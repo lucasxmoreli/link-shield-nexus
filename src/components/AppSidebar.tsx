@@ -1,6 +1,7 @@
-import { LayoutDashboard, Globe, Megaphone, FileText, Settings, Shield } from "lucide-react";
+import { LayoutDashboard, Globe, Megaphone, FileText, Settings, Shield, LogOut } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import {
   Sidebar,
   SidebarContent,
@@ -24,6 +25,7 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
+  const { signOut } = useAuth();
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border">
@@ -35,7 +37,7 @@ export function AppSidebar() {
           </span>
         )}
       </div>
-      <SidebarContent className="pt-2">
+      <SidebarContent className="pt-2 flex flex-col justify-between">
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -54,6 +56,23 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <button
+                    onClick={signOut}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-md text-destructive hover:bg-destructive/10 transition-colors w-full"
+                  >
+                    <LogOut className="h-5 w-5 shrink-0" />
+                    {!collapsed && <span>Sair</span>}
+                  </button>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
