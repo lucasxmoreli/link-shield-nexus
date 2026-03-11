@@ -104,8 +104,7 @@ serve(async (req) => {
     }
 
     // ─── STEP 4: Proxy/VPN detection via Proxycheck.io ───
-    // Replace YOUR_PROXYCHECK_KEY with your actual API key
-    const proxyCheckKey = Deno.env.get("PROXYCHECK_API_KEY") || "YOUR_API_KEY";
+    const proxyCheckKey = Deno.env.get("PROXYCHECK_API_KEY")!;
     try {
       const proxyRes = await fetch(
         `https://proxycheck.io/v2/${ip}?key=${proxyCheckKey}&vpn=1`,
