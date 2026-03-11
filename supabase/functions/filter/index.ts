@@ -120,8 +120,7 @@ serve(async (req) => {
     }
 
     // ─── STEP 5: ASN/Datacenter detection via IPinfo.io ───
-    // Replace YOUR_IPINFO_TOKEN with your actual token
-    const ipinfoToken = Deno.env.get("IPINFO_API_KEY") || "YOUR_API_KEY";
+    const ipinfoToken = Deno.env.get("IPINFO_API_KEY")!;
     let countryCode = "XX";
     try {
       const ipRes = await fetch(
