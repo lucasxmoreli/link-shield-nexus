@@ -1,7 +1,8 @@
 import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Copy, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -9,8 +10,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { mockCampaigns, mockDomains } from "@/lib/mock-data";
+import { Skeleton } from "@/components/ui/skeleton";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import type { Database } from "@/integrations/supabase/types";
+
+type TrafficSource = Database["public"]["Enums"]["traffic_source"];
 
 const sourceColors: Record<string, string> = {
   tiktok: "bg-primary/20 text-primary",
@@ -18,22 +24,80 @@ const sourceColors: Record<string, string> = {
   google: "bg-success/20 text-success",
 };
 
+function generateHash(len = 10) {
+  const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  return Array.from({ length: len }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+}
+
 export default function Campaigns() {
-  const [campaigns, setCampaigns] = useState(mockCampaigns);
+  const { user } = useAuth();
+  const qc = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ name: "", traffic_source: "" as string, domain: "", offer_url: "", safe_url: "" });
 
-  const handleToggle = (id: string) => {
-    setCampaigns((prev) => prev.map((c) => (c.id === id ? { ...c, is_active: !c.is_active } : c)));
-  };
+  const { data: campaigns = [], isLoading } = useQuery({
+    queryKey: ["campaigns", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("campaigns").select("*").order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
 
-  const handleCopy = (hash: string, domain: string) => {
-    navigator.clipboard.writeText(`https://${domain}/${hash}`);
-    toast.success("Link copiado!");
-  };
+  const { data: domains = [] } = useQuery({
+    queryKey: ["domains", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("domains").select("*").eq("is_verified", true);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
 
-  const handleDelete = (id: string) => {
-    setCampaigns((prev) => prev.filter((c) => c.id !== id));
-    toast.success("Campanha removida");
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("campaigns").insert({
+        user_id: user!.id,
+        hash: generateHash(),
+        name: form.name,
+        traffic_source: form.traffic_source as TrafficSource,
+        safe_url: form.safe_url,
+        offer_url: form.offer_url,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["campaigns"] });
+      setOpen(false);
+      setForm({ name: "", traffic_source: "", domain: "", offer_url: "", safe_url: "" });
+      toast.success("Campanha criada!");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
+      const { error } = await supabase.from("campaigns").update({ is_active }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["campaigns"] }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("campaigns").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["campaigns"] });
+      toast.success("Campanha removida");
+    },
+  });
+
+  const handleCopy = (hash: string) => {
+    navigator.clipboard.writeText(hash);
+    toast.success("Hash copiado!");
   };
 
   return (
@@ -42,25 +106,15 @@ export default function Campaigns() {
         <h1 className="text-2xl font-bold">Campaigns</h1>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button className="neon-glow">
-              <Plus className="h-4 w-4 mr-1" /> Create +
-            </Button>
+            <Button className="neon-glow"><Plus className="h-4 w-4 mr-1" /> Create +</Button>
           </DialogTrigger>
           <DialogContent className="bg-card border-border">
-            <DialogHeader>
-              <DialogTitle>Nova Campanha</DialogTitle>
-            </DialogHeader>
+            <DialogHeader><DialogTitle>Nova Campanha</DialogTitle></DialogHeader>
             <div className="space-y-4 pt-2">
-              <div>
-                <Label>Nome</Label>
-                <Input placeholder="Ex: TikTok BR - Nutra" className="bg-secondary border-border" />
-              </div>
-              <div>
-                <Label>Fonte de Tráfego</Label>
-                <Select>
-                  <SelectTrigger className="bg-secondary border-border">
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
+              <div><Label>Nome</Label><Input placeholder="Ex: TikTok BR - Nutra" className="bg-secondary border-border" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} /></div>
+              <div><Label>Fonte de Tráfego</Label>
+                <Select value={form.traffic_source} onValueChange={(v) => setForm((f) => ({ ...f, traffic_source: v }))}>
+                  <SelectTrigger className="bg-secondary border-border"><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent className="bg-card border-border">
                     <SelectItem value="tiktok">TikTok</SelectItem>
                     <SelectItem value="facebook">Facebook</SelectItem>
@@ -68,29 +122,18 @@ export default function Campaigns() {
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label>Domínio</Label>
-                <Select>
-                  <SelectTrigger className="bg-secondary border-border">
-                    <SelectValue placeholder="Selecione um domínio" />
-                  </SelectTrigger>
+              <div><Label>Domínio</Label>
+                <Select value={form.domain} onValueChange={(v) => setForm((f) => ({ ...f, domain: v }))}>
+                  <SelectTrigger className="bg-secondary border-border"><SelectValue placeholder="Selecione um domínio" /></SelectTrigger>
                   <SelectContent className="bg-card border-border">
-                    {mockDomains.filter((d) => d.is_verified).map((d) => (
-                      <SelectItem key={d.id} value={d.url}>{d.url}</SelectItem>
-                    ))}
+                    {domains.map((d) => <SelectItem key={d.id} value={d.url}>{d.url}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label>URL da Oferta</Label>
-                <Input placeholder="https://offer.example.com/..." className="bg-secondary border-border" />
-              </div>
-              <div>
-                <Label>URL da Safe Page</Label>
-                <Input placeholder="https://blog.example.com/..." className="bg-secondary border-border" />
-              </div>
-              <Button className="w-full neon-glow" onClick={() => { setOpen(false); toast.success("Campanha criada!"); }}>
-                Criar Campanha
+              <div><Label>URL da Oferta</Label><Input placeholder="https://offer.example.com/..." className="bg-secondary border-border" value={form.offer_url} onChange={(e) => setForm((f) => ({ ...f, offer_url: e.target.value }))} /></div>
+              <div><Label>URL da Safe Page</Label><Input placeholder="https://blog.example.com/..." className="bg-secondary border-border" value={form.safe_url} onChange={(e) => setForm((f) => ({ ...f, safe_url: e.target.value }))} /></div>
+              <Button className="w-full neon-glow" onClick={() => createMutation.mutate()} disabled={createMutation.isPending || !form.name || !form.traffic_source || !form.offer_url || !form.safe_url}>
+                {createMutation.isPending ? "Criando..." : "Criar Campanha"}
               </Button>
             </div>
           </DialogContent>
@@ -111,36 +154,32 @@ export default function Campaigns() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {campaigns.map((c) => (
-                <TableRow key={c.id} className="border-border">
-                  <TableCell className="font-mono text-sm text-primary">{c.hash}</TableCell>
-                  <TableCell>{c.name}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={`${sourceColors[c.traffic_source]} border-0`}>
-                      {c.traffic_source}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-sm">
-                    {new Date(c.created_at).toLocaleDateString('pt-BR')}
-                  </TableCell>
-                  <TableCell>
-                    <Switch checked={c.is_active} onCheckedChange={() => handleToggle(c.id)} />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
-                      <Button variant="ghost" size="icon" onClick={() => handleCopy(c.hash, c.domain)}>
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon">
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(c.id)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {isLoading ? (
+                Array.from({ length: 3 }).map((_, i) => (
+                  <TableRow key={i} className="border-border">
+                    {Array.from({ length: 6 }).map((_, j) => <TableCell key={j}><Skeleton className="h-5 w-20" /></TableCell>)}
+                  </TableRow>
+                ))
+              ) : campaigns.length === 0 ? (
+                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Nenhuma campanha criada ainda.</TableCell></TableRow>
+              ) : (
+                campaigns.map((c) => (
+                  <TableRow key={c.id} className="border-border">
+                    <TableCell className="font-mono text-sm text-primary">{c.hash}</TableCell>
+                    <TableCell>{c.name}</TableCell>
+                    <TableCell><Badge variant="outline" className={`${sourceColors[c.traffic_source]} border-0`}>{c.traffic_source}</Badge></TableCell>
+                    <TableCell className="text-muted-foreground text-sm">{new Date(c.created_at).toLocaleDateString("pt-BR")}</TableCell>
+                    <TableCell><Switch checked={c.is_active ?? false} onCheckedChange={(v) => toggleMutation.mutate({ id: c.id, is_active: v })} /></TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => handleCopy(c.hash)}><Copy className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon"><Pencil className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(c.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>
