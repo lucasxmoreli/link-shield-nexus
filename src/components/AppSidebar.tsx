@@ -13,14 +13,17 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-const items = [
+const baseItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Domains", url: "/domains", icon: Globe },
   { title: "Campaigns", url: "/campaigns", icon: Megaphone },
   { title: "Requests", url: "/requests", icon: FileText },
   { title: "Cloak Test", url: "/cloak-test", icon: FlaskConical },
-  { title: "Convites", url: "/invite-codes", icon: Ticket },
   { title: "Settings", url: "/settings", icon: Settings },
+];
+
+const adminItems = [
+  { title: "Convites", url: "/invite-codes", icon: Ticket },
 ];
 
 export function AppSidebar() {
