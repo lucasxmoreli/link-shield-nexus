@@ -28,15 +28,15 @@ export default function InviteCodes() {
   const queryClient = useQueryClient();
   const [customCode, setCustomCode] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const { isAdmin } = useAdmin();
+  const { isAdmin, isLoading: isAdminLoading } = useAdmin();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isAdmin) {
+    if (!isAdminLoading && !isAdmin) {
       toast.error("Acesso negado. Área restrita a administradores.");
       navigate("/dashboard", { replace: true });
     }
-  }, [isAdmin, navigate]);
+  }, [isAdmin, isAdminLoading, navigate]);
 
   const { data: codes = [], isLoading } = useQuery({
     queryKey: ["invite_codes"],
