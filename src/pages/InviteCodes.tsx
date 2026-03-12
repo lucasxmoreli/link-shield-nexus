@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Ticket, Plus, Copy, Loader2, Check, X, RefreshCw } from "lucide-react";
+import { Ticket, Plus, Copy, Loader2, Check, X, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
