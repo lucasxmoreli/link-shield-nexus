@@ -18,6 +18,7 @@ const items = [
   { title: "Domains", url: "/domains", icon: Globe },
   { title: "Campaigns", url: "/campaigns", icon: Megaphone },
   { title: "Requests", url: "/requests", icon: FileText },
+  { title: "Cloak Test", url: "/cloak-test", icon: FlaskConical },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 

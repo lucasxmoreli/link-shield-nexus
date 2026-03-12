@@ -55,6 +55,7 @@ const App = () => (
               <Route path="/campaigns/new" element={<CampaignEdit />} />
               <Route path="/campaigns/:id/edit" element={<CampaignEdit />} />
               <Route path="/requests" element={<Requests />} />
+              <Route path="/cloak-test" element={<CloakTest />} />
               <Route path="/settings" element={<AccountSettings />} />
             </Route>
             <Route path="*" element={<NotFound />} />
