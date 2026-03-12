@@ -72,14 +72,14 @@ export default function Campaigns() {
   const defaultBase = window.location.origin;
 
   const getFullLink = () => {
-    const base = selectedDomain || defaultBase;
-    const domain = base.replace(/\/+$/, "");
-    return `${domain.startsWith("http") ? domain : `https://${domain}`}/${linkModal.hash}`;
+    const base = (selectedDomain || defaultBase).trim().replace(/\/+$/, "");
+    const domain = base.startsWith("http") ? base : `https://${base}`;
+    return `${domain}/${linkModal.hash}`;
   };
 
   const openLinkModal = (hash: string, name: string) => {
     setCopied(false);
-    setSelectedDomain("");
+    setSelectedDomain(domains.length > 0 ? domains[0].url : "");
     setLinkModal({ open: true, hash, name });
   };
 
@@ -168,10 +168,9 @@ export default function Campaigns() {
                 <label className="text-sm font-medium text-muted-foreground">Domínio</label>
                 <Select value={selectedDomain} onValueChange={setSelectedDomain}>
                   <SelectTrigger className="border-border bg-background">
-                    <SelectValue placeholder="Domínio padrão" />
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value=" ">Domínio padrão</SelectItem>
                     {domains.map((d) => (
                       <SelectItem key={d.id} value={d.url}>{d.url}</SelectItem>
                     ))}
