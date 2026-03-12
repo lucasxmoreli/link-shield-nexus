@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Ticket, Plus, Copy, Loader2, Check, X, RefreshCw } from "lucide-react";
+import { Ticket, Plus, Copy, Loader2, Check, X, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -56,6 +56,18 @@ export default function InviteCodes() {
         toast.error("Erro ao criar código.");
       }
     },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("invite_codes").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["invite_codes"] });
+      toast.success("Código deletado.");
+    },
+    onError: () => toast.error("Erro ao deletar código."),
   });
 
   const handleCreateRandom = () => createMutation.mutate(generateCode());
@@ -193,17 +205,27 @@ export default function InviteCodes() {
                   </TableCell>
                   <TableCell>
                     {!code.is_used && (
-                      <button
-                        onClick={() => copyToClipboard(code.code, code.id)}
-                        className="text-muted-foreground hover:text-foreground transition-colors"
-                        title="Copiar código"
-                      >
-                        {copiedId === code.id ? (
-                          <Check className="h-4 w-4 text-primary" />
-                        ) : (
-                          <Copy className="h-4 w-4" />
-                        )}
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => copyToClipboard(code.code, code.id)}
+                          className="text-muted-foreground hover:text-foreground transition-colors"
+                          title="Copiar código"
+                        >
+                          {copiedId === code.id ? (
+                            <Check className="h-4 w-4 text-primary" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => deleteMutation.mutate(code.id)}
+                          disabled={deleteMutation.isPending}
+                          className="text-muted-foreground hover:text-destructive transition-colors"
+                          title="Deletar código"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     )}
                   </TableCell>
                 </TableRow>
