@@ -15,25 +15,38 @@ export default function CampaignRedirect() {
 
     const resolve = async () => {
       try {
-        const { data, error: dbError } = await supabase
-          .from("campaigns")
-          .select("offer_url, safe_url, is_active")
-          .eq("hash", hash)
-          .maybeSingle();
+        // Get real visitor IP via public API
+        let visitorIP = "0.0.0.0";
+        try {
+          const ipRes = await fetch("https://api.ipify.org?format=json", {
+            signal: AbortSignal.timeout(3000),
+          });
+          const ipData = await ipRes.json();
+          visitorIP = ipData.ip;
+        } catch {
+          // fallback IP if service is down
+        }
 
-        if (dbError || !data || !data.is_active) {
+        const visitorUA = navigator.userAgent;
+
+        // Call the same filter edge function used by Cloak Test
+        const { data, error: fnError } = await supabase.functions.invoke("filter", {
+          body: {
+            campaign_hash: hash,
+            ip: visitorIP,
+            user_agent: visitorUA,
+            referer: document.referrer || null,
+          },
+        });
+
+        if (fnError || !data?.url) {
           setError(true);
           setTimeout(() => navigate("/", { replace: true }), 2000);
           return;
         }
 
-        const destination = data.offer_url || data.safe_url;
-        if (destination) {
-          window.location.href = destination;
-        } else {
-          setError(true);
-          setTimeout(() => navigate("/", { replace: true }), 2000);
-        }
+        // Redirect to the destination decided by the cloaking engine
+        window.location.replace(data.url);
       } catch {
         setError(true);
         setTimeout(() => navigate("/", { replace: true }), 2000);
@@ -53,7 +66,7 @@ export default function CampaignRedirect() {
       ) : (
         <>
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="text-sm text-muted-foreground">Carregando...</p>
+          <p className="text-sm text-muted-foreground">Redirecionando...</p>
         </>
       )}
     </div>
