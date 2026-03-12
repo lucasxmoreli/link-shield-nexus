@@ -9,6 +9,7 @@ import Landing from "./pages/Landing";
 import Dashboard from "./pages/Dashboard";
 import Domains from "./pages/Domains";
 import Campaigns from "./pages/Campaigns";
+import CampaignEdit from "./pages/CampaignEdit";
 import Requests from "./pages/Requests";
 import AccountSettings from "./pages/AccountSettings";
 import Auth from "./pages/Auth";
