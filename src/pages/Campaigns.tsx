@@ -74,7 +74,7 @@ export default function Campaigns() {
   const getFullLink = () => {
     const base = (selectedDomain || defaultBase).trim().replace(/\/+$/, "");
     const domain = base.startsWith("http") ? base : `https://${base}`;
-    return `${domain}/${linkModal.hash}`;
+    return `${domain}/c/${linkModal.hash}`;
   };
 
   const openLinkModal = (hash: string, name: string) => {
