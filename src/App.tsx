@@ -13,6 +13,7 @@ import CampaignEdit from "./pages/CampaignEdit";
 import Requests from "./pages/Requests";
 import AccountSettings from "./pages/AccountSettings";
 import Auth from "./pages/Auth";
+import CloakTest from "./pages/CloakTest";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -54,6 +55,7 @@ const App = () => (
               <Route path="/campaigns/new" element={<CampaignEdit />} />
               <Route path="/campaigns/:id/edit" element={<CampaignEdit />} />
               <Route path="/requests" element={<Requests />} />
+              <Route path="/cloak-test" element={<CloakTest />} />
               <Route path="/settings" element={<AccountSettings />} />
             </Route>
             <Route path="*" element={<NotFound />} />
