@@ -58,6 +58,18 @@ export default function InviteCodes() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("invite_codes").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["invite_codes"] });
+      toast.success("Código deletado.");
+    },
+    onError: () => toast.error("Erro ao deletar código."),
+  });
+
   const handleCreateRandom = () => createMutation.mutate(generateCode());
   const handleCreateCustom = (e: React.FormEvent) => {
     e.preventDefault();
