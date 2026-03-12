@@ -2,6 +2,7 @@ import { LayoutDashboard, Globe, Megaphone, FileText, Settings, Shield, LogOut, 
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useAdmin } from "@/hooks/useAdmin";
 import {
   Sidebar,
   SidebarContent,
@@ -13,14 +14,17 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-const items = [
+const baseItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Domains", url: "/domains", icon: Globe },
   { title: "Campaigns", url: "/campaigns", icon: Megaphone },
   { title: "Requests", url: "/requests", icon: FileText },
   { title: "Cloak Test", url: "/cloak-test", icon: FlaskConical },
-  { title: "Convites", url: "/invite-codes", icon: Ticket },
   { title: "Settings", url: "/settings", icon: Settings },
+];
+
+const adminItems = [
+  { title: "Convites", url: "/invite-codes", icon: Ticket },
 ];
 
 export function AppSidebar() {
@@ -28,6 +32,9 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const location = useLocation();
   const { signOut } = useAuth();
+  const { isAdmin } = useAdmin();
+
+  const items = [...baseItems, ...(isAdmin ? adminItems : [])];
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border">

@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAdmin } from "@/hooks/useAdmin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +28,15 @@ export default function InviteCodes() {
   const queryClient = useQueryClient();
   const [customCode, setCustomCode] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const { isAdmin } = useAdmin();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isAdmin) {
+      toast.error("Acesso negado. Área restrita a administradores.");
+      navigate("/dashboard", { replace: true });
+    }
+  }, [isAdmin, navigate]);
 
   const { data: codes = [], isLoading } = useQuery({
     queryKey: ["invite_codes"],
@@ -70,15 +81,21 @@ export default function InviteCodes() {
     onError: () => toast.error("Erro ao deletar código."),
   });
 
-  const handleCreateRandom = () => createMutation.mutate(generateCode());
+  const handleCreateRandom = () => {
+    if (!isAdmin) return;
+    createMutation.mutate(generateCode());
+  };
   const handleCreateCustom = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isAdmin) return;
     if (customCode.trim().length < 4) {
       toast.error("O código precisa ter pelo menos 4 caracteres.");
       return;
     }
     createMutation.mutate(customCode.trim().toUpperCase());
   };
+
+  if (!isAdmin) return null;
 
   const copyToClipboard = (code: string, id: string) => {
     navigator.clipboard.writeText(code);
@@ -218,8 +235,8 @@ export default function InviteCodes() {
                           )}
                         </button>
                         <button
-                          onClick={() => deleteMutation.mutate(code.id)}
-                          disabled={deleteMutation.isPending}
+                          onClick={() => { if (isAdmin) deleteMutation.mutate(code.id); }}
+                          disabled={deleteMutation.isPending || !isAdmin}
                           className="text-muted-foreground hover:text-destructive transition-colors"
                           title="Deletar código"
                         >
