@@ -168,10 +168,9 @@ export default function Campaigns() {
                 <label className="text-sm font-medium text-muted-foreground">Domínio</label>
                 <Select value={selectedDomain} onValueChange={setSelectedDomain}>
                   <SelectTrigger className="border-border bg-background">
-                    <SelectValue placeholder="Domínio padrão" />
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value=" ">Domínio padrão</SelectItem>
                     {domains.map((d) => (
                       <SelectItem key={d.id} value={d.url}>{d.url}</SelectItem>
                     ))}
