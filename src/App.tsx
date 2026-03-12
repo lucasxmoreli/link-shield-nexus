@@ -61,6 +61,7 @@ const App = () => (
               <Route path="/invite-codes" element={<InviteCodes />} />
               <Route path="/settings" element={<AccountSettings />} />
             </Route>
+            <Route path="/c/:hash" element={<CampaignRedirect />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
