@@ -233,8 +233,8 @@ export default function InviteCodes() {
                           )}
                         </button>
                         <button
-                          onClick={() => deleteMutation.mutate(code.id)}
-                          disabled={deleteMutation.isPending}
+                          onClick={() => { if (isAdmin) deleteMutation.mutate(code.id); }}
+                          disabled={deleteMutation.isPending || !isAdmin}
                           className="text-muted-foreground hover:text-destructive transition-colors"
                           title="Deletar código"
                         >
