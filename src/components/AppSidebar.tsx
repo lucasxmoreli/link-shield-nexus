@@ -2,6 +2,7 @@ import { LayoutDashboard, Globe, Megaphone, FileText, Settings, Shield, LogOut, 
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useAdmin } from "@/hooks/useAdmin";
 import {
   Sidebar,
   SidebarContent,
