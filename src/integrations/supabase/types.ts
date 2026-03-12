@@ -196,15 +196,43 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       action_taken: "safe_page" | "offer_page" | "bot_blocked"
+      app_role: "admin" | "moderator" | "user"
       device_type: "mobile" | "desktop"
       traffic_source: "tiktok" | "facebook" | "google"
     }
@@ -335,6 +363,7 @@ export const Constants = {
   public: {
     Enums: {
       action_taken: ["safe_page", "offer_page", "bot_blocked"],
+      app_role: ["admin", "moderator", "user"],
       device_type: ["mobile", "desktop"],
       traffic_source: ["tiktok", "facebook", "google"],
     },
