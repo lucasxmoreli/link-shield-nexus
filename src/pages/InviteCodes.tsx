@@ -79,15 +79,21 @@ export default function InviteCodes() {
     onError: () => toast.error("Erro ao deletar código."),
   });
 
-  const handleCreateRandom = () => createMutation.mutate(generateCode());
+  const handleCreateRandom = () => {
+    if (!isAdmin) return;
+    createMutation.mutate(generateCode());
+  };
   const handleCreateCustom = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isAdmin) return;
     if (customCode.trim().length < 4) {
       toast.error("O código precisa ter pelo menos 4 caracteres.");
       return;
     }
     createMutation.mutate(customCode.trim().toUpperCase());
   };
+
+  if (!isAdmin) return null;
 
   const copyToClipboard = (code: string, id: string) => {
     navigator.clipboard.writeText(code);
