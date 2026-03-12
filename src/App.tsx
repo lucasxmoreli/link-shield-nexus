@@ -13,6 +13,7 @@ import CampaignEdit from "./pages/CampaignEdit";
 import Requests from "./pages/Requests";
 import AccountSettings from "./pages/AccountSettings";
 import Auth from "./pages/Auth";
+import CloakTest from "./pages/CloakTest";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
