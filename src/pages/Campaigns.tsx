@@ -79,7 +79,7 @@ export default function Campaigns() {
 
   const openLinkModal = (hash: string, name: string) => {
     setCopied(false);
-    setSelectedDomain("");
+    setSelectedDomain(domains.length > 0 ? domains[0].url : "");
     setLinkModal({ open: true, hash, name });
   };
 
