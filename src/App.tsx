@@ -15,6 +15,7 @@ import AccountSettings from "./pages/AccountSettings";
 import Auth from "./pages/Auth";
 import CloakTest from "./pages/CloakTest";
 import InviteCodes from "./pages/InviteCodes";
+import CampaignRedirect from "./pages/CampaignRedirect";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
