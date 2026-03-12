@@ -21,8 +21,13 @@ export type Database = {
           id: string
           is_active: boolean | null
           name: string
+          offer_page_method: string
           offer_url: string
+          safe_page_method: string
           safe_url: string
+          tags: string[] | null
+          target_countries: string[] | null
+          target_devices: string[] | null
           traffic_source: Database["public"]["Enums"]["traffic_source"]
           user_id: string
         }
@@ -32,8 +37,13 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name: string
+          offer_page_method?: string
           offer_url: string
+          safe_page_method?: string
           safe_url: string
+          tags?: string[] | null
+          target_countries?: string[] | null
+          target_devices?: string[] | null
           traffic_source: Database["public"]["Enums"]["traffic_source"]
           user_id: string
         }
@@ -43,8 +53,13 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name?: string
+          offer_page_method?: string
           offer_url?: string
+          safe_page_method?: string
           safe_url?: string
+          tags?: string[] | null
+          target_countries?: string[] | null
+          target_devices?: string[] | null
           traffic_source?: Database["public"]["Enums"]["traffic_source"]
           user_id?: string
         }

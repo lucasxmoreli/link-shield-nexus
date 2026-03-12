@@ -9,6 +9,7 @@ import Landing from "./pages/Landing";
 import Dashboard from "./pages/Dashboard";
 import Domains from "./pages/Domains";
 import Campaigns from "./pages/Campaigns";
+import CampaignEdit from "./pages/CampaignEdit";
 import Requests from "./pages/Requests";
 import AccountSettings from "./pages/AccountSettings";
 import Auth from "./pages/Auth";
@@ -50,6 +51,8 @@ const App = () => (
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/domains" element={<Domains />} />
               <Route path="/campaigns" element={<Campaigns />} />
+              <Route path="/campaigns/new" element={<CampaignEdit />} />
+              <Route path="/campaigns/:id/edit" element={<CampaignEdit />} />
               <Route path="/requests" element={<Requests />} />
               <Route path="/settings" element={<AccountSettings />} />
             </Route>
