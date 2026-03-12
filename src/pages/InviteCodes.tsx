@@ -205,17 +205,27 @@ export default function InviteCodes() {
                   </TableCell>
                   <TableCell>
                     {!code.is_used && (
-                      <button
-                        onClick={() => copyToClipboard(code.code, code.id)}
-                        className="text-muted-foreground hover:text-foreground transition-colors"
-                        title="Copiar código"
-                      >
-                        {copiedId === code.id ? (
-                          <Check className="h-4 w-4 text-primary" />
-                        ) : (
-                          <Copy className="h-4 w-4" />
-                        )}
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => copyToClipboard(code.code, code.id)}
+                          className="text-muted-foreground hover:text-foreground transition-colors"
+                          title="Copiar código"
+                        >
+                          {copiedId === code.id ? (
+                            <Check className="h-4 w-4 text-primary" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => deleteMutation.mutate(code.id)}
+                          disabled={deleteMutation.isPending}
+                          className="text-muted-foreground hover:text-destructive transition-colors"
+                          title="Deletar código"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     )}
                   </TableCell>
                 </TableRow>
