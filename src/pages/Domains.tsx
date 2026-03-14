@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, CheckCircle, XCircle, Trash2, ShieldCheck, Copy, RefreshCw, Info } from "lucide-react";
+import { Plus, CheckCircle, XCircle, Trash2, ShieldCheck, Copy, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
@@ -13,33 +13,38 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
-function DnsInstructions({ domain }: { domain: { id: string; url: string } }) {
+function DnsSteps({ domain }: { domain: { id: string; url: string } }) {
   const hostname = domain.url.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
   const txtName = `_cloakguard.${hostname}`;
   const txtValue = `cloakguard-verify=${domain.id}`;
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
-    toast.success(`${label} copiado!`);
+    toast.success(`${label} copied!`);
   };
 
   return (
-    <div className="space-y-5">
-      <div className="rounded-md border border-border bg-secondary/20 p-4 space-y-4">
-        <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-          <Info className="h-4 w-4 text-primary" />
-          Adicione o seguinte registro TXT no DNS do seu domínio:
-        </div>
+    <div className="flex flex-col space-y-4">
+      {/* Step 1 */}
+      <div className="rounded-lg border border-border/30 bg-secondary/10 p-4">
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Step 1</p>
+        <p className="text-sm text-foreground">Access your domain's DNS provider panel.</p>
+      </div>
+
+      {/* Step 2 */}
+      <div className="rounded-lg border border-border/30 bg-secondary/10 p-4 space-y-4">
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Step 2</p>
+        <p className="text-sm text-foreground">Create a TXT record with the following values:</p>
 
         <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">Tipo</Label>
+          <Label className="text-xs text-muted-foreground">Type</Label>
           <div className="rounded-md bg-background border border-border px-3 py-2.5 text-sm font-mono text-foreground">
             TXT
           </div>
         </div>
 
         <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">Nome / Host</Label>
+          <Label className="text-xs text-muted-foreground">Name / Host</Label>
           <div className="relative w-full">
             <Input
               readOnly
@@ -58,7 +63,7 @@ function DnsInstructions({ domain }: { domain: { id: string; url: string } }) {
         </div>
 
         <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">Valor</Label>
+          <Label className="text-xs text-muted-foreground">Value</Label>
           <div className="relative w-full">
             <Input
               readOnly
@@ -69,7 +74,7 @@ function DnsInstructions({ domain }: { domain: { id: string; url: string } }) {
               variant="ghost"
               size="icon"
               className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground"
-              onClick={() => copyToClipboard(txtValue, "Valor")}
+              onClick={() => copyToClipboard(txtValue, "Value")}
             >
               <Copy className="h-3.5 w-3.5" />
             </Button>
@@ -77,9 +82,11 @@ function DnsInstructions({ domain }: { domain: { id: string; url: string } }) {
         </div>
       </div>
 
-      <p className="text-xs text-muted-foreground leading-relaxed">
-        Após adicionar o registro, aguarde a propagação do DNS (pode levar até 72h) e clique em <strong className="text-foreground">Verificar</strong>.
-      </p>
+      {/* Step 3 */}
+      <div className="rounded-lg border border-border/30 bg-secondary/10 p-4">
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Step 3</p>
+        <p className="text-sm text-foreground">Save changes in your DNS panel and wait for propagation (up to 72h). Return here to verify.</p>
+      </div>
     </div>
   );
 }
@@ -110,7 +117,7 @@ export default function Domains() {
       qc.invalidateQueries({ queryKey: ["domains"] });
       setOpen(false);
       setUrl("");
-      toast.success("Domínio adicionado! Configure o DNS para verificar.");
+      toast.success("Domain added! Configure DNS to verify.");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -122,7 +129,7 @@ export default function Domains() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["domains"] });
-      toast.success("Domínio removido");
+      toast.success("Domain removed");
     },
   });
 
@@ -137,10 +144,10 @@ export default function Domains() {
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["domains"] });
       if (data.verified) {
-        toast.success("Domínio verificado com sucesso!");
+        toast.success("Domain verified successfully!");
         setDnsDialogDomain(null);
       } else {
-        toast.error(data.message || "Registro TXT não encontrado.");
+        toast.error(data.message || "TXT record not found.");
       }
     },
     onError: (e: Error) => toast.error(e.message),
@@ -156,50 +163,50 @@ export default function Domains() {
           </DialogTrigger>
           <DialogContent className="bg-card border-border">
             <DialogHeader>
-              <DialogTitle>Adicionar Domínio</DialogTitle>
-              <DialogDescription>Insira o domínio que deseja usar com o CloakGuard.</DialogDescription>
+              <DialogTitle>Add Domain</DialogTitle>
+              <DialogDescription>Enter the domain you want to use with CloakGuard.</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 pt-2">
               <div>
-                <Label>URL do Domínio</Label>
+                <Label>Domain URL</Label>
                 <Input
-                  placeholder="Ex: track.mysite.com"
+                  placeholder="e.g. track.mysite.com"
                   className="bg-secondary/50 border-border"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
                 />
               </div>
               <Button className="w-full" onClick={() => createMutation.mutate()} disabled={createMutation.isPending || !url}>
-                {createMutation.isPending ? "Adicionando..." : "Adicionar"}
+                {createMutation.isPending ? "Adding..." : "Add"}
               </Button>
             </div>
           </DialogContent>
         </Dialog>
       </div>
 
-      {/* DNS Instructions Dialog */}
+      {/* Verify Domain Dialog — Step by Step */}
       <Dialog open={!!dnsDialogDomain} onOpenChange={(v) => !v && setDnsDialogDomain(null)}>
         <DialogContent className="bg-card border-border sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ShieldCheck className="h-5 w-5 text-primary" />
-              Verificar Domínio
+              Verify Domain
             </DialogTitle>
             <DialogDescription>
-              Configure o registro DNS para verificar a propriedade de{" "}
+              Configure the DNS record to verify ownership of{" "}
               <span className="font-mono text-foreground">{dnsDialogDomain?.url}</span>
             </DialogDescription>
           </DialogHeader>
-          {dnsDialogDomain && <DnsInstructions domain={dnsDialogDomain} />}
+          {dnsDialogDomain && <DnsSteps domain={dnsDialogDomain} />}
           <Button
             onClick={() => dnsDialogDomain && verifyMutation.mutate(dnsDialogDomain.id)}
             disabled={verifyMutation.isPending}
-            className="w-full mt-2"
+            className="w-full mt-4"
           >
             {verifyMutation.isPending ? (
-              <><RefreshCw className="h-4 w-4 mr-2 animate-spin" /> Verificando...</>
+              <><RefreshCw className="h-4 w-4 mr-2 animate-spin" /> Verifying...</>
             ) : (
-              <><ShieldCheck className="h-4 w-4 mr-2" /> Verificar Agora</>
+              <><ShieldCheck className="h-4 w-4 mr-2" /> Verify & Save Domain</>
             )}
           </Button>
         </DialogContent>
@@ -212,8 +219,8 @@ export default function Domains() {
               <TableRow className="border-border hover:bg-transparent">
                 <TableHead className="text-muted-foreground">URL</TableHead>
                 <TableHead className="text-muted-foreground">Status</TableHead>
-                <TableHead className="text-muted-foreground">Criado em</TableHead>
-                <TableHead className="text-muted-foreground text-right">Ações</TableHead>
+                <TableHead className="text-muted-foreground">Created</TableHead>
+                <TableHead className="text-muted-foreground text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -228,7 +235,7 @@ export default function Domains() {
               ) : domains.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
-                    Nenhum domínio adicionado ainda.
+                    No domains added yet.
                   </TableCell>
                 </TableRow>
               ) : (
@@ -251,7 +258,7 @@ export default function Domains() {
                       )}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
-                      {new Date(d.created_at).toLocaleDateString("pt-BR")}
+                      {new Date(d.created_at).toLocaleDateString("en-US")}
                     </TableCell>
                     <TableCell className="text-right space-x-1">
                       {!d.is_verified && (
@@ -261,7 +268,7 @@ export default function Domains() {
                           className="text-primary hover:text-primary"
                           onClick={() => setDnsDialogDomain({ id: d.id, url: d.url })}
                         >
-                          <ShieldCheck className="h-4 w-4 mr-1" /> Verificar
+                          <ShieldCheck className="h-4 w-4 mr-1" /> Verify
                         </Button>
                       )}
                       <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(d.id)}>

@@ -54,12 +54,12 @@ export default function Requests() {
                   </TableRow>
                 ))
               ) : logs.length === 0 ? (
-                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Nenhuma requisição registrada ainda.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No requests logged yet.</TableCell></TableRow>
               ) : (
                 logs.map((r) => (
                   <TableRow key={r.id} className="border-border">
                     <TableCell className="text-sm text-muted-foreground font-mono">
-                      {new Date(r.created_at).toLocaleString("pt-BR")}
+                      {new Date(r.created_at).toLocaleString("en-US")}
                     </TableCell>
                     <TableCell>{r.campaigns?.name ?? "—"}</TableCell>
                     <TableCell className="font-mono text-sm text-primary">{r.campaigns?.hash ?? "—"}</TableCell>

@@ -76,21 +76,13 @@ export default function CloakTest() {
     enabled: !!session?.user?.id,
   });
 
-  const getIP = () => {
-    if (selectedIPPreset === "custom") return customIP;
-    return selectedIPPreset;
-  };
-
+  const getIP = () => selectedIPPreset === "custom" ? customIP : selectedIPPreset;
   const getUA = () => {
     if (customUA) return customUA;
     const preset = PRESET_USER_AGENTS.find(p => p.value === selectedUAPreset);
     return preset?.value ?? "";
   };
-
-  const getCampaignHash = () => {
-    const campaign = campaigns?.find(c => c.id === selectedCampaign);
-    return campaign?.hash ?? "";
-  };
+  const getCampaignHash = () => campaigns?.find(c => c.id === selectedCampaign)?.hash ?? "";
 
   const runTest = async () => {
     const ip = getIP();
@@ -98,7 +90,7 @@ export default function CloakTest() {
     const campaignHash = getCampaignHash();
 
     if (!campaignHash || !ip || !userAgent) {
-      toast.error("Preencha todos os campos obrigatórios");
+      toast.error("Please fill in all required fields");
       return;
     }
 
@@ -107,31 +99,20 @@ export default function CloakTest() {
 
     try {
       const { data, error } = await supabase.functions.invoke("filter", {
-        body: {
-          campaign_hash: campaignHash,
-          ip,
-          user_agent: userAgent,
-          referer: referer || null,
-        },
+        body: { campaign_hash: campaignHash, ip, user_agent: userAgent, referer: referer || null },
       });
-
       const duration = Math.round(performance.now() - start);
-
       if (error) throw error;
 
       const newLog: TestLog = {
-        id: logCounter + 1,
-        timestamp: new Date(),
-        ip,
+        id: logCounter + 1, timestamp: new Date(), ip,
         userAgent: userAgent.substring(0, 60) + (userAgent.length > 60 ? "..." : ""),
-        result: data as FilterResult,
-        duration,
+        result: data as FilterResult, duration,
       };
-
       setLogs(prev => [newLog, ...prev]);
       setLogCounter(prev => prev + 1);
     } catch (err: any) {
-      toast.error("Erro ao testar: " + (err.message || "Erro desconhecido"));
+      toast.error("Test error: " + (err.message || "Unknown error"));
     } finally {
       setTesting(false);
     }
@@ -139,51 +120,24 @@ export default function CloakTest() {
 
   const getActionBadge = (action: string) => {
     switch (action) {
-      case "redirect":
-        return (
-          <Badge className="bg-green-500/20 text-green-400 border-green-500/30 gap-1">
-            <ShieldCheck className="h-3 w-3" /> Offer Page
-          </Badge>
-        );
-      case "safe_page":
-        return (
-          <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 gap-1">
-            <Shield className="h-3 w-3" /> Safe Page
-          </Badge>
-        );
-      case "bot_blocked":
-        return (
-          <Badge className="bg-red-500/20 text-red-400 border-red-500/30 gap-1">
-            <ShieldAlert className="h-3 w-3" /> Bot Blocked
-          </Badge>
-        );
-      default:
-        return <Badge variant="outline">{action}</Badge>;
+      case "redirect": return <Badge className="bg-green-500/20 text-green-400 border-green-500/30 gap-1"><ShieldCheck className="h-3 w-3" /> Offer Page</Badge>;
+      case "safe_page": return <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 gap-1"><Shield className="h-3 w-3" /> Safe Page</Badge>;
+      case "bot_blocked": return <Badge className="bg-red-500/20 text-red-400 border-red-500/30 gap-1"><ShieldAlert className="h-3 w-3" /> Bot Blocked</Badge>;
+      default: return <Badge variant="outline">{action}</Badge>;
     }
   };
 
   const getUATypeColor = (type: string) => {
-    switch (type) {
-      case "bot": return "text-red-400";
-      case "real": return "text-green-400";
-      case "suspicious": return "text-yellow-400";
-      default: return "text-muted-foreground";
-    }
+    switch (type) { case "bot": return "text-red-400"; case "real": return "text-green-400"; case "suspicious": return "text-yellow-400"; default: return "text-muted-foreground"; }
   };
-
   const getIPTypeColor = (type: string) => {
-    switch (type) {
-      case "datacenter": return "text-red-400";
-      case "vpn": return "text-yellow-400";
-      case "real": return "text-green-400";
-      default: return "text-muted-foreground";
-    }
+    switch (type) { case "datacenter": return "text-red-400"; case "vpn": return "text-yellow-400"; case "real": return "text-green-400"; default: return "text-muted-foreground"; }
   };
 
   const copyLog = (log: TestLog) => {
     const text = `IP: ${log.ip}\nUA: ${log.userAgent}\nAction: ${log.result.action}\nURL: ${log.result.url || "N/A"}\nReason: ${log.result.reason || "N/A"}\nDuration: ${log.duration}ms`;
     navigator.clipboard.writeText(text);
-    toast.success("Log copiado!");
+    toast.success("Log copied!");
   };
 
   return (
@@ -191,34 +145,28 @@ export default function CloakTest() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
           <FlaskConical className="h-6 w-6 text-primary" />
-          Teste de Cloaking
+          Cloak Test
         </h1>
-        <p className="text-muted-foreground mt-1">
-          Simule requisições para testar o filtro de cloaking em tempo real
-        </p>
+        <p className="text-muted-foreground mt-1">Simulate requests to test the cloaking filter in real time</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Config Panel */}
         <Card className="border-border bg-card">
           <CardHeader>
-            <CardTitle className="text-lg">Configuração do Teste</CardTitle>
-            <CardDescription>Defina os parâmetros da requisição simulada</CardDescription>
+            <CardTitle className="text-lg">Test Configuration</CardTitle>
+            <CardDescription>Define the parameters for the simulated request</CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
-            {/* Campaign */}
             <div className="space-y-2">
-              <Label>Campanha *</Label>
+              <Label>Campaign *</Label>
               <Select value={selectedCampaign} onValueChange={setSelectedCampaign}>
-                <SelectTrigger>
-                  <SelectValue placeholder={loadingCampaigns ? "Carregando..." : "Selecione uma campanha"} />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={loadingCampaigns ? "Loading..." : "Select a campaign"} /></SelectTrigger>
                 <SelectContent>
                   {campaigns?.map(c => (
                     <SelectItem key={c.id} value={c.id}>
                       <span className="flex items-center gap-2">
                         {c.name}
-                        {!c.is_active && <Badge variant="outline" className="text-xs">Inativa</Badge>}
+                        {!c.is_active && <Badge variant="outline" className="text-xs">Inactive</Badge>}
                       </span>
                     </SelectItem>
                   ))}
@@ -228,13 +176,10 @@ export default function CloakTest() {
 
             <Separator />
 
-            {/* User Agent */}
             <div className="space-y-2">
               <Label>User Agent *</Label>
               <Select value={selectedUAPreset} onValueChange={(v) => { setSelectedUAPreset(v); setCustomUA(""); }}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Escolha um preset" />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Choose a preset" /></SelectTrigger>
                 <SelectContent>
                   {PRESET_USER_AGENTS.map(ua => (
                     <SelectItem key={ua.value} value={ua.value}>
@@ -245,23 +190,15 @@ export default function CloakTest() {
                   ))}
                 </SelectContent>
               </Select>
-              <Input
-                placeholder="Ou digite um user agent customizado..."
-                value={customUA}
-                onChange={(e) => { setCustomUA(e.target.value); setSelectedUAPreset(""); }}
-                className="font-mono text-xs"
-              />
+              <Input placeholder="Or type a custom user agent..." value={customUA} onChange={(e) => { setCustomUA(e.target.value); setSelectedUAPreset(""); }} className="font-mono text-xs" />
             </div>
 
             <Separator />
 
-            {/* IP */}
             <div className="space-y-2">
-              <Label>Endereço IP *</Label>
+              <Label>IP Address *</Label>
               <Select value={selectedIPPreset} onValueChange={setSelectedIPPreset}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Escolha um preset" />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Choose a preset" /></SelectTrigger>
                 <SelectContent>
                   {PRESET_IPS.map(ip => (
                     <SelectItem key={ip.value} value={ip.value}>
@@ -273,59 +210,32 @@ export default function CloakTest() {
                 </SelectContent>
               </Select>
               {selectedIPPreset === "custom" && (
-                <Input
-                  placeholder="Digite o IP (ex: 192.168.1.1)"
-                  value={customIP}
-                  onChange={(e) => setCustomIP(e.target.value)}
-                  className="font-mono"
-                />
+                <Input placeholder="Enter IP (e.g. 192.168.1.1)" value={customIP} onChange={(e) => setCustomIP(e.target.value)} className="font-mono" />
               )}
             </div>
 
             <Separator />
 
-            {/* Referer */}
             <div className="space-y-2">
-              <Label>Referer (opcional)</Label>
-              <Input
-                placeholder="https://www.tiktok.com/@user/video/123"
-                value={referer}
-                onChange={(e) => setReferer(e.target.value)}
-              />
+              <Label>Referer (optional)</Label>
+              <Input placeholder="https://www.tiktok.com/@user/video/123" value={referer} onChange={(e) => setReferer(e.target.value)} />
             </div>
 
-            {/* Test Button */}
-            <Button
-              className="w-full gap-2 mt-2"
-              size="lg"
-              onClick={runTest}
-              disabled={testing || !selectedCampaign || (!selectedUAPreset && !customUA) || !selectedIPPreset || (selectedIPPreset === "custom" && !customIP)}
-            >
-              {testing ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Testando...
-                </>
-              ) : (
-                <>
-                  <Play className="h-4 w-4" />
-                  Executar Teste
-                </>
-              )}
+            <Button className="w-full gap-2 mt-2" size="lg" onClick={runTest} disabled={testing || !selectedCampaign || (!selectedUAPreset && !customUA) || !selectedIPPreset || (selectedIPPreset === "custom" && !customIP)}>
+              {testing ? (<><Loader2 className="h-4 w-4 animate-spin" /> Testing...</>) : (<><Play className="h-4 w-4" /> Run Test</>)}
             </Button>
           </CardContent>
         </Card>
 
-        {/* Results Panel */}
         <Card className="border-border bg-card">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
-              <CardTitle className="text-lg">Resultados</CardTitle>
-              <CardDescription>{logs.length} teste(s) executado(s)</CardDescription>
+              <CardTitle className="text-lg">Results</CardTitle>
+              <CardDescription>{logs.length} test(s) executed</CardDescription>
             </div>
             {logs.length > 0 && (
               <Button variant="ghost" size="sm" onClick={() => setLogs([])} className="gap-1 text-muted-foreground">
-                <RotateCcw className="h-3 w-3" /> Limpar
+                <RotateCcw className="h-3 w-3" /> Clear
               </Button>
             )}
           </CardHeader>
@@ -333,8 +243,8 @@ export default function CloakTest() {
             {logs.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                 <FlaskConical className="h-12 w-12 mb-3 opacity-30" />
-                <p className="text-sm">Nenhum teste executado ainda</p>
-                <p className="text-xs mt-1">Configure os parâmetros e clique em "Executar Teste"</p>
+                <p className="text-sm">No tests executed yet</p>
+                <p className="text-xs mt-1">Configure the parameters and click "Run Test"</p>
               </div>
             ) : (
               <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
@@ -342,43 +252,18 @@ export default function CloakTest() {
                   <div key={log.id} className="rounded-lg border border-border bg-background p-3 space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground font-mono">
-                          #{log.id}
-                        </span>
+                        <span className="text-xs text-muted-foreground font-mono">#{log.id}</span>
                         {getActionBadge(log.result.action)}
-                        <span className="text-xs text-muted-foreground">
-                          {log.duration}ms
-                        </span>
+                        <span className="text-xs text-muted-foreground">{log.duration}ms</span>
                       </div>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyLog(log)}>
-                        <Copy className="h-3 w-3" />
-                      </Button>
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyLog(log)}><Copy className="h-3 w-3" /></Button>
                     </div>
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                      <div>
-                        <span className="text-muted-foreground">IP: </span>
-                        <span className="font-mono text-foreground">{log.ip}</span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Hora: </span>
-                        <span className="text-foreground">{log.timestamp.toLocaleTimeString()}</span>
-                      </div>
-                      <div className="col-span-2">
-                        <span className="text-muted-foreground">UA: </span>
-                        <span className="font-mono text-foreground">{log.userAgent}</span>
-                      </div>
-                      {log.result.url && (
-                        <div className="col-span-2">
-                          <span className="text-muted-foreground">URL: </span>
-                          <span className="font-mono text-primary break-all">{log.result.url}</span>
-                        </div>
-                      )}
-                      {log.result.reason && (
-                        <div className="col-span-2">
-                          <span className="text-muted-foreground">Motivo: </span>
-                          <span className="text-yellow-400">{log.result.reason}</span>
-                        </div>
-                      )}
+                      <div><span className="text-muted-foreground">IP: </span><span className="font-mono text-foreground">{log.ip}</span></div>
+                      <div><span className="text-muted-foreground">Time: </span><span className="text-foreground">{log.timestamp.toLocaleTimeString()}</span></div>
+                      <div className="col-span-2"><span className="text-muted-foreground">UA: </span><span className="font-mono text-foreground">{log.userAgent}</span></div>
+                      {log.result.url && <div className="col-span-2"><span className="text-muted-foreground">URL: </span><span className="font-mono text-primary break-all">{log.result.url}</span></div>}
+                      {log.result.reason && <div className="col-span-2"><span className="text-muted-foreground">Reason: </span><span className="text-yellow-400">{log.result.reason}</span></div>}
                     </div>
                   </div>
                 ))}

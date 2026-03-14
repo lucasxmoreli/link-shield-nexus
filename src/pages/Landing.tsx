@@ -6,31 +6,31 @@ import { useAuth } from "@/hooks/useAuth";
 const features = [
   {
     icon: Shield,
-    title: "Cloaking Avançado",
-    description: "Redirecione bots e moderadores para páginas seguras automaticamente.",
+    title: "Advanced Cloaking",
+    description: "Automatically redirect bots and moderators to safe pages.",
   },
   {
     icon: Eye,
-    title: "Detecção de Proxy/VPN",
-    description: "Identifique e bloqueie tráfego suspeito com APIs de inteligência de IP.",
+    title: "Proxy/VPN Detection",
+    description: "Identify and block suspicious traffic with IP intelligence APIs.",
   },
   {
     icon: Zap,
-    title: "Latência Ultra-Baixa",
-    description: "Edge Functions processam cada request em milissegundos, sem atrasar seu funil.",
+    title: "Ultra-Low Latency",
+    description: "Edge Functions process each request in milliseconds without slowing your funnel.",
   },
   {
     icon: Globe,
-    title: "Multi-Plataforma",
-    description: "Suporte nativo para TikTok, Facebook e Google Ads.",
+    title: "Multi-Platform",
+    description: "Native support for TikTok, Facebook, and Google Ads.",
   },
 ];
 
 const benefits = [
-  "Proteja suas campanhas contra revisões manuais",
-  "Dashboard completo com métricas em tempo real",
-  "Configuração em menos de 5 minutos",
-  "Suporte a múltiplos domínios e campanhas",
+  "Protect your campaigns against manual reviews",
+  "Complete dashboard with real-time metrics",
+  "Setup in less than 5 minutes",
+  "Support for multiple domains and campaigns",
 ];
 
 export default function Landing() {
@@ -49,7 +49,7 @@ export default function Landing() {
             {session ? (
               <Button asChild>
                 <Link to="/dashboard">
-                  Ir ao Dashboard <ArrowRight className="ml-1 h-4 w-4" />
+                  Go to Dashboard <ArrowRight className="ml-1 h-4 w-4" />
                 </Link>
               </Button>
             ) : (
@@ -58,7 +58,7 @@ export default function Landing() {
                   <Link to="/auth">Login</Link>
                 </Button>
                 <Button asChild>
-                  <Link to="/auth">Começar Agora</Link>
+                  <Link to="/auth">Get Started</Link>
                 </Button>
               </>
             )}
@@ -72,24 +72,24 @@ export default function Landing() {
         <div className="max-w-4xl mx-auto px-6 pt-24 pb-20 text-center relative z-10">
           <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm text-primary mb-8">
             <Zap className="h-3.5 w-3.5" />
-            Proteção inteligente para seus links
+            Smart protection for your links
           </div>
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-tight mb-6">
-            Proteja suas campanhas.{" "}
-            <span className="text-primary">Maximize seus resultados.</span>
+            Protect your campaigns.{" "}
+            <span className="text-primary">Maximize your results.</span>
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-10">
-            CloakGuard filtra bots, moderadores e tráfego indesejado em tempo real,
-            garantindo que apenas visitantes reais cheguem à sua oferta.
+            CloakGuard filters bots, moderators, and unwanted traffic in real time,
+            ensuring only real visitors reach your offer.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button size="lg" asChild className="text-base px-8">
               <Link to="/auth">
-                Criar Conta Grátis <ArrowRight className="ml-2 h-4 w-4" />
+                Create Free Account <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
             <Button size="lg" variant="outline" asChild className="text-base px-8">
-              <a href="#features">Ver Recursos</a>
+              <a href="#features">See Features</a>
             </Button>
           </div>
         </div>
@@ -98,9 +98,9 @@ export default function Landing() {
       {/* Features */}
       <section id="features" className="max-w-6xl mx-auto px-6 py-20">
         <div className="text-center mb-14">
-          <h2 className="text-3xl font-bold mb-3">Tudo que você precisa</h2>
+          <h2 className="text-3xl font-bold mb-3">Everything you need</h2>
           <p className="text-muted-foreground text-lg">
-            Ferramentas poderosas para proteger e otimizar suas campanhas.
+            Powerful tools to protect and optimize your campaigns.
           </p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -125,11 +125,11 @@ export default function Landing() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div>
               <h2 className="text-3xl font-bold mb-4">
-                Por que escolher o CloakGuard?
+                Why choose CloakGuard?
               </h2>
               <p className="text-muted-foreground mb-8">
-                Desenvolvido para afiliados e media buyers que precisam de segurança
-                e performance sem complicação.
+                Built for affiliates and media buyers who need security
+                and performance without complexity.
               </p>
               <ul className="space-y-4">
                 {benefits.map((b) => (
@@ -142,10 +142,10 @@ export default function Landing() {
             </div>
             <div className="rounded-xl border border-border bg-background p-8 text-center">
               <div className="text-5xl font-bold text-primary mb-2">99.9%</div>
-              <p className="text-muted-foreground">Taxa de detecção de bots</p>
+              <p className="text-muted-foreground">Bot detection rate</p>
               <div className="h-px bg-border my-6" />
               <div className="text-5xl font-bold text-[hsl(var(--success))] mb-2">&lt;50ms</div>
-              <p className="text-muted-foreground">Latência média por request</p>
+              <p className="text-muted-foreground">Average latency per request</p>
             </div>
           </div>
         </div>
@@ -153,13 +153,13 @@ export default function Landing() {
 
       {/* CTA */}
       <section className="max-w-4xl mx-auto px-6 py-20 text-center">
-        <h2 className="text-3xl font-bold mb-4">Pronto para proteger suas campanhas?</h2>
+        <h2 className="text-3xl font-bold mb-4">Ready to protect your campaigns?</h2>
         <p className="text-muted-foreground mb-8 text-lg">
-          Comece gratuitamente e veja a diferença em minutos.
+          Start for free and see the difference in minutes.
         </p>
         <Button size="lg" asChild className="text-base px-10">
           <Link to="/auth">
-            Começar Agora <ArrowRight className="ml-2 h-4 w-4" />
+            Get Started <ArrowRight className="ml-2 h-4 w-4" />
           </Link>
         </Button>
       </section>
@@ -171,7 +171,7 @@ export default function Landing() {
             <Shield className="h-4 w-4 text-primary" />
             <span>CloakGuard © {new Date().getFullYear()}</span>
           </div>
-          <span>Proteção inteligente para media buyers.</span>
+          <span>Smart protection for media buyers.</span>
         </div>
       </footer>
     </div>
