@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX domains_user_id_url_unique ON public.domains (user_id, url);
