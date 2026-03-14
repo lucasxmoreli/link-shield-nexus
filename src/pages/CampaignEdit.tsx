@@ -49,7 +49,7 @@ export default function CampaignEdit() {
   const [trafficSource, setTrafficSource] = useState("");
   const [safeUrl, setSafeUrl] = useState("");
   const [safeMethod, setSafeMethod] = useState("redirect");
-  const [offerMode, setOfferMode: useState<"single" | "ab">("single");
+  const [offerMode, setOfferMode] = useState<"single" | "ab">("single");
   const [offerUrl, setOfferUrl] = useState("");
   const [offerMethod, setOfferMethod] = useState("redirect");
   const [abOffers, setAbOffers] = useState<OfferEntry[]>([
