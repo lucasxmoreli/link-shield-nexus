@@ -40,14 +40,16 @@ function DnsInstructions({ domain }: { domain: { id: string; url: string } }) {
 
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Nome / Host</Label>
-          <div className="relative">
-            <div className="rounded-md bg-background border border-border px-3 py-2.5 pr-10 text-sm font-mono text-foreground truncate">
-              {txtName}
-            </div>
+          <div className="relative w-full">
+            <Input
+              readOnly
+              value={txtName}
+              className="w-full pr-10 bg-background border-border font-mono text-sm"
+            />
             <Button
               variant="ghost"
               size="icon"
-              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground"
+              className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground"
               onClick={() => copyToClipboard(txtName, "Host")}
             >
               <Copy className="h-3.5 w-3.5" />
@@ -57,14 +59,16 @@ function DnsInstructions({ domain }: { domain: { id: string; url: string } }) {
 
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Valor</Label>
-          <div className="relative">
-            <div className="rounded-md bg-background border border-border px-3 py-2.5 pr-10 text-sm font-mono text-foreground truncate">
-              {txtValue}
-            </div>
+          <div className="relative w-full">
+            <Input
+              readOnly
+              value={txtValue}
+              className="w-full pr-10 bg-background border-border font-mono text-sm"
+            />
             <Button
               variant="ghost"
               size="icon"
-              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground"
+              className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground"
               onClick={() => copyToClipboard(txtValue, "Valor")}
             >
               <Copy className="h-3.5 w-3.5" />
