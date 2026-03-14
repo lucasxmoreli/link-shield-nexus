@@ -44,7 +44,6 @@ export default function CampaignEdit() {
   const { user } = useAuth();
   const qc = useQueryClient();
 
-  // Form state
   const [name, setName] = useState("");
   const [domain, setDomain] = useState("");
   const [trafficSource, setTrafficSource] = useState("");
@@ -64,7 +63,6 @@ export default function CampaignEdit() {
   const [countrySearch, setCountrySearch] = useState("");
   const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
 
-  // Fetch domains
   const { data: domains = [] } = useQuery({
     queryKey: ["domains", user?.id],
     queryFn: async () => {
@@ -75,7 +73,6 @@ export default function CampaignEdit() {
     enabled: !!user,
   });
 
-  // Fetch existing campaign if editing
   const { data: campaign } = useQuery({
     queryKey: ["campaign", id],
     queryFn: async () => {
@@ -86,7 +83,6 @@ export default function CampaignEdit() {
     enabled: isEditing,
   });
 
-  // Populate form when editing
   useEffect(() => {
     if (campaign) {
       setName(campaign.name);
@@ -101,7 +97,6 @@ export default function CampaignEdit() {
     }
   }, [campaign]);
 
-  // Save mutation
   const saveMutation = useMutation({
     mutationFn: async () => {
       const payload: any = {
@@ -127,13 +122,12 @@ export default function CampaignEdit() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["campaigns"] });
-      toast.success(isEditing ? "Campanha atualizada!" : "Campanha criada!");
+      toast.success(isEditing ? "Campaign updated!" : "Campaign created!");
       navigate("/campaigns");
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
-  // Tag handlers
   const handleTagKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && tagInput.trim()) {
       e.preventDefault();
@@ -145,7 +139,6 @@ export default function CampaignEdit() {
   };
   const removeTag = (t: string) => setTags(tags.filter((x) => x !== t));
 
-  // A/B handlers
   const addAbOffer = () => {
     if (abOffers.length < 3) setAbOffers([...abOffers, { url: "", weight: 0 }]);
   };
@@ -156,7 +149,6 @@ export default function CampaignEdit() {
     setAbOffers(abOffers.map((o, idx) => (idx === i ? { ...o, [field]: value } : o)));
   };
 
-  // Country handlers
   const filteredCountries = COUNTRIES.filter(
     (c) => !targetCountries.includes(c.code) && (c.name.toLowerCase().includes(countrySearch.toLowerCase()) || c.code.toLowerCase().includes(countrySearch.toLowerCase()))
   );
@@ -167,7 +159,6 @@ export default function CampaignEdit() {
   };
   const removeCountry = (code: string) => setTargetCountries(targetCountries.filter((c) => c !== code));
 
-  // Device toggle
   const toggleDevice = (d: string) => {
     setTargetDevices((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
   };
@@ -176,7 +167,6 @@ export default function CampaignEdit() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 pb-12">
-      {/* Header */}
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => navigate("/campaigns")}>
           <ArrowLeft className="h-5 w-5" />
@@ -190,7 +180,7 @@ export default function CampaignEdit() {
         <div className="space-y-4">
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">Campaign Name</Label>
-            <Input placeholder="Ex: TTK 10 - LIVRE [TRESH-$500]" className="bg-secondary border-border" value={name} onChange={(e) => setName(e.target.value)} />
+            <Input placeholder="e.g. TTK 10 - FREE [TRESH-$500]" className="bg-secondary border-border" value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">Domain</Label>
@@ -246,21 +236,11 @@ export default function CampaignEdit() {
       {/* BLOCK 3: Offer Page */}
       <section className="rounded-xl bg-[hsl(var(--card))] p-6 space-y-4">
         <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Offer Page</h2>
-
-        {/* Mode toggle */}
         <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => setOfferMode("single")}
-            className={`rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${offerMode === "single" ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary text-muted-foreground"}`}
-          >
+          <button type="button" onClick={() => setOfferMode("single")} className={`rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${offerMode === "single" ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary text-muted-foreground"}`}>
             Single Offer
           </button>
-          <button
-            type="button"
-            onClick={() => setOfferMode("ab")}
-            className={`rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${offerMode === "ab" ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary text-muted-foreground"}`}
-          >
+          <button type="button" onClick={() => setOfferMode("ab")} className={`rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${offerMode === "ab" ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary text-muted-foreground"}`}>
             A/B Storm
           </button>
         </div>
@@ -311,14 +291,11 @@ export default function CampaignEdit() {
       {/* BLOCK 4: Target */}
       <section className="rounded-xl bg-[hsl(var(--card))] p-6 space-y-4">
         <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Target</h2>
-
-        {/* Alert */}
         <div className="flex items-start gap-3 rounded-lg border border-yellow-500/30 bg-yellow-500/5 p-3">
           <AlertTriangle className="h-4 w-4 mt-0.5 text-yellow-500 shrink-0" />
-          <p className="text-sm text-yellow-200/80">We recommend the selection of all countries for TikTok campaigns.</p>
+          <p className="text-sm text-yellow-200/80">We recommend selecting all countries for TikTok campaigns.</p>
         </div>
 
-        {/* Countries */}
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Countries</Label>
           <div className="relative">
@@ -333,14 +310,8 @@ export default function CampaignEdit() {
             {countryDropdownOpen && filteredCountries.length > 0 && (
               <div className="absolute z-50 mt-1 w-full max-h-48 overflow-y-auto rounded-lg border border-border bg-card shadow-lg">
                 {filteredCountries.slice(0, 10).map((c) => (
-                  <button
-                    key={c.code}
-                    type="button"
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-secondary transition-colors"
-                    onMouseDown={(e) => { e.preventDefault(); addCountry(c.code); }}
-                  >
-                    <span className="font-mono text-primary mr-2">{c.code}</span>
-                    {c.name}
+                  <button key={c.code} type="button" className="w-full text-left px-3 py-2 text-sm hover:bg-secondary transition-colors" onMouseDown={(e) => { e.preventDefault(); addCountry(c.code); }}>
+                    <span className="font-mono text-primary mr-2">{c.code}</span>{c.name}
                   </button>
                 ))}
               </div>
@@ -351,26 +322,18 @@ export default function CampaignEdit() {
               {targetCountries.map((code) => (
                 <Badge key={code} variant="secondary" className="gap-1 bg-primary/10 text-primary border-primary/20">
                   {code}
-                  <button type="button" onClick={() => removeCountry(code)} className="hover:text-destructive">
-                    <X className="h-3 w-3" />
-                  </button>
+                  <button type="button" onClick={() => removeCountry(code)} className="hover:text-destructive"><X className="h-3 w-3" /></button>
                 </Badge>
               ))}
             </div>
           )}
         </div>
 
-        {/* Devices */}
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Devices</Label>
           <div className="flex gap-2">
             {DEVICES.map((d) => (
-              <button
-                key={d}
-                type="button"
-                onClick={() => toggleDevice(d)}
-                className={`rounded-lg border px-4 py-2 text-sm font-medium capitalize transition-colors ${targetDevices.includes(d) ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary text-muted-foreground"}`}
-              >
+              <button key={d} type="button" onClick={() => toggleDevice(d)} className={`rounded-lg border px-4 py-2 text-sm font-medium capitalize transition-colors ${targetDevices.includes(d) ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary text-muted-foreground"}`}>
                 {d}
               </button>
             ))}
@@ -383,32 +346,24 @@ export default function CampaignEdit() {
         <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Tags</h2>
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Press Enter to add a tag</Label>
-          <Input
-            placeholder="Type a tag and press Enter..."
-            className="bg-secondary border-border"
-            value={tagInput}
-            onChange={(e) => setTagInput(e.target.value)}
-            onKeyDown={handleTagKeyDown}
-          />
+          <Input placeholder="Type a tag and press Enter..." className="bg-secondary border-border" value={tagInput} onChange={(e) => setTagInput(e.target.value)} onKeyDown={handleTagKeyDown} />
         </div>
         {tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {tags.map((t) => (
               <Badge key={t} variant="secondary" className="gap-1 bg-primary/10 text-primary border-primary/20">
                 {t}
-                <button type="button" onClick={() => removeTag(t)} className="hover:text-destructive">
-                  <X className="h-3 w-3" />
-                </button>
+                <button type="button" onClick={() => removeTag(t)} className="hover:text-destructive"><X className="h-3 w-3" /></button>
               </Badge>
             ))}
           </div>
         )}
       </section>
 
-      {/* Actions */}
-      <div className="flex justify-end gap-3">
-        <Button variant="ghost" onClick={() => navigate("/campaigns")}>Cancel</Button>
-        <Button className="neon-glow" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || !isFormValid}>
+      {/* Footer */}
+      <div className="flex justify-end gap-3 pt-2">
+        <Button variant="outline" onClick={() => navigate("/campaigns")}>Cancel</Button>
+        <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || !isFormValid}>
           {saveMutation.isPending ? "Saving..." : "Save Campaign"}
         </Button>
       </div>

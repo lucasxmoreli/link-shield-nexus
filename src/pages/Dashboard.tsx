@@ -24,7 +24,6 @@ export default function Dashboard() {
     enabled: !!user,
   });
 
-  // Compute stats
   const stats = {
     total_requests: logs.length,
     safe_page: logs.filter((l) => l.action_taken === "safe_page").length,
@@ -32,7 +31,6 @@ export default function Dashboard() {
     bot_blocked: logs.filter((l) => l.action_taken === "bot_blocked").length,
   };
 
-  // Build chart data for last 7 days
   const chartData = Array.from({ length: 7 }, (_, i) => {
     const date = subDays(new Date(), 6 - i);
     const dayStr = format(date, "yyyy-MM-dd");
@@ -64,7 +62,7 @@ export default function Dashboard() {
 
       <Card className="border-border bg-card">
         <CardHeader>
-          <CardTitle className="text-lg">Tráfego nos últimos 7 dias</CardTitle>
+          <CardTitle className="text-lg">Traffic — Last 7 Days</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="h-[320px]">

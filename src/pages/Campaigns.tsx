@@ -65,7 +65,7 @@ export default function Campaigns() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["campaigns"] });
-      toast.success("Campanha removida");
+      toast.success("Campaign removed");
     },
   });
 
@@ -89,7 +89,7 @@ export default function Campaigns() {
     setTimeout(() => {
       setLinkModal({ open: false, hash: "", name: "" });
       setCopied(false);
-      toast.success("Link da campanha copiado com sucesso!", {
+      toast.success("Campaign link copied!", {
         style: { background: "hsl(var(--success))", color: "#fff", border: "none" },
       });
     }, 600);
@@ -125,14 +125,14 @@ export default function Campaigns() {
                   </TableRow>
                 ))
               ) : campaigns.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Nenhuma campanha criada ainda.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No campaigns created yet.</TableCell></TableRow>
               ) : (
                 campaigns.map((c) => (
                   <TableRow key={c.id} className="border-border">
                     <TableCell className="font-mono text-sm text-primary">{c.hash}</TableCell>
                     <TableCell>{c.name}</TableCell>
                     <TableCell><Badge variant="outline" className={`${sourceColors[c.traffic_source]} border-0`}>{c.traffic_source}</Badge></TableCell>
-                    <TableCell className="text-muted-foreground text-sm">{new Date(c.created_at).toLocaleDateString("pt-BR")}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm">{new Date(c.created_at).toLocaleDateString("en-US")}</TableCell>
                     <TableCell><Switch checked={c.is_active ?? false} onCheckedChange={(v) => toggleMutation.mutate({ id: c.id, is_active: v })} /></TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
@@ -155,7 +155,7 @@ export default function Campaigns() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-lg">
               <Link className="h-5 w-5 text-primary" />
-              Link da Campanha
+              Campaign Link
             </DialogTitle>
             <DialogDescription className="text-muted-foreground">
               {linkModal.name}
@@ -165,7 +165,7 @@ export default function Campaigns() {
           <div className="space-y-4 pt-2">
             {domains.length > 0 && (
               <div className="space-y-2">
-                <label className="text-sm font-medium text-muted-foreground">Domínio</label>
+                <label className="text-sm font-medium text-muted-foreground">Domain</label>
                 <Select value={selectedDomain} onValueChange={setSelectedDomain}>
                   <SelectTrigger className="border-border bg-background">
                     <SelectValue />
@@ -180,7 +180,7 @@ export default function Campaigns() {
             )}
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">URL da campanha</label>
+              <label className="text-sm font-medium text-muted-foreground">Campaign URL</label>
               <Input
                 readOnly
                 value={getFullLink()}
@@ -196,12 +196,12 @@ export default function Campaigns() {
               {copied ? (
                 <>
                   <Check className="h-4 w-4 mr-2" />
-                  Copiado!
+                  Copied!
                 </>
               ) : (
                 <>
                   <Copy className="h-4 w-4 mr-2" />
-                  Copiar Link
+                  Copy Link
                 </>
               )}
             </Button>

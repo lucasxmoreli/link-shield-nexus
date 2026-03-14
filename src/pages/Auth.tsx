@@ -43,13 +43,13 @@ export default function Auth() {
       .maybeSingle();
 
     if (error || !data) {
-      setInviteError("Este código de convite é inválido ou já foi utilizado.");
+      setInviteError("This invite code is invalid or has already been used.");
     } else if (data.is_used) {
-      setInviteError("Este código de convite é inválido ou já foi utilizado.");
+      setInviteError("This invite code is invalid or has already been used.");
     } else {
       setValidatedCode(inviteCode.trim().toUpperCase());
       setView("register");
-      toast.success("Código válido! Crie sua conta.");
+      toast.success("Valid code! Create your account.");
     }
     setLoading(false);
   };
@@ -67,7 +67,6 @@ export default function Auth() {
     if (error) {
       toast.error(error.message);
     } else {
-      // Mark invite code as used
       if (signUpData.user) {
         await supabase
           .from("invite_codes")
@@ -78,7 +77,7 @@ export default function Auth() {
           })
           .eq("code", validatedCode);
       }
-      toast.success("Conta criada! Verifique seu e-mail para confirmar.");
+      toast.success("Account created! Check your email to confirm.");
       setView("login");
     }
     setLoading(false);
@@ -92,7 +91,7 @@ export default function Auth() {
           className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <Ticket className="h-4 w-4" />
-          <span>Tenho um convite</span>
+          <span>I have an invite</span>
         </button>
       );
     }
@@ -101,8 +100,8 @@ export default function Auth() {
         onClick={() => { setView("login"); setInviteError(""); }}
         className="text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
-        Já tem conta?{" "}
-        <span className="text-primary font-medium">Entrar</span>
+        Already have an account?{" "}
+        <span className="text-primary font-medium">Sign in</span>
       </button>
     );
   };
@@ -110,11 +109,11 @@ export default function Auth() {
   const renderTitle = () => {
     switch (view) {
       case "login":
-        return { title: "Bem-vindo de volta", subtitle: "Entre com suas credenciais para acessar o dashboard." };
+        return { title: "Welcome back", subtitle: "Enter your credentials to access the dashboard." };
       case "invite":
-        return { title: "Código de Convite", subtitle: "Insira seu código de convite para criar uma conta." };
+        return { title: "Invite Code", subtitle: "Enter your invite code to create an account." };
       case "register":
-        return { title: "Crie sua conta", subtitle: "Comece a proteger suas campanhas em minutos." };
+        return { title: "Create your account", subtitle: "Start protecting your campaigns in minutes." };
     }
   };
 
@@ -135,19 +134,19 @@ export default function Auth() {
           </div>
           <div className="space-y-4">
             <h2 className="text-3xl font-bold leading-tight">
-              Proteção invisível.{" "}
-              <span className="text-primary">Resultados reais.</span>
+              Invisible protection.{" "}
+              <span className="text-primary">Real results.</span>
             </h2>
             <p className="text-muted-foreground text-lg leading-relaxed">
-              Filtre bots e moderadores em tempo real. Seus visitantes veem a oferta,
-              o resto vê a safe page.
+              Filter bots and moderators in real time. Your visitors see the offer,
+              everyone else sees the safe page.
             </p>
           </div>
           <div className="flex gap-6 pt-4">
             {[
-              { value: "99.9%", label: "Detecção" },
-              { value: "<50ms", label: "Latência" },
-              { value: "24/7", label: "Monitoramento" },
+              { value: "99.9%", label: "Detection" },
+              { value: "<50ms", label: "Latency" },
+              { value: "24/7", label: "Monitoring" },
             ].map((stat) => (
               <div key={stat.label} className="text-center">
                 <div className="text-2xl font-bold text-primary">{stat.value}</div>
@@ -160,22 +159,19 @@ export default function Auth() {
 
       {/* Right panel — form */}
       <div className="flex-1 flex flex-col">
-        {/* Top bar */}
         <div className="flex items-center justify-between p-6">
           <Link
             to="/"
             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
-            Voltar
+            Back
           </Link>
           {headerAction()}
         </div>
 
-        {/* Form area */}
         <div className="flex-1 flex items-center justify-center px-6 pb-12">
           <div className="w-full max-w-sm space-y-8">
-            {/* Mobile logo */}
             <div className="lg:hidden flex items-center gap-2 justify-center">
               <Shield className="h-7 w-7 text-primary" />
               <span className="text-xl font-bold">CloakGuard</span>
@@ -195,7 +191,7 @@ export default function Auth() {
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       type="email"
-                      placeholder="seu@email.com"
+                      placeholder="you@email.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
@@ -205,7 +201,7 @@ export default function Auth() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-foreground">Senha</label>
+                  <label className="text-sm font-medium text-foreground">Password</label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -230,7 +226,7 @@ export default function Auth() {
 
                 <Button type="submit" className="w-full h-11 text-sm font-semibold" disabled={loading}>
                   {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Entrar
+                  Sign In
                 </Button>
               </form>
             )}
@@ -239,7 +235,7 @@ export default function Auth() {
             {view === "invite" && (
               <form onSubmit={handleValidateInvite} className="space-y-5">
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-foreground">Código de Convite</label>
+                  <label className="text-sm font-medium text-foreground">Invite Code</label>
                   <div className="relative">
                     <Ticket className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -261,12 +257,12 @@ export default function Auth() {
 
                 <Button type="submit" className="w-full h-11 text-sm font-semibold" disabled={loading}>
                   {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Validar Código
+                  Validate Code
                 </Button>
               </form>
             )}
 
-            {/* REGISTER (after valid invite) */}
+            {/* REGISTER */}
             {view === "register" && (
               <form onSubmit={handleRegister} className="space-y-5">
                 <div className="space-y-1.5">
@@ -275,7 +271,7 @@ export default function Auth() {
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       type="email"
-                      placeholder="seu@email.com"
+                      placeholder="you@email.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
@@ -285,7 +281,7 @@ export default function Auth() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-foreground">Senha</label>
+                  <label className="text-sm font-medium text-foreground">Password</label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -306,19 +302,18 @@ export default function Auth() {
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
-                  <p className="text-xs text-muted-foreground">Mínimo de 6 caracteres</p>
+                  <p className="text-xs text-muted-foreground">Minimum 6 characters</p>
                 </div>
 
                 <Button type="submit" className="w-full h-11 text-sm font-semibold" disabled={loading}>
                   {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Criar conta
+                  Create Account
                 </Button>
               </form>
             )}
 
-            {/* Footer */}
             <p className="text-xs text-center text-muted-foreground leading-relaxed">
-              Acesso restrito. Se você não possui um código, entre em contato com o administrador.
+              Access is restricted. If you don't have an invite code, contact the administrator.
             </p>
           </div>
         </div>

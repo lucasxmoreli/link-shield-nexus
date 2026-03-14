@@ -42,14 +42,14 @@ export default function AccountSettings() {
       <h1 className="text-2xl font-bold">Account Settings</h1>
 
       <Card className="border-border bg-card">
-        <CardHeader><CardTitle className="text-lg">Perfil</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-lg">Profile</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">Email</span>
             <span className="font-mono text-sm">{profile?.email ?? user?.email ?? "—"}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Plano</span>
+            <span className="text-muted-foreground">Plan</span>
             <Badge className="bg-primary/20 text-primary border-0">{profile?.plan_name ?? "Free"}</Badge>
           </div>
           <div className="flex items-center justify-between">
@@ -60,14 +60,14 @@ export default function AccountSettings() {
       </Card>
 
       <Card className="border-border bg-card">
-        <CardHeader><CardTitle className="text-lg">Uso do Plano</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-lg">Plan Usage</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Clicks utilizados</span>
+            <span className="text-muted-foreground">Clicks used</span>
             <span className="font-mono">{currentClicks.toLocaleString()} / {maxClicks.toLocaleString()}</span>
           </div>
           <Progress value={usagePercent} className="h-3 bg-secondary" />
-          <p className="text-sm text-muted-foreground">{usagePercent}% do limite utilizado</p>
+          <p className="text-sm text-muted-foreground">{usagePercent}% of limit used</p>
         </CardContent>
       </Card>
     </div>
