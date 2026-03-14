@@ -24,57 +24,57 @@ function DnsInstructions({ domain }: { domain: { id: string; url: string } }) {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-lg border border-border bg-secondary/30 p-4 space-y-3">
-        <div className="flex items-center gap-2 text-sm font-medium">
+    <div className="space-y-5">
+      <div className="rounded-md border border-border bg-secondary/20 p-4 space-y-4">
+        <div className="flex items-center gap-2 text-sm font-medium text-foreground">
           <Info className="h-4 w-4 text-primary" />
           Adicione o seguinte registro TXT no DNS do seu domínio:
         </div>
-        <div className="space-y-3">
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Tipo</Label>
-            <div className="flex items-center gap-2">
-              <code className="flex-1 rounded-md bg-background border border-border px-3 py-2 text-sm font-mono">
-                TXT
-              </code>
-            </div>
+
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">Tipo</Label>
+          <div className="rounded-md bg-background border border-border px-3 py-2.5 text-sm font-mono text-foreground">
+            TXT
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Nome / Host</Label>
-            <div className="flex items-center gap-2">
-              <code className="flex-1 rounded-md bg-background border border-border px-3 py-2 text-sm font-mono truncate">
-                {txtName}
-              </code>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="shrink-0"
-                onClick={() => copyToClipboard(txtName, "Host")}
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">Nome / Host</Label>
+          <div className="relative">
+            <div className="rounded-md bg-background border border-border px-3 py-2.5 pr-10 text-sm font-mono text-foreground truncate">
+              {txtName}
             </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground"
+              onClick={() => copyToClipboard(txtName, "Host")}
+            >
+              <Copy className="h-3.5 w-3.5" />
+            </Button>
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Valor</Label>
-            <div className="flex items-center gap-2">
-              <code className="flex-1 rounded-md bg-background border border-border px-3 py-2 text-sm font-mono truncate">
-                {txtValue}
-              </code>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="shrink-0"
-                onClick={() => copyToClipboard(txtValue, "Valor")}
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">Valor</Label>
+          <div className="relative">
+            <div className="rounded-md bg-background border border-border px-3 py-2.5 pr-10 text-sm font-mono text-foreground truncate">
+              {txtValue}
             </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground"
+              onClick={() => copyToClipboard(txtValue, "Valor")}
+            >
+              <Copy className="h-3.5 w-3.5" />
+            </Button>
           </div>
         </div>
       </div>
+
       <p className="text-xs text-muted-foreground leading-relaxed">
-        Após adicionar o registro, aguarde a propagação do DNS (pode levar até 72h) e clique em <strong>Verificar</strong>.
+        Após adicionar o registro, aguarde a propagação do DNS (pode levar até 72h) e clique em <strong className="text-foreground">Verificar</strong>.
       </p>
     </div>
   );
@@ -190,7 +190,7 @@ export default function Domains() {
           <Button
             onClick={() => dnsDialogDomain && verifyMutation.mutate(dnsDialogDomain.id)}
             disabled={verifyMutation.isPending}
-            className="w-full"
+            className="w-full mt-2"
           >
             {verifyMutation.isPending ? (
               <><RefreshCw className="h-4 w-4 mr-2 animate-spin" /> Verificando...</>
