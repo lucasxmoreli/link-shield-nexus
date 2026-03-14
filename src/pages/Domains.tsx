@@ -190,7 +190,7 @@ export default function Domains() {
           <Button
             onClick={() => dnsDialogDomain && verifyMutation.mutate(dnsDialogDomain.id)}
             disabled={verifyMutation.isPending}
-            className="w-full"
+            className="w-full mt-2"
           >
             {verifyMutation.isPending ? (
               <><RefreshCw className="h-4 w-4 mr-2 animate-spin" /> Verificando...</>
