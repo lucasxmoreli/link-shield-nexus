@@ -3,22 +3,42 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 // Blocked ASN keywords (datacenters, bots, known crawlers)
 const BLOCKED_ORGS = [
-  "amazon", "google cloud", "facebook", "meta", "bytedance",
-  "tiktok", "datacenter", "hosting", "microsoft", "digitalocean",
-  "ovh", "hetzner", "linode", "vultr",
+  "amazon",
+  "google cloud",
+  "facebook",
+  "meta",
+  "bytedance",
+  "tiktok",
+  "datacenter",
+  "hosting",
+  "microsoft",
+  "digitalocean",
+  "ovh",
+  "hetzner",
+  "linode",
+  "vultr",
 ];
 
 // Blocked user-agent keywords
 const BLOCKED_UA = [
-  "bot", "crawler", "spider", "tiktok", "facebookexternalhit",
-  "bytespider", "googlebot", "bingbot", "yandexbot", "semrush",
-  "ahrefsbot", "mj12bot", "dotbot",
+  "bot",
+  "crawler",
+  "spider",
+  "tiktok",
+  "facebookexternalhit",
+  "bytespider",
+  "googlebot",
+  "bingbot",
+  "yandexbot",
+  "semrush",
+  "ahrefsbot",
+  "mj12bot",
+  "dotbot",
 ];
 
 serve(async (req) => {
@@ -31,10 +51,10 @@ serve(async (req) => {
     const { campaign_hash, ip, user_agent, referer } = await req.json();
 
     if (!campaign_hash || !ip || !user_agent) {
-      return new Response(
-        JSON.stringify({ action: "safe_page", reason: "missing_params" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
-      );
+      return new Response(JSON.stringify({ action: "safe_page", reason: "missing_params" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
     }
 
     // Create Supabase client with service role (bypasses RLS)
@@ -50,10 +70,9 @@ serve(async (req) => {
       .single();
 
     if (campaignError || !campaign || !campaign.is_active) {
-      return new Response(
-        JSON.stringify({ action: "safe_page", reason: "campaign_invalid" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ action: "safe_page", reason: "campaign_invalid" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // ─── STEP 2: Check user click limit ───
@@ -63,10 +82,10 @@ serve(async (req) => {
       .eq("user_id", campaign.user_id)
       .single();
 
-    if (profile && profile.current_clicks >= profile.max_clicks) {
+    if (profile && profile.max_clicks > 0 && profile.current_clicks >= profile.max_clicks) {
       return new Response(
-        JSON.stringify({ action: "safe_page", reason: "click_limit_reached" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ action: "safe_page", url: campaign.safe_url, reason: "click_limit_reached" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
@@ -74,7 +93,7 @@ serve(async (req) => {
     const logAndRespond = async (
       action: "safe_page" | "offer_page" | "bot_blocked",
       deviceType: "mobile" | "desktop",
-      countryCode: string
+      countryCode: string,
     ) => {
       await supabase.from("requests_log").insert({
         user_id: campaign.user_id,
@@ -89,7 +108,7 @@ serve(async (req) => {
       const redirectUrl = action === "offer_page" ? campaign.offer_url : campaign.safe_url;
       return new Response(
         JSON.stringify({ action: action === "offer_page" ? "redirect" : "safe_page", url: redirectUrl }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     };
 
@@ -106,10 +125,9 @@ serve(async (req) => {
     // ─── STEP 4: Proxy/VPN detection via Proxycheck.io ───
     const proxyCheckKey = Deno.env.get("PROXYCHECK_API_KEY")!;
     try {
-      const proxyRes = await fetch(
-        `https://proxycheck.io/v2/${ip}?key=${proxyCheckKey}&vpn=1`,
-        { signal: AbortSignal.timeout(3000) }
-      );
+      const proxyRes = await fetch(`https://proxycheck.io/v2/${ip}?key=${proxyCheckKey}&vpn=1`, {
+        signal: AbortSignal.timeout(3000),
+      });
       const proxyData = await proxyRes.json();
       if (proxyData[ip] && (proxyData[ip].proxy === "yes" || proxyData[ip].type === "VPN")) {
         return await logAndRespond("bot_blocked", deviceType, proxyData[ip].country || "XX");
@@ -123,10 +141,9 @@ serve(async (req) => {
     const ipinfoToken = Deno.env.get("IPINFO_API_KEY")!;
     let countryCode = "XX";
     try {
-      const ipRes = await fetch(
-        `https://ipinfo.io/${ip}/json?token=${ipinfoToken}`,
-        { signal: AbortSignal.timeout(3000) }
-      );
+      const ipRes = await fetch(`https://ipinfo.io/${ip}/json?token=${ipinfoToken}`, {
+        signal: AbortSignal.timeout(3000),
+      });
       const ipData = await ipRes.json();
       countryCode = ipData.country || "XX";
 
@@ -151,9 +168,9 @@ serve(async (req) => {
     return await logAndRespond("offer_page", deviceType, countryCode);
   } catch (error) {
     console.error("Filter error:", error);
-    return new Response(
-      JSON.stringify({ action: "safe_page", reason: "internal_error" }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
-    );
+    return new Response(JSON.stringify({ action: "safe_page", reason: "internal_error" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+    });
   }
 });
