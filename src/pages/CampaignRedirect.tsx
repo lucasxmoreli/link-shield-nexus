@@ -29,7 +29,7 @@ export default function CampaignRedirect() {
 
         const visitorUA = navigator.userAgent;
 
-        // Call the same filter edge function used by Cloak Test
+        // Call the filter edge function
         const { data, error: fnError } = await supabase.functions.invoke("filter", {
           body: {
             campaign_hash: hash,
@@ -45,8 +45,14 @@ export default function CampaignRedirect() {
           return;
         }
 
+        // FIX: Ensure URL format is correct for redirection
+        let finalUrl = data.url;
+        if (!finalUrl.startsWith("http://") && !finalUrl.startsWith("https://")) {
+          finalUrl = "https://" + finalUrl;
+        }
+
         // Redirect to the destination decided by the cloaking engine
-        window.location.replace(data.url);
+        window.location.replace(finalUrl);
       } catch {
         setError(true);
         setTimeout(() => navigate("/", { replace: true }), 2000);
@@ -60,13 +66,13 @@ export default function CampaignRedirect() {
     <div className="flex min-h-screen flex-col items-center justify-center bg-background gap-4">
       {error ? (
         <>
-          <p className="text-destructive font-medium">Campanha não encontrada ou inativa.</p>
-          <p className="text-sm text-muted-foreground">Redirecionando...</p>
+          <p className="text-destructive font-medium">Campaign not found or inactive.</p>
+          <p className="text-sm text-muted-foreground">Redirecting...</p>
         </>
       ) : (
         <>
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="text-sm text-muted-foreground">Redirecionando...</p>
+          <p className="text-sm text-muted-foreground">Redirecting...</p>
         </>
       )}
     </div>
