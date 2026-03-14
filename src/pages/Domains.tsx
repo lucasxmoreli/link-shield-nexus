@@ -110,8 +110,17 @@ export default function Domains() {
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("domains").insert({ user_id: user!.id, url });
-      if (error) throw error;
+      const normalized = url.trim().toLowerCase().replace(/\/+$/, "");
+      if (!normalized) throw new Error("Domain URL is required.");
+      const isDuplicate = domains.some((d) => d.url.toLowerCase().replace(/\/+$/, "") === normalized);
+      if (isDuplicate) throw new Error("This domain has already been added.");
+      const { error } = await supabase.from("domains").insert({ user_id: user!.id, url: normalized });
+      if (error) {
+        if (error.message?.includes("duplicate") || error.code === "23505") {
+          throw new Error("This domain has already been added.");
+        }
+        throw error;
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["domains"] });
