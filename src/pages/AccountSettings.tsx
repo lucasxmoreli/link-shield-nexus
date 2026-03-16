@@ -70,6 +70,7 @@ const PLANS: PlanData[] = [
     buttonText: "Select Plan",
     highlighted: false,
     isFree: false,
+    maxClicksLimit: 20000,
   },
   {
     name: "PRO PLAN",
