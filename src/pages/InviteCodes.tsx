@@ -114,18 +114,30 @@ export default function InviteCodes() {
     createMutation.mutate(customCode.trim().toUpperCase());
   };
 
-  const handleManageUser = (user: typeof MOCK_USERS[0]) => {
+  const handleManageUser = (user: ProfileRow) => {
     setManagingUser(user);
-    setSelectedPlan(user.plan_name);
+    setSelectedPlan(user.plan_name ?? "Free");
   };
+
+  const updatePlanMutation = useMutation({
+    mutationFn: async ({ userId, planName }: { userId: string; planName: string }) => {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ plan_name: planName })
+        .eq("user_id", userId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin_all_profiles"] });
+      toast.success(`Plan updated to ${selectedPlan} for ${managingUser?.email}`);
+      setManagingUser(null);
+    },
+    onError: () => toast.error("Error updating plan."),
+  });
 
   const handleSavePlan = () => {
     if (!managingUser) return;
-    setMockUsers((prev) =>
-      prev.map((u) => (u.id === managingUser.id ? { ...u, plan_name: selectedPlan } : u))
-    );
-    toast.success(`Plan updated to ${selectedPlan} for ${managingUser.email}`);
-    setManagingUser(null);
+    updatePlanMutation.mutate({ userId: managingUser.user_id, planName: selectedPlan });
   };
 
   if (!isAdmin) return null;
