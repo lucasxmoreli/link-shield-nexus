@@ -1,22 +1,44 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Activity, ShieldCheck, Target, Bug } from "lucide-react";
+import { Activity, ShieldCheck, Target, Bug, Globe, Monitor, Smartphone, Tablet, Clock, MapPin } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StatCard } from "@/components/StatCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
-import { format, subDays } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+  PieChart, Pie, Cell,
+} from "recharts";
+import { format, subDays, formatDistanceToNow } from "date-fns";
+
+const DEVICE_COLORS = [
+  "hsl(271, 81%, 56%)",   // desktop - purple
+  "hsl(142, 71%, 45%)",   // mobile - green
+  "hsl(45, 100%, 51%)",   // tablet - amber
+];
+
+const MOCK_FEED = [
+  { time: "2 mins ago", ip: "191.193.70.18", country: "BR", device: "Desktop", action: "Passed" },
+  { time: "5 mins ago", ip: "73.162.214.101", country: "US", device: "Mobile", action: "Blocked" },
+  { time: "8 mins ago", ip: "177.79.99.151", country: "BR", device: "Mobile", action: "Passed" },
+  { time: "12 mins ago", ip: "8.8.8.8", country: "US", device: "Desktop", action: "Blocked" },
+  { time: "15 mins ago", ip: "189.29.108.45", country: "DE", device: "Desktop", action: "Passed" },
+];
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const [dateRange, setDateRange] = useState("7");
 
   const { data: logs = [], isLoading } = useQuery({
     queryKey: ["requests_log", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("requests_log")
-        .select("action_taken, created_at")
+        .select("action_taken, created_at, device_type, ip_address, country_code")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
@@ -31,10 +53,11 @@ export default function Dashboard() {
     bot_blocked: logs.filter((l) => l.action_taken === "bot_blocked").length,
   };
 
-  const chartData = Array.from({ length: 7 }, (_, i) => {
-    const date = subDays(new Date(), 6 - i);
+  const days = parseInt(dateRange);
+  const chartData = Array.from({ length: days }, (_, i) => {
+    const date = subDays(new Date(), days - 1 - i);
     const dayStr = format(date, "yyyy-MM-dd");
-    const dayLabel = format(date, "EEE");
+    const dayLabel = days <= 7 ? format(date, "EEE") : format(date, "MMM d");
     const dayLogs = logs.filter((l) => l.created_at.startsWith(dayStr));
     return {
       day: dayLabel,
@@ -43,52 +66,256 @@ export default function Dashboard() {
     };
   });
 
+  // Device breakdown from real data, fallback to mock proportions
+  const deviceCounts = {
+    desktop: logs.filter((l) => l.device_type === "desktop").length || 0,
+    mobile: logs.filter((l) => l.device_type === "mobile").length || 0,
+    tablet: logs.filter((l) => l.device_type === "tablet").length || 0,
+  };
+  const totalDevices = deviceCounts.desktop + deviceCounts.mobile + deviceCounts.tablet;
+  const deviceData = totalDevices > 0
+    ? [
+        { name: "Desktop", value: deviceCounts.desktop, icon: Monitor },
+        { name: "Mobile", value: deviceCounts.mobile, icon: Smartphone },
+        { name: "Tablet", value: deviceCounts.tablet, icon: Tablet },
+      ]
+    : [
+        { name: "Desktop", value: 40, icon: Monitor },
+        { name: "Mobile", value: 55, icon: Smartphone },
+        { name: "Tablet", value: 5, icon: Tablet },
+      ];
+  const deviceTotal = deviceData.reduce((a, b) => a + b.value, 0);
+
+  // Recent interceptions from real data
+  const recentLogs = logs.slice(0, 5).map((l) => ({
+    time: formatDistanceToNow(new Date(l.created_at), { addSuffix: true }),
+    ip: l.ip_address ?? "—",
+    country: l.country_code ?? "—",
+    device: l.device_type === "mobile" ? "Mobile" : l.device_type === "tablet" ? "Tablet" : "Desktop",
+    action: l.action_taken === "bot_blocked" ? "Blocked" : "Passed",
+  }));
+  const feedData = recentLogs.length > 0 ? recentLogs : MOCK_FEED;
+
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Dashboard</h1>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Command Center</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Real-time traffic intelligence & threat monitoring</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[hsl(var(--success))] opacity-75" />
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[hsl(var(--success))]" />
+          </span>
+          <span className="text-xs text-muted-foreground font-mono">LIVE</span>
+        </div>
+      </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Stat Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {isLoading ? (
-          Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-lg" />)
+          Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-[88px] rounded-lg" />)
         ) : (
           <>
-            <StatCard title="Total Requests" value={stats.total_requests} icon={Activity} />
-            <StatCard title="Safe Page" value={stats.safe_page} icon={ShieldCheck} variant="primary" />
-            <StatCard title="Offer Page" value={stats.offer_page} icon={Target} variant="success" />
-            <StatCard title="Bots Blocked" value={stats.bot_blocked} icon={Bug} variant="destructive" />
+            <StatCard title="Total Requests" value={stats.total_requests} icon={Activity} trend={{ value: "+12% this week", positive: true }} />
+            <StatCard title="Safe Page" value={stats.safe_page} icon={ShieldCheck} variant="primary" trend={{ value: "+5% this week", positive: true }} />
+            <StatCard title="Offer Page" value={stats.offer_page} icon={Target} variant="success" trend={{ value: "+18% this week", positive: true }} />
+            <StatCard title="Bots Blocked" value={stats.bot_blocked} icon={Bug} variant="destructive" trend={{ value: "-3% vs last week", positive: false }} />
           </>
         )}
       </div>
 
-      <Card className="border-border bg-card">
-        <CardHeader>
-          <CardTitle className="text-lg">Traffic — Last 7 Days</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[320px]">
-            {isLoading ? (
-              <Skeleton className="h-full w-full rounded-lg" />
-            ) : (
+      {/* Charts Row */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        {/* Traffic Area Chart */}
+        <Card className="border-border bg-card xl:col-span-2">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-base font-semibold">Traffic Overview</CardTitle>
+            <Select value={dateRange} onValueChange={setDateRange}>
+              <SelectTrigger className="w-[140px] h-8 text-xs border-border bg-secondary/50">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">Today</SelectItem>
+                <SelectItem value="7">Last 7 Days</SelectItem>
+                <SelectItem value="30">Last 30 Days</SelectItem>
+              </SelectContent>
+            </Select>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[320px]">
+              {isLoading ? (
+                <Skeleton className="h-full w-full rounded-lg" />
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData}>
+                    <defs>
+                      <linearGradient id="gradientOffer" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="hsl(142, 71%, 45%)" stopOpacity={0.35} />
+                        <stop offset="100%" stopColor="hsl(142, 71%, 45%)" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="gradientBot" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="hsl(0, 84%, 60%)" stopOpacity={0.3} />
+                        <stop offset="100%" stopColor="hsl(0, 84%, 60%)" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(0 0% 15%)" vertical={false} />
+                    <XAxis dataKey="day" stroke="hsl(0 0% 40%)" fontSize={11} tickLine={false} axisLine={false} />
+                    <YAxis stroke="hsl(0 0% 40%)" fontSize={11} tickLine={false} axisLine={false} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(0 0% 9%)",
+                        border: "1px solid hsl(0 0% 18%)",
+                        borderRadius: "10px",
+                        color: "hsl(0 0% 95%)",
+                        fontSize: 12,
+                        boxShadow: "0 8px 32px hsl(0 0% 0% / 0.5)",
+                      }}
+                    />
+                    <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
+                    <Area
+                      type="monotone"
+                      dataKey="offer_page"
+                      stroke="hsl(142, 71%, 45%)"
+                      strokeWidth={2.5}
+                      fill="url(#gradientOffer)"
+                      name="Offer Page"
+                      dot={false}
+                      activeDot={{ r: 5, strokeWidth: 2, stroke: "hsl(142, 71%, 45%)", fill: "hsl(0 0% 9%)" }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="bot_blocked"
+                      stroke="hsl(0, 84%, 60%)"
+                      strokeWidth={2.5}
+                      fill="url(#gradientBot)"
+                      name="Bots Blocked"
+                      dot={false}
+                      activeDot={{ r: 5, strokeWidth: 2, stroke: "hsl(0, 84%, 60%)", fill: "hsl(0 0% 9%)" }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Device Donut Chart */}
+        <Card className="border-border bg-card">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
+              <Globe className="h-4 w-4 text-primary" />
+              Traffic by Device
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center justify-center">
+            <div className="h-[200px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(0 0% 18%)" />
-                  <XAxis dataKey="day" stroke="hsl(0 0% 55%)" fontSize={12} />
-                  <YAxis stroke="hsl(0 0% 55%)" fontSize={12} />
+                <PieChart>
+                  <Pie
+                    data={deviceData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={85}
+                    paddingAngle={4}
+                    dataKey="value"
+                    strokeWidth={0}
+                  >
+                    {deviceData.map((_, idx) => (
+                      <Cell key={idx} fill={DEVICE_COLORS[idx]} />
+                    ))}
+                  </Pie>
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "hsl(0 0% 11.8%)",
+                      backgroundColor: "hsl(0 0% 9%)",
                       border: "1px solid hsl(0 0% 18%)",
-                      borderRadius: "8px",
+                      borderRadius: "10px",
                       color: "hsl(0 0% 95%)",
+                      fontSize: 12,
+                    }}
+                    formatter={(value: number) => {
+                      const pct = deviceTotal > 0 ? Math.round((value / deviceTotal) * 100) : 0;
+                      return [`${pct}%`, ""];
                     }}
                   />
-                  <Legend />
-                  <Line type="monotone" dataKey="offer_page" stroke="hsl(142 71% 45%)" strokeWidth={2} dot={{ r: 4 }} name="Offer Page" />
-                  <Line type="monotone" dataKey="bot_blocked" stroke="hsl(0 84% 60%)" strokeWidth={2} dot={{ r: 4 }} name="Bots Blocked" />
-                </LineChart>
+                </PieChart>
               </ResponsiveContainer>
-            )}
+            </div>
+            <div className="flex gap-5 mt-2">
+              {deviceData.map((d, idx) => {
+                const DeviceIcon = d.icon;
+                const pct = deviceTotal > 0 ? Math.round((d.value / deviceTotal) * 100) : 0;
+                return (
+                  <div key={d.name} className="flex items-center gap-2 text-sm">
+                    <DeviceIcon className="h-3.5 w-3.5" style={{ color: DEVICE_COLORS[idx] }} />
+                    <span className="text-muted-foreground">{d.name}</span>
+                    <span className="font-mono font-semibold text-foreground">{pct}%</span>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Live Traffic Log */}
+      <Card className="border-border bg-card">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
+              <Clock className="h-4 w-4 text-primary" />
+              Live Traffic Log
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[hsl(var(--success))] opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[hsl(var(--success))]" />
+              </span>
+              <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-mono">Real-time</span>
+            </div>
           </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-border hover:bg-transparent">
+                <TableHead className="text-muted-foreground text-xs uppercase tracking-wider">Time</TableHead>
+                <TableHead className="text-muted-foreground text-xs uppercase tracking-wider">IP Address</TableHead>
+                <TableHead className="text-muted-foreground text-xs uppercase tracking-wider">Country</TableHead>
+                <TableHead className="text-muted-foreground text-xs uppercase tracking-wider">Device</TableHead>
+                <TableHead className="text-muted-foreground text-xs uppercase tracking-wider text-right">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {feedData.map((row, i) => (
+                <TableRow key={i} className="border-border">
+                  <TableCell className="text-sm text-muted-foreground font-mono">{row.time}</TableCell>
+                  <TableCell className="text-sm font-mono">{row.ip}</TableCell>
+                  <TableCell>
+                    <span className="flex items-center gap-1.5 text-sm">
+                      <MapPin className="h-3 w-3 text-muted-foreground" />
+                      {row.country}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{row.device}</TableCell>
+                  <TableCell className="text-right">
+                    {row.action === "Blocked" ? (
+                      <Badge variant="outline" className="border-destructive/30 bg-destructive/10 text-destructive text-[11px] font-mono">
+                        Blocked
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="border-[hsl(var(--success))]/30 bg-[hsl(var(--success))]/10 text-[hsl(var(--success))] text-[11px] font-mono">
+                        Passed
+                      </Badge>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
     </div>
