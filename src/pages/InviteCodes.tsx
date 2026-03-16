@@ -128,9 +128,10 @@ export default function InviteCodes() {
 
   const updatePlanMutation = useMutation({
     mutationFn: async ({ userId, planName }: { userId: string; planName: string }) => {
+      const limits = PLAN_LIMITS[planName] || PLAN_LIMITS.Free;
       const { error } = await supabase
         .from("profiles")
-        .update({ plan_name: planName })
+        .update({ plan_name: planName, max_clicks: limits.max_clicks, max_domains: limits.max_domains })
         .eq("user_id", userId);
       if (error) throw error;
     },
