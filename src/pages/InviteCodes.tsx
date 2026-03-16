@@ -345,7 +345,10 @@ export default function InviteCodes() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setManagingUser(null)}>Cancel</Button>
-            <Button onClick={handleSavePlan}>Save Changes</Button>
+            <Button onClick={handleSavePlan} disabled={updatePlanMutation.isPending}>
+              {updatePlanMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              Save Changes
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
