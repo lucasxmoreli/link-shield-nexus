@@ -20,15 +20,18 @@ function generateCode() {
   return `CLOAK-${seg()}-${seg()}`;
 }
 
-const MOCK_USERS = [
-  { id: "1", email: "john@example.com", created_at: "2025-01-15T10:30:00Z", plan_name: "Free" },
-  { id: "2", email: "maria@startup.io", created_at: "2025-02-20T14:15:00Z", plan_name: "Basic" },
-  { id: "3", email: "alex@agency.com", created_at: "2025-03-01T09:00:00Z", plan_name: "Pro" },
-  { id: "4", email: "sarah@corp.net", created_at: "2025-03-10T16:45:00Z", plan_name: "Freedom" },
-  { id: "5", email: "dev@techco.dev", created_at: "2025-03-14T08:20:00Z", plan_name: "Enterprise" },
-];
-
 const PLAN_OPTIONS = ["Free", "Basic", "Pro", "Freedom", "Enterprise"];
+
+interface ProfileRow {
+  id: string;
+  user_id: string;
+  email: string | null;
+  plan_name: string | null;
+  created_at: string;
+  max_clicks: number | null;
+  current_clicks: number | null;
+  subscription_status: string | null;
+}
 
 export default function InviteCodes() {
   const queryClient = useQueryClient();
@@ -37,9 +40,8 @@ export default function InviteCodes() {
   const { isAdmin, isLoading: isAdminLoading } = useAdmin();
   const navigate = useNavigate();
 
-  const [managingUser, setManagingUser] = useState<typeof MOCK_USERS[0] | null>(null);
+  const [managingUser, setManagingUser] = useState<ProfileRow | null>(null);
   const [selectedPlan, setSelectedPlan] = useState("");
-  const [mockUsers, setMockUsers] = useState(MOCK_USERS);
 
   useEffect(() => {
     if (!isAdminLoading && !isAdmin) {
@@ -55,6 +57,16 @@ export default function InviteCodes() {
       if (error) throw error;
       return data;
     },
+  });
+
+  const { data: allProfiles = [], isLoading: isLoadingProfiles } = useQuery({
+    queryKey: ["admin_all_profiles"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as ProfileRow[];
+    },
+    enabled: isAdmin,
   });
 
   const createMutation = useMutation({
@@ -102,18 +114,30 @@ export default function InviteCodes() {
     createMutation.mutate(customCode.trim().toUpperCase());
   };
 
-  const handleManageUser = (user: typeof MOCK_USERS[0]) => {
+  const handleManageUser = (user: ProfileRow) => {
     setManagingUser(user);
-    setSelectedPlan(user.plan_name);
+    setSelectedPlan(user.plan_name ?? "Free");
   };
+
+  const updatePlanMutation = useMutation({
+    mutationFn: async ({ userId, planName }: { userId: string; planName: string }) => {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ plan_name: planName })
+        .eq("user_id", userId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin_all_profiles"] });
+      toast.success(`Plan updated to ${selectedPlan} for ${managingUser?.email}`);
+      setManagingUser(null);
+    },
+    onError: () => toast.error("Error updating plan."),
+  });
 
   const handleSavePlan = () => {
     if (!managingUser) return;
-    setMockUsers((prev) =>
-      prev.map((u) => (u.id === managingUser.id ? { ...u, plan_name: selectedPlan } : u))
-    );
-    toast.success(`Plan updated to ${selectedPlan} for ${managingUser.email}`);
-    setManagingUser(null);
+    updatePlanMutation.mutate({ userId: managingUser.user_id, planName: selectedPlan });
   };
 
   if (!isAdmin) return null;
@@ -247,44 +271,50 @@ export default function InviteCodes() {
         {/* ── Users Tab ── */}
         <TabsContent value="users" className="space-y-6 mt-4">
           <div className="rounded-lg border border-border bg-card overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>User Email</TableHead>
-                  <TableHead>Registration Date</TableHead>
-                  <TableHead>Current Plan</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {mockUsers.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-mono text-sm">{user.email}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {format(new Date(user.created_at), "MM/dd/yyyy")}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        className={
-                          user.plan_name === "Free"
-                            ? "bg-muted text-muted-foreground border-0"
-                            : user.plan_name === "Pro"
-                              ? "bg-primary/20 text-primary border-0"
-                              : "bg-accent text-accent-foreground border-0"
-                        }
-                      >
-                        {user.plan_name}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button size="sm" variant="outline" onClick={() => handleManageUser(user)} className="gap-1.5">
-                        <Settings2 className="h-3.5 w-3.5" /> Manage
-                      </Button>
-                    </TableCell>
+            {isLoadingProfiles ? (
+              <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+            ) : allProfiles.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground text-sm">No registered users found.</div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>User Email</TableHead>
+                    <TableHead>Registration Date</TableHead>
+                    <TableHead>Current Plan</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {allProfiles.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell className="font-mono text-sm">{user.email ?? "—"}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {format(new Date(user.created_at), "MM/dd/yyyy")}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          className={
+                            (user.plan_name ?? "Free") === "Free"
+                              ? "bg-muted text-muted-foreground border-0"
+                              : (user.plan_name ?? "") === "Pro"
+                                ? "bg-primary/20 text-primary border-0"
+                                : "bg-accent text-accent-foreground border-0"
+                          }
+                        >
+                          {user.plan_name ?? "Free"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button size="sm" variant="outline" onClick={() => handleManageUser(user)} className="gap-1.5">
+                          <Settings2 className="h-3.5 w-3.5" /> Manage
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </div>
         </TabsContent>
       </Tabs>
@@ -315,7 +345,10 @@ export default function InviteCodes() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setManagingUser(null)}>Cancel</Button>
-            <Button onClick={handleSavePlan}>Save Changes</Button>
+            <Button onClick={handleSavePlan} disabled={updatePlanMutation.isPending}>
+              {updatePlanMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              Save Changes
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
