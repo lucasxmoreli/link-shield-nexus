@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Plus, Copy, Pencil, Trash2, Link, Check } from "lucide-react";
+import { Plus, Copy, Pencil, Trash2, Link, Check, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -29,6 +30,18 @@ export default function Campaigns() {
   const [linkModal, setLinkModal] = useState<{ open: boolean; hash: string; name: string }>({ open: false, hash: "", name: "" });
   const [selectedDomain, setSelectedDomain] = useState<string>("");
   const [copied, setCopied] = useState(false);
+
+  const { data: profile } = useQuery({
+    queryKey: ["profile", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("profiles").select("*").eq("user_id", user!.id).single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const isFreePlan = (profile?.plan_name || "Free").toLowerCase() === "free" || (profile?.max_clicks ?? 0) === 0;
 
   const { data: campaigns = [], isLoading } = useQuery({
     queryKey: ["campaigns", user?.id],
@@ -95,14 +108,38 @@ export default function Campaigns() {
     }, 600);
   };
 
+  const handleCreateClick = () => {
+    if (isFreePlan) {
+      toast.error("Upgrade your plan to create campaigns.");
+      return;
+    }
+    navigate("/campaigns/new");
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Campaigns</h1>
-        <Button className="neon-glow" onClick={() => navigate("/campaigns/new")}>
-          <Plus className="h-4 w-4 mr-1" /> Create +
-        </Button>
+        {isFreePlan ? (
+          <Button variant="outline" className="border-destructive/30 text-destructive" onClick={handleCreateClick}>
+            <Lock className="h-4 w-4 mr-1" /> Upgrade to Create
+          </Button>
+        ) : (
+          <Button className="neon-glow" onClick={handleCreateClick}>
+            <Plus className="h-4 w-4 mr-1" /> Create +
+          </Button>
+        )}
       </div>
+
+      {/* Free plan warning banner */}
+      {isFreePlan && (
+        <Alert className="border-border bg-muted/30">
+          <Lock className="h-4 w-4 text-muted-foreground" />
+          <AlertDescription className="text-muted-foreground">
+            🔒 View-only mode. Upgrade your plan to create and manage campaigns.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <Card className="border-border bg-card">
         <CardContent className="p-0">
@@ -133,7 +170,13 @@ export default function Campaigns() {
                     <TableCell>{c.name}</TableCell>
                     <TableCell><Badge variant="outline" className={`${sourceColors[c.traffic_source]} border-0`}>{c.traffic_source}</Badge></TableCell>
                     <TableCell className="text-muted-foreground text-sm">{new Date(c.created_at).toLocaleDateString("en-US")}</TableCell>
-                    <TableCell><Switch checked={c.is_active ?? false} onCheckedChange={(v) => toggleMutation.mutate({ id: c.id, is_active: v })} /></TableCell>
+                    <TableCell>
+                      <Switch
+                        checked={c.is_active ?? false}
+                        disabled={isFreePlan}
+                        onCheckedChange={(v) => toggleMutation.mutate({ id: c.id, is_active: v })}
+                      />
+                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
                         <Button variant="ghost" size="icon" onClick={() => openLinkModal(c.hash, c.name)}><Copy className="h-4 w-4" /></Button>
@@ -181,28 +224,14 @@ export default function Campaigns() {
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-muted-foreground">Campaign URL</label>
-              <Input
-                readOnly
-                value={getFullLink()}
-                className="font-mono text-sm border-border bg-muted/30 cursor-default"
-              />
+              <Input readOnly value={getFullLink()} className="font-mono text-sm border-border bg-muted/30 cursor-default" />
             </div>
 
-            <Button
-              className="w-full neon-glow"
-              onClick={handleCopyLink}
-              disabled={copied}
-            >
+            <Button className="w-full neon-glow" onClick={handleCopyLink} disabled={copied}>
               {copied ? (
-                <>
-                  <Check className="h-4 w-4 mr-2" />
-                  Copied!
-                </>
+                <><Check className="h-4 w-4 mr-2" /> Copied!</>
               ) : (
-                <>
-                  <Copy className="h-4 w-4 mr-2" />
-                  Copy Link
-                </>
+                <><Copy className="h-4 w-4 mr-2" /> Copy Link</>
               )}
             </Button>
           </div>

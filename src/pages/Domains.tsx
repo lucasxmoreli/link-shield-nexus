@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, CheckCircle, XCircle, Trash2, ShieldCheck, Copy, RefreshCw } from "lucide-react";
+import { Plus, CheckCircle, XCircle, Trash2, ShieldCheck, Copy, RefreshCw, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
@@ -9,9 +9,18 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+
+const PLAN_MAX_DOMAINS: Record<string, number> = {
+  free: 0,
+  basic: 3,
+  pro: 10,
+  freedom: 20,
+  enterprise: 25,
+};
 
 function DnsSteps({ domain }: { domain: { id: string; url: string } }) {
   const hostname = domain.url.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
@@ -25,13 +34,11 @@ function DnsSteps({ domain }: { domain: { id: string; url: string } }) {
 
   return (
     <div className="flex flex-col space-y-4">
-      {/* Step 1 */}
       <div className="rounded-lg border border-border/30 bg-secondary/10 p-4">
         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Step 1</p>
         <p className="text-sm text-foreground">Access your domain's DNS provider panel.</p>
       </div>
 
-      {/* Step 2 */}
       <div className="rounded-lg border border-border/30 bg-secondary/10 p-4 space-y-4">
         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Step 2</p>
         <p className="text-sm text-foreground">Create a TXT record with the following values:</p>
@@ -46,17 +53,8 @@ function DnsSteps({ domain }: { domain: { id: string; url: string } }) {
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Name / Host</Label>
           <div className="relative w-full">
-            <Input
-              readOnly
-              value={txtName}
-              className="w-full pr-10 bg-background border-border font-mono text-sm"
-            />
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground"
-              onClick={() => copyToClipboard(txtName, "Host")}
-            >
+            <Input readOnly value={txtName} className="w-full pr-10 bg-background border-border font-mono text-sm" />
+            <Button variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => copyToClipboard(txtName, "Host")}>
               <Copy className="h-3.5 w-3.5" />
             </Button>
           </div>
@@ -65,24 +63,14 @@ function DnsSteps({ domain }: { domain: { id: string; url: string } }) {
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Value</Label>
           <div className="relative w-full">
-            <Input
-              readOnly
-              value={txtValue}
-              className="w-full pr-10 bg-background border-border font-mono text-sm"
-            />
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground"
-              onClick={() => copyToClipboard(txtValue, "Value")}
-            >
+            <Input readOnly value={txtValue} className="w-full pr-10 bg-background border-border font-mono text-sm" />
+            <Button variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => copyToClipboard(txtValue, "Value")}>
               <Copy className="h-3.5 w-3.5" />
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Step 3 */}
       <div className="rounded-lg border border-border/30 bg-secondary/10 p-4">
         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Step 3</p>
         <p className="text-sm text-foreground">Save changes in your DNS panel and wait for propagation (up to 72h). Return here to verify.</p>
@@ -98,6 +86,16 @@ export default function Domains() {
   const [dnsDialogDomain, setDnsDialogDomain] = useState<{ id: string; url: string } | null>(null);
   const [url, setUrl] = useState("");
 
+  const { data: profile } = useQuery({
+    queryKey: ["profile", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("profiles").select("*").eq("user_id", user!.id).single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
   const { data: domains = [], isLoading } = useQuery({
     queryKey: ["domains", user?.id],
     queryFn: async () => {
@@ -107,6 +105,12 @@ export default function Domains() {
     },
     enabled: !!user,
   });
+
+  const planName = (profile?.plan_name || "Free").toLowerCase();
+  const maxDomains = profile?.max_domains || PLAN_MAX_DOMAINS[planName] || 0;
+  const currentDomains = domains.length;
+  const isLimitReached = maxDomains <= 0 || currentDomains >= maxDomains;
+  const usagePercent = maxDomains > 0 ? Math.round((currentDomains / maxDomains) * 100) : 0;
 
   const createMutation = useMutation({
     mutationFn: async () => {
@@ -162,38 +166,63 @@ export default function Domains() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const handleAddClick = () => {
+    if (isLimitReached) {
+      toast.error("Domain limit reached. Please upgrade your plan to add more domains.");
+      return;
+    }
+    setOpen(true);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Domains</h1>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button><Plus className="h-4 w-4 mr-1" /> Add Domain</Button>
-          </DialogTrigger>
-          <DialogContent className="bg-card border-border">
-            <DialogHeader>
-              <DialogTitle>Add Domain</DialogTitle>
-              <DialogDescription>Enter the domain you want to use with CloakGuard.</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 pt-2">
-              <div>
-                <Label>Domain URL</Label>
-                <Input
-                  placeholder="e.g. track.mysite.com"
-                  className="bg-secondary/50 border-border"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                />
+        {isLimitReached ? (
+          <Button variant="outline" className="border-destructive/30 text-destructive" onClick={handleAddClick}>
+            <Lock className="h-4 w-4 mr-1" /> Limit Reached (Upgrade)
+          </Button>
+        ) : (
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button><Plus className="h-4 w-4 mr-1" /> Add Domain</Button>
+            </DialogTrigger>
+            <DialogContent className="bg-card border-border">
+              <DialogHeader>
+                <DialogTitle>Add Domain</DialogTitle>
+                <DialogDescription>Enter the domain you want to use with CloakGuard.</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 pt-2">
+                <div>
+                  <Label>Domain URL</Label>
+                  <Input placeholder="e.g. track.mysite.com" className="bg-secondary/50 border-border" value={url} onChange={(e) => setUrl(e.target.value)} />
+                </div>
+                <Button className="w-full" onClick={() => createMutation.mutate()} disabled={createMutation.isPending || !url}>
+                  {createMutation.isPending ? "Adding..." : "Add"}
+                </Button>
               </div>
-              <Button className="w-full" onClick={() => createMutation.mutate()} disabled={createMutation.isPending || !url}>
-                {createMutation.isPending ? "Adding..." : "Add"}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
-      {/* Verify Domain Dialog — Step by Step */}
+      {/* Usage Indicator */}
+      <Card className="border-border bg-card">
+        <CardContent className="p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-muted-foreground">Domain Usage</p>
+            <span className="text-sm font-mono text-foreground">
+              {currentDomains} / {maxDomains} <span className="text-muted-foreground">Domains Used</span>
+            </span>
+          </div>
+          <Progress value={usagePercent} className="h-2" />
+          {maxDomains <= 0 && (
+            <p className="text-xs text-muted-foreground">Your current plan does not include custom domains. Upgrade to unlock this feature.</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Verify Domain Dialog */}
       <Dialog open={!!dnsDialogDomain} onOpenChange={(v) => !v && setDnsDialogDomain(null)}>
         <DialogContent className="bg-card border-border sm:max-w-lg">
           <DialogHeader>
@@ -207,11 +236,7 @@ export default function Domains() {
             </DialogDescription>
           </DialogHeader>
           {dnsDialogDomain && <DnsSteps domain={dnsDialogDomain} />}
-          <Button
-            onClick={() => dnsDialogDomain && verifyMutation.mutate(dnsDialogDomain.id)}
-            disabled={verifyMutation.isPending}
-            className="w-full mt-4"
-          >
+          <Button onClick={() => dnsDialogDomain && verifyMutation.mutate(dnsDialogDomain.id)} disabled={verifyMutation.isPending} className="w-full mt-4">
             {verifyMutation.isPending ? (
               <><RefreshCw className="h-4 w-4 mr-2 animate-spin" /> Verifying...</>
             ) : (
@@ -243,9 +268,7 @@ export default function Domains() {
                 ))
               ) : domains.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
-                    No domains added yet.
-                  </TableCell>
+                  <TableCell colSpan={4} className="text-center text-muted-foreground py-8">No domains added yet.</TableCell>
                 </TableRow>
               ) : (
                 domains.map((d) => (
@@ -257,26 +280,15 @@ export default function Domains() {
                           <CheckCircle className="h-3 w-3 mr-1" /> Verified
                         </Badge>
                       ) : (
-                        <Badge
-                          variant="outline"
-                          className="border-destructive/30 bg-destructive/10 text-destructive cursor-pointer hover:bg-destructive/20 transition-colors"
-                          onClick={() => setDnsDialogDomain({ id: d.id, url: d.url })}
-                        >
+                        <Badge variant="outline" className="border-destructive/30 bg-destructive/10 text-destructive cursor-pointer hover:bg-destructive/20 transition-colors" onClick={() => setDnsDialogDomain({ id: d.id, url: d.url })}>
                           <XCircle className="h-3 w-3 mr-1" /> Pending
                         </Badge>
                       )}
                     </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
-                      {new Date(d.created_at).toLocaleDateString("en-US")}
-                    </TableCell>
+                    <TableCell className="text-muted-foreground text-sm">{new Date(d.created_at).toLocaleDateString("en-US")}</TableCell>
                     <TableCell className="text-right space-x-1">
                       {!d.is_verified && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-primary hover:text-primary"
-                          onClick={() => setDnsDialogDomain({ id: d.id, url: d.url })}
-                        >
+                        <Button variant="ghost" size="sm" className="text-primary hover:text-primary" onClick={() => setDnsDialogDomain({ id: d.id, url: d.url })}>
                           <ShieldCheck className="h-4 w-4 mr-1" /> Verify
                         </Button>
                       )}
