@@ -271,44 +271,50 @@ export default function InviteCodes() {
         {/* ── Users Tab ── */}
         <TabsContent value="users" className="space-y-6 mt-4">
           <div className="rounded-lg border border-border bg-card overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>User Email</TableHead>
-                  <TableHead>Registration Date</TableHead>
-                  <TableHead>Current Plan</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {mockUsers.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-mono text-sm">{user.email}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {format(new Date(user.created_at), "MM/dd/yyyy")}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        className={
-                          user.plan_name === "Free"
-                            ? "bg-muted text-muted-foreground border-0"
-                            : user.plan_name === "Pro"
-                              ? "bg-primary/20 text-primary border-0"
-                              : "bg-accent text-accent-foreground border-0"
-                        }
-                      >
-                        {user.plan_name}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button size="sm" variant="outline" onClick={() => handleManageUser(user)} className="gap-1.5">
-                        <Settings2 className="h-3.5 w-3.5" /> Manage
-                      </Button>
-                    </TableCell>
+            {isLoadingProfiles ? (
+              <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+            ) : allProfiles.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground text-sm">No registered users found.</div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>User Email</TableHead>
+                    <TableHead>Registration Date</TableHead>
+                    <TableHead>Current Plan</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {allProfiles.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell className="font-mono text-sm">{user.email ?? "—"}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {format(new Date(user.created_at), "MM/dd/yyyy")}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          className={
+                            (user.plan_name ?? "Free") === "Free"
+                              ? "bg-muted text-muted-foreground border-0"
+                              : (user.plan_name ?? "") === "Pro"
+                                ? "bg-primary/20 text-primary border-0"
+                                : "bg-accent text-accent-foreground border-0"
+                          }
+                        >
+                          {user.plan_name ?? "Free"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button size="sm" variant="outline" onClick={() => handleManageUser(user)} className="gap-1.5">
+                          <Settings2 className="h-3.5 w-3.5" /> Manage
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </div>
         </TabsContent>
       </Tabs>
