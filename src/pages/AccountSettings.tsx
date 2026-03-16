@@ -144,6 +144,26 @@ export default function AccountSettings() {
     enabled: !!user,
   });
 
+  const { data: domainsCount = 0 } = useQuery({
+    queryKey: ["domains-count", user?.id],
+    queryFn: async () => {
+      const { count, error } = await supabase.from("domains").select("*", { count: "exact", head: true });
+      if (error) throw error;
+      return count ?? 0;
+    },
+    enabled: !!user,
+  });
+
+  const { data: campaignsCount = 0 } = useQuery({
+    queryKey: ["campaigns-count", user?.id],
+    queryFn: async () => {
+      const { count, error } = await supabase.from("campaigns").select("*", { count: "exact", head: true });
+      if (error) throw error;
+      return count ?? 0;
+    },
+    enabled: !!user,
+  });
+
   // Find the active plan based on the user's profile plan_name (fallback to Free)
   const activePlan = PLANS.find(
     (p) => p.name.toLowerCase() === (profile?.plan_name || 'free').toLowerCase()
@@ -157,6 +177,15 @@ export default function AccountSettings() {
   const usagePercent = maxClicks > 0 ? Math.round((currentClicks / maxClicks) * 100) : 0;
   const planName = profile?.plan_name ?? "Free";
   const isFreePlan = planName === "Free";
+
+  // Domain usage
+  const PLAN_MAX_DOMAINS: Record<string, number> = { free: 0, "basic plan": 3, "pro plan": 10, "freedom plan": 20, "enterprise conquest": 25 };
+  const maxDomains = profile?.max_domains || PLAN_MAX_DOMAINS[activePlan.name.toLowerCase()] || 0;
+  const domainsPercent = maxDomains > 0 ? Math.round((domainsCount / maxDomains) * 100) : 0;
+
+  // Campaign usage (unlimited for paid plans, 0 for free)
+  const maxCampaigns = isFreePlan ? 0 : Infinity;
+  const campaignsLimited = maxCampaigns === 0;
 
   const handlePlanClick = (plan: PlanData) => {
     if (plan.isFree) return;
@@ -209,13 +238,40 @@ export default function AccountSettings() {
 
             <Card className="border-border bg-card">
               <CardHeader><CardTitle className="text-lg">Plan Usage</CardTitle></CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Clicks used</span>
-                  <span className="font-mono">{currentClicks.toLocaleString()} / {maxClicks.toLocaleString()}</span>
+              <CardContent className="space-y-6">
+                {/* Clicks */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Clicks used</span>
+                    <span className="font-mono">{currentClicks.toLocaleString()} / {maxClicks > 0 ? maxClicks.toLocaleString() : "0"}</span>
+                  </div>
+                  <Progress value={usagePercent} className="h-3 bg-secondary" />
+                  <p className="text-xs text-muted-foreground">{usagePercent}% of limit used</p>
                 </div>
-                <Progress value={usagePercent} className="h-3 bg-secondary" />
-                <p className="text-sm text-muted-foreground">{usagePercent}% of limit used</p>
+
+                {/* Domains */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Domains used</span>
+                    <span className="font-mono">{domainsCount} / {maxDomains}</span>
+                  </div>
+                  <Progress value={domainsPercent} className="h-3 bg-secondary" />
+                  <p className="text-xs text-muted-foreground">
+                    {maxDomains > 0 ? `${domainsPercent}% of limit used` : "Upgrade to unlock custom domains"}
+                  </p>
+                </div>
+
+                {/* Campaigns */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Campaigns created</span>
+                    <span className="font-mono">{campaignsCount}{campaignsLimited ? " / 0" : " / ∞"}</span>
+                  </div>
+                  <Progress value={campaignsLimited ? 0 : Math.min(campaignsCount, 100)} className="h-3 bg-secondary" />
+                  <p className="text-xs text-muted-foreground">
+                    {campaignsLimited ? "Upgrade to create campaigns" : "Unlimited campaigns on your plan"}
+                  </p>
+                </div>
               </CardContent>
             </Card>
           </div>
