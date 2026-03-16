@@ -20,15 +20,18 @@ function generateCode() {
   return `CLOAK-${seg()}-${seg()}`;
 }
 
-const MOCK_USERS = [
-  { id: "1", email: "john@example.com", created_at: "2025-01-15T10:30:00Z", plan_name: "Free" },
-  { id: "2", email: "maria@startup.io", created_at: "2025-02-20T14:15:00Z", plan_name: "Basic" },
-  { id: "3", email: "alex@agency.com", created_at: "2025-03-01T09:00:00Z", plan_name: "Pro" },
-  { id: "4", email: "sarah@corp.net", created_at: "2025-03-10T16:45:00Z", plan_name: "Freedom" },
-  { id: "5", email: "dev@techco.dev", created_at: "2025-03-14T08:20:00Z", plan_name: "Enterprise" },
-];
-
 const PLAN_OPTIONS = ["Free", "Basic", "Pro", "Freedom", "Enterprise"];
+
+interface ProfileRow {
+  id: string;
+  user_id: string;
+  email: string | null;
+  plan_name: string | null;
+  created_at: string;
+  max_clicks: number | null;
+  current_clicks: number | null;
+  subscription_status: string | null;
+}
 
 export default function InviteCodes() {
   const queryClient = useQueryClient();
