@@ -24,7 +24,7 @@ const baseItems = [
 ];
 
 const adminItems = [
-  { title: "Convites", url: "/invite-codes", icon: Ticket },
+  { title: "Admin & Users", url: "/invite-codes", icon: Ticket },
 ];
 
 export function AppSidebar() {

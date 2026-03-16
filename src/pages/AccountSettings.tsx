@@ -8,19 +8,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Check, X } from "lucide-react";
+import { Check, X, Facebook, Instagram, Youtube, Search, Smartphone, Twitter, Camera, Pin, Linkedin, Flame } from "lucide-react";
 
 const TRAFFIC_SOURCES = [
-  { name: "Facebook", color: "hsl(221 44% 41%)" },
-  { name: "Instagram", color: "hsl(330 70% 50%)" },
-  { name: "TikTok", color: "hsl(0 0% 10%)" },
-  { name: "Google Ads", color: "hsl(45 100% 51%)" },
-  { name: "YouTube", color: "hsl(0 100% 50%)" },
-  { name: "Twitter/X", color: "hsl(203 89% 53%)" },
-  { name: "Snapchat", color: "hsl(56 100% 50%)" },
-  { name: "Pinterest", color: "hsl(0 78% 43%)" },
-  { name: "LinkedIn", color: "hsl(210 70% 40%)" },
-  { name: "Kwai", color: "hsl(25 100% 50%)" },
+  { name: "Facebook", icon: Facebook, color: "hsl(221 44% 41%)" },
+  { name: "Instagram", icon: Instagram, color: "hsl(330 70% 50%)" },
+  { name: "TikTok", icon: Smartphone, color: "hsl(0 0% 90%)" },
+  { name: "Google Ads", icon: Search, color: "hsl(45 100% 51%)" },
+  { name: "YouTube", icon: Youtube, color: "hsl(0 100% 50%)" },
+  { name: "Twitter/X", icon: Twitter, color: "hsl(203 89% 53%)" },
+  { name: "Snapchat", icon: Camera, color: "hsl(56 100% 50%)" },
+  { name: "Pinterest", icon: Pin, color: "hsl(0 78% 43%)" },
+  { name: "LinkedIn", icon: Linkedin, color: "hsl(210 70% 40%)" },
+  { name: "Kwai", icon: Flame, color: "hsl(25 100% 50%)" },
 ];
 
 interface PlanData {
@@ -145,7 +145,6 @@ export default function AccountSettings() {
   const handlePlanClick = (plan: PlanData) => {
     if (plan.isFree) return;
     toast({ title: "Upgrade feature coming soon", description: `You selected ${plan.name}.` });
-    console.log("Plan selected:", plan.name, plan.price);
   };
 
   if (isLoading) {
@@ -168,7 +167,6 @@ export default function AccountSettings() {
           <TabsTrigger value="subscription">Subscription</TabsTrigger>
         </TabsList>
 
-        {/* ── Account Tab ── */}
         <TabsContent value="account">
           <div className="space-y-6 max-w-2xl">
             <Card className="border-border bg-card">
@@ -203,14 +201,13 @@ export default function AccountSettings() {
           </div>
         </TabsContent>
 
-        {/* ── Subscription Tab ── */}
         <TabsContent value="subscription">
-          <div className="flex overflow-x-auto gap-6 pb-4 xl:grid xl:grid-cols-5">
+          <div className="flex overflow-x-auto snap-x snap-mandatory gap-6 pt-6 pb-4 scrollbar-hide xl:grid xl:grid-cols-5">
             {PLANS.map((plan) => (
               <div
                 key={plan.name}
                 className={`
-                  relative min-w-[260px] flex-shrink-0 flex flex-col rounded-xl border p-6
+                  relative min-w-[300px] flex-shrink-0 snap-center flex flex-col rounded-xl border p-6
                   bg-card text-card-foreground
                   ${plan.highlighted
                     ? "border-primary/50 ring-1 ring-primary/30 shadow-[0_0_30px_hsl(271_81%_56%/0.15)]"
@@ -218,32 +215,27 @@ export default function AccountSettings() {
                   }
                 `}
               >
-                {/* Badge */}
                 {plan.badge && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
                     <Badge className="bg-primary text-primary-foreground border-0 text-[10px] tracking-wider px-3 py-1 whitespace-nowrap">
                       {plan.badge}
                     </Badge>
                   </div>
                 )}
 
-                {/* Plan name */}
                 <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground mb-4">
                   {plan.name}
                 </p>
 
-                {/* Price */}
                 <div className="mb-4">
                   <span className="text-4xl font-bold font-mono">{plan.price}</span>
                   <span className="text-muted-foreground text-sm">/mo</span>
                 </div>
 
-                {/* Description */}
                 <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
                   {plan.description}
                 </p>
 
-                {/* Features */}
                 <ul className="space-y-3 mb-6">
                   {plan.features.map((f) => (
                     <li key={f.text} className="flex items-start gap-2 text-sm">
@@ -259,10 +251,10 @@ export default function AccountSettings() {
                   ))}
                 </ul>
 
-                {/* Traffic Sources */}
                 <div className="grid grid-cols-5 gap-2 mb-6">
                   {TRAFFIC_SOURCES.map((src, i) => {
                     const visible = i < plan.visibleSources;
+                    const Icon = src.icon;
                     return (
                       <div
                         key={src.name}
@@ -270,9 +262,10 @@ export default function AccountSettings() {
                         title={src.name}
                       >
                         <div
-                          className="w-6 h-6 rounded-full border border-border"
-                          style={{ backgroundColor: src.color }}
-                        />
+                          className="w-8 h-8 rounded-lg border border-border flex items-center justify-center bg-secondary/50"
+                        >
+                          <Icon size={16} style={{ color: visible ? src.color : undefined }} className={!visible ? "text-muted-foreground" : ""} />
+                        </div>
                         <span className="text-[9px] text-muted-foreground truncate w-full text-center">
                           {src.name}
                         </span>
@@ -281,7 +274,6 @@ export default function AccountSettings() {
                   })}
                 </div>
 
-                {/* CTA Button */}
                 <Button
                   className={`mt-auto w-full ${
                     plan.isFree

@@ -7,7 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Ticket, Plus, Copy, Loader2, Check, X, RefreshCw, Trash2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Ticket, Plus, Copy, Loader2, Check, X, RefreshCw, Trash2, Users, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -17,12 +20,26 @@ function generateCode() {
   return `CLOAK-${seg()}-${seg()}`;
 }
 
+const MOCK_USERS = [
+  { id: "1", email: "john@example.com", created_at: "2025-01-15T10:30:00Z", plan_name: "Free" },
+  { id: "2", email: "maria@startup.io", created_at: "2025-02-20T14:15:00Z", plan_name: "Basic" },
+  { id: "3", email: "alex@agency.com", created_at: "2025-03-01T09:00:00Z", plan_name: "Pro" },
+  { id: "4", email: "sarah@corp.net", created_at: "2025-03-10T16:45:00Z", plan_name: "Freedom" },
+  { id: "5", email: "dev@techco.dev", created_at: "2025-03-14T08:20:00Z", plan_name: "Enterprise" },
+];
+
+const PLAN_OPTIONS = ["Free", "Basic", "Pro", "Freedom", "Enterprise"];
+
 export default function InviteCodes() {
   const queryClient = useQueryClient();
   const [customCode, setCustomCode] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const { isAdmin, isLoading: isAdminLoading } = useAdmin();
   const navigate = useNavigate();
+
+  const [managingUser, setManagingUser] = useState<typeof MOCK_USERS[0] | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState("");
+  const [mockUsers, setMockUsers] = useState(MOCK_USERS);
 
   useEffect(() => {
     if (!isAdminLoading && !isAdmin) {
@@ -85,6 +102,20 @@ export default function InviteCodes() {
     createMutation.mutate(customCode.trim().toUpperCase());
   };
 
+  const handleManageUser = (user: typeof MOCK_USERS[0]) => {
+    setManagingUser(user);
+    setSelectedPlan(user.plan_name);
+  };
+
+  const handleSavePlan = () => {
+    if (!managingUser) return;
+    setMockUsers((prev) =>
+      prev.map((u) => (u.id === managingUser.id ? { ...u, plan_name: selectedPlan } : u))
+    );
+    toast.success(`Plan updated to ${selectedPlan} for ${managingUser.email}`);
+    setManagingUser(null);
+  };
+
   if (!isAdmin) return null;
 
   const copyToClipboard = (code: string, id: string) => {
@@ -102,100 +133,192 @@ export default function InviteCodes() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <Ticket className="h-6 w-6 text-primary" />
-            Invite Codes
+            <Users className="h-6 w-6 text-primary" />
+            Admin & Users
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Manage access codes for the invite-only system.
+            Manage invite codes and registered users.
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => queryClient.invalidateQueries({ queryKey: ["invite_codes"] })}>
-          <RefreshCw className="h-4 w-4 mr-1" /> Refresh
-        </Button>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
-        {[
-          { label: "Total", value: codes.length, color: "text-foreground" },
-          { label: "Available", value: availableCount, color: "text-primary" },
-          { label: "Used", value: usedCount, color: "text-muted-foreground" },
-        ].map((s) => (
-          <div key={s.label} className="rounded-lg border border-border bg-card p-4 text-center">
-            <div className={`text-2xl font-bold ${s.color}`}>{s.value}</div>
-            <div className="text-xs text-muted-foreground mt-1">{s.label}</div>
+      <Tabs defaultValue="invites" className="w-full">
+        <TabsList className="bg-secondary">
+          <TabsTrigger value="invites" className="gap-1.5">
+            <Ticket className="h-4 w-4" /> Invite Codes
+          </TabsTrigger>
+          <TabsTrigger value="users" className="gap-1.5">
+            <Users className="h-4 w-4" /> Registered Users
+          </TabsTrigger>
+        </TabsList>
+
+        {/* ── Invites Tab ── */}
+        <TabsContent value="invites" className="space-y-6 mt-4">
+          <div className="flex justify-end">
+            <Button variant="outline" size="sm" onClick={() => queryClient.invalidateQueries({ queryKey: ["invite_codes"] })}>
+              <RefreshCw className="h-4 w-4 mr-1" /> Refresh
+            </Button>
           </div>
-        ))}
-      </div>
 
-      <div className="rounded-lg border border-border bg-card p-5 space-y-4">
-        <h2 className="text-sm font-semibold">Create new code</h2>
-        <div className="flex flex-col sm:flex-row gap-3">
-          <Button onClick={handleCreateRandom} disabled={createMutation.isPending} className="shrink-0">
-            {createMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
-            Generate Random
-          </Button>
-          <form onSubmit={handleCreateCustom} className="flex flex-1 gap-2">
-            <Input placeholder="Custom code (e.g. VIP-2024)" value={customCode} onChange={(e) => setCustomCode(e.target.value)} className="uppercase tracking-wider bg-secondary/50" />
-            <Button type="submit" variant="secondary" disabled={createMutation.isPending || !customCode.trim()}>Create</Button>
-          </form>
-        </div>
-      </div>
+          <div className="grid grid-cols-3 gap-4">
+            {[
+              { label: "Total", value: codes.length, color: "text-foreground" },
+              { label: "Available", value: availableCount, color: "text-primary" },
+              { label: "Used", value: usedCount, color: "text-muted-foreground" },
+            ].map((s) => (
+              <div key={s.label} className="rounded-lg border border-border bg-card p-4 text-center">
+                <div className={`text-2xl font-bold ${s.color}`}>{s.value}</div>
+                <div className="text-xs text-muted-foreground mt-1">{s.label}</div>
+              </div>
+            ))}
+          </div>
 
-      <div className="rounded-lg border border-border bg-card overflow-hidden">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
-        ) : codes.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground text-sm">No codes created yet.</div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Code</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Used By</TableHead>
-                <TableHead>Used At</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead className="w-12" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {codes.map((code) => (
-                <TableRow key={code.id}>
-                  <TableCell className="font-mono text-sm tracking-wider">{code.code}</TableCell>
-                  <TableCell>
-                    {code.is_used ? (
-                      <Badge variant="secondary" className="gap-1"><X className="h-3 w-3" /> Used</Badge>
-                    ) : (
-                      <Badge className="gap-1 bg-primary/15 text-primary border-primary/30 hover:bg-primary/20"><Check className="h-3 w-3" /> Available</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {code.used_by ? <span className="font-mono text-xs">{code.used_by.slice(0, 8)}…</span> : "—"}
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {code.used_at ? format(new Date(code.used_at), "MM/dd/yyyy HH:mm") : "—"}
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {format(new Date(code.created_at), "MM/dd/yyyy HH:mm")}
-                  </TableCell>
-                  <TableCell>
-                    {!code.is_used && (
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => copyToClipboard(code.code, code.id)} className="text-muted-foreground hover:text-foreground transition-colors" title="Copy code">
-                          {copiedId === code.id ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
-                        </button>
-                        <button onClick={() => { if (isAdmin) deleteMutation.mutate(code.id); }} disabled={deleteMutation.isPending || !isAdmin} className="text-muted-foreground hover:text-destructive transition-colors" title="Delete code">
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    )}
-                  </TableCell>
+          <div className="rounded-lg border border-border bg-card p-5 space-y-4">
+            <h2 className="text-sm font-semibold">Create new code</h2>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button onClick={handleCreateRandom} disabled={createMutation.isPending} className="shrink-0">
+                {createMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
+                Generate Random
+              </Button>
+              <form onSubmit={handleCreateCustom} className="flex flex-1 gap-2">
+                <Input placeholder="Custom code (e.g. VIP-2024)" value={customCode} onChange={(e) => setCustomCode(e.target.value)} className="uppercase tracking-wider bg-secondary/50" />
+                <Button type="submit" variant="secondary" disabled={createMutation.isPending || !customCode.trim()}>Create</Button>
+              </form>
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-border bg-card overflow-hidden">
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+            ) : codes.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground text-sm">No codes created yet.</div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Code</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Used By</TableHead>
+                    <TableHead>Used At</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead className="w-12" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {codes.map((code) => (
+                    <TableRow key={code.id}>
+                      <TableCell className="font-mono text-sm tracking-wider">{code.code}</TableCell>
+                      <TableCell>
+                        {code.is_used ? (
+                          <Badge variant="secondary" className="gap-1"><X className="h-3 w-3" /> Used</Badge>
+                        ) : (
+                          <Badge className="gap-1 bg-primary/15 text-primary border-primary/30 hover:bg-primary/20"><Check className="h-3 w-3" /> Available</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {code.used_by ? <span className="font-mono text-xs">{code.used_by.slice(0, 8)}…</span> : "—"}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {code.used_at ? format(new Date(code.used_at), "MM/dd/yyyy HH:mm") : "—"}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {format(new Date(code.created_at), "MM/dd/yyyy HH:mm")}
+                      </TableCell>
+                      <TableCell>
+                        {!code.is_used && (
+                          <div className="flex items-center gap-2">
+                            <button onClick={() => copyToClipboard(code.code, code.id)} className="text-muted-foreground hover:text-foreground transition-colors" title="Copy code">
+                              {copiedId === code.id ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
+                            </button>
+                            <button onClick={() => { if (isAdmin) deleteMutation.mutate(code.id); }} disabled={deleteMutation.isPending || !isAdmin} className="text-muted-foreground hover:text-destructive transition-colors" title="Delete code">
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* ── Users Tab ── */}
+        <TabsContent value="users" className="space-y-6 mt-4">
+          <div className="rounded-lg border border-border bg-card overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User Email</TableHead>
+                  <TableHead>Registration Date</TableHead>
+                  <TableHead>Current Plan</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </div>
+              </TableHeader>
+              <TableBody>
+                {mockUsers.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-mono text-sm">{user.email}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {format(new Date(user.created_at), "MM/dd/yyyy")}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        className={
+                          user.plan_name === "Free"
+                            ? "bg-muted text-muted-foreground border-0"
+                            : user.plan_name === "Pro"
+                              ? "bg-primary/20 text-primary border-0"
+                              : "bg-accent text-accent-foreground border-0"
+                        }
+                      >
+                        {user.plan_name}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button size="sm" variant="outline" onClick={() => handleManageUser(user)} className="gap-1.5">
+                        <Settings2 className="h-3.5 w-3.5" /> Manage
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
+      </Tabs>
+
+      {/* ── Manage User Dialog ── */}
+      <Dialog open={!!managingUser} onOpenChange={(open) => !open && setManagingUser(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Manage User Plan</DialogTitle>
+            <DialogDescription>
+              Change the active plan for <span className="font-mono text-foreground">{managingUser?.email}</span>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-muted-foreground">Select Plan</label>
+              <Select value={selectedPlan} onValueChange={setSelectedPlan}>
+                <SelectTrigger className="bg-secondary/50">
+                  <SelectValue placeholder="Choose a plan" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PLAN_OPTIONS.map((p) => (
+                    <SelectItem key={p} value={p}>{p}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setManagingUser(null)}>Cancel</Button>
+            <Button onClick={handleSavePlan}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
