@@ -40,9 +40,8 @@ export default function InviteCodes() {
   const { isAdmin, isLoading: isAdminLoading } = useAdmin();
   const navigate = useNavigate();
 
-  const [managingUser, setManagingUser] = useState<typeof MOCK_USERS[0] | null>(null);
+  const [managingUser, setManagingUser] = useState<ProfileRow | null>(null);
   const [selectedPlan, setSelectedPlan] = useState("");
-  const [mockUsers, setMockUsers] = useState(MOCK_USERS);
 
   useEffect(() => {
     if (!isAdminLoading && !isAdmin) {
