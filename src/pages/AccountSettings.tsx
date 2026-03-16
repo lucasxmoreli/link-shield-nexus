@@ -138,9 +138,11 @@ export default function AccountSettings() {
     enabled: !!user,
   });
 
-  const maxClicks = profile?.max_clicks ?? 100000;
+  const maxClicks = profile?.max_clicks ?? 0;
   const currentClicks = profile?.current_clicks ?? 0;
-  const usagePercent = Math.round((currentClicks / maxClicks) * 100);
+  const usagePercent = maxClicks > 0 ? Math.round((currentClicks / maxClicks) * 100) : 0;
+  const planName = profile?.plan_name ?? "Free";
+  const isFreePlan = planName === "Free";
 
   const handlePlanClick = (plan: PlanData) => {
     if (plan.isFree) return;
