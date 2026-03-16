@@ -144,6 +144,26 @@ export default function AccountSettings() {
     enabled: !!user,
   });
 
+  const { data: domainsCount = 0 } = useQuery({
+    queryKey: ["domains-count", user?.id],
+    queryFn: async () => {
+      const { count, error } = await supabase.from("domains").select("*", { count: "exact", head: true });
+      if (error) throw error;
+      return count ?? 0;
+    },
+    enabled: !!user,
+  });
+
+  const { data: campaignsCount = 0 } = useQuery({
+    queryKey: ["campaigns-count", user?.id],
+    queryFn: async () => {
+      const { count, error } = await supabase.from("campaigns").select("*", { count: "exact", head: true });
+      if (error) throw error;
+      return count ?? 0;
+    },
+    enabled: !!user,
+  });
+
   // Find the active plan based on the user's profile plan_name (fallback to Free)
   const activePlan = PLANS.find(
     (p) => p.name.toLowerCase() === (profile?.plan_name || 'free').toLowerCase()
