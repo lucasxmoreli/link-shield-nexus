@@ -140,8 +140,16 @@ export default function AccountSettings() {
     enabled: !!user,
   });
 
-  const maxClicks = profile?.max_clicks ?? 0;
+  // Find the active plan based on the user's profile plan_name (fallback to Free)
+  const activePlan = PLANS.find(
+    (p) => p.name.toLowerCase() === (profile?.plan_name || 'free').toLowerCase()
+  ) || PLANS[0];
+
+  // Prefer the database value, but fallback to the plan's official limit
+  const maxClicks = profile?.max_clicks || activePlan.maxClicksLimit;
   const currentClicks = profile?.current_clicks ?? 0;
+  
+  // Prevent NaN (divide by zero) error for Free users
   const usagePercent = maxClicks > 0 ? Math.round((currentClicks / maxClicks) * 100) : 0;
   const planName = profile?.plan_name ?? "Free";
   const isFreePlan = planName === "Free";
