@@ -70,14 +70,14 @@ export default function Dashboard() {
   const deviceCounts = {
     desktop: logs.filter((l) => l.device_type === "desktop").length || 0,
     mobile: logs.filter((l) => l.device_type === "mobile").length || 0,
-    tablet: logs.filter((l) => l.device_type === "tablet").length || 0,
+    tablet: 0,
   };
   const totalDevices = deviceCounts.desktop + deviceCounts.mobile + deviceCounts.tablet;
   const deviceData = totalDevices > 0
     ? [
         { name: "Desktop", value: deviceCounts.desktop, icon: Monitor },
         { name: "Mobile", value: deviceCounts.mobile, icon: Smartphone },
-        { name: "Tablet", value: deviceCounts.tablet, icon: Tablet },
+        { name: "Tablet", value: deviceCounts.tablet || 1, icon: Tablet },
       ]
     : [
         { name: "Desktop", value: 40, icon: Monitor },
@@ -91,7 +91,7 @@ export default function Dashboard() {
     time: formatDistanceToNow(new Date(l.created_at), { addSuffix: true }),
     ip: l.ip_address ?? "—",
     country: l.country_code ?? "—",
-    device: l.device_type === "mobile" ? "Mobile" : l.device_type === "tablet" ? "Tablet" : "Desktop",
+    device: l.device_type === "mobile" ? "Mobile" : "Desktop",
     action: l.action_taken === "bot_blocked" ? "Blocked" : "Passed",
   }));
   const feedData = recentLogs.length > 0 ? recentLogs : MOCK_FEED;
