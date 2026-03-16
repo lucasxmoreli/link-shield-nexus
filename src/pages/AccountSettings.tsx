@@ -180,11 +180,15 @@ export default function AccountSettings() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Plan</span>
-                  <Badge className="bg-primary/20 text-primary border-0">{profile?.plan_name ?? "Free"}</Badge>
+                  <Badge className="bg-primary/20 text-primary border-0">{planName}</Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Status</span>
-                  <Badge className="bg-success/20 text-success border-0">{profile?.subscription_status ?? "active"}</Badge>
+                  {isFreePlan ? (
+                    <Badge className="bg-destructive/20 text-destructive border-0">Inactive</Badge>
+                  ) : (
+                    <Badge className="bg-success/20 text-success border-0">Active</Badge>
+                  )}
                 </div>
               </CardContent>
             </Card>
