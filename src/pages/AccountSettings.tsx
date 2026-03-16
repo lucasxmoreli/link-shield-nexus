@@ -138,9 +138,11 @@ export default function AccountSettings() {
     enabled: !!user,
   });
 
-  const maxClicks = profile?.max_clicks ?? 100000;
+  const maxClicks = profile?.max_clicks ?? 0;
   const currentClicks = profile?.current_clicks ?? 0;
-  const usagePercent = Math.round((currentClicks / maxClicks) * 100);
+  const usagePercent = maxClicks > 0 ? Math.round((currentClicks / maxClicks) * 100) : 0;
+  const planName = profile?.plan_name ?? "Free";
+  const isFreePlan = planName === "Free";
 
   const handlePlanClick = (plan: PlanData) => {
     if (plan.isFree) return;
@@ -178,11 +180,15 @@ export default function AccountSettings() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Plan</span>
-                  <Badge className="bg-primary/20 text-primary border-0">{profile?.plan_name ?? "Free"}</Badge>
+                  <Badge className="bg-primary/20 text-primary border-0">{planName}</Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Status</span>
-                  <Badge className="bg-success/20 text-success border-0">{profile?.subscription_status ?? "active"}</Badge>
+                  {isFreePlan ? (
+                    <Badge className="bg-destructive/20 text-destructive border-0">Inactive</Badge>
+                  ) : (
+                    <Badge className="bg-success/20 text-success border-0">Active</Badge>
+                  )}
                 </div>
               </CardContent>
             </Card>

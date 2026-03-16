@@ -123,6 +123,7 @@ export type Database = {
           email: string | null
           id: string
           max_clicks: number | null
+          max_domains: number | null
           plan_name: string | null
           subscription_status: string | null
           updated_at: string
@@ -134,6 +135,7 @@ export type Database = {
           email?: string | null
           id?: string
           max_clicks?: number | null
+          max_domains?: number | null
           plan_name?: string | null
           subscription_status?: string | null
           updated_at?: string
@@ -145,6 +147,7 @@ export type Database = {
           email?: string | null
           id?: string
           max_clicks?: number | null
+          max_domains?: number | null
           plan_name?: string | null
           subscription_status?: string | null
           updated_at?: string
