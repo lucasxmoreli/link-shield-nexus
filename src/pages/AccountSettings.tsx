@@ -88,6 +88,7 @@ const PLANS: PlanData[] = [
     highlighted: true,
     badge: "BEST OPTION FOR YOU",
     isFree: false,
+    maxClicksLimit: 100000,
   },
   {
     name: "FREEDOM PLAN",
