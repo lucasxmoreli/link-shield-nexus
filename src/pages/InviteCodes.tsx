@@ -20,7 +20,14 @@ function generateCode() {
   return `CLOAK-${seg()}-${seg()}`;
 }
 
-const PLAN_OPTIONS = ["Free", "Basic", "Pro", "Freedom", "Enterprise"];
+const PLAN_LIMITS: Record<string, { max_clicks: number; max_domains: number }> = {
+  Free: { max_clicks: 0, max_domains: 0 },
+  Basic: { max_clicks: 20000, max_domains: 3 },
+  Pro: { max_clicks: 100000, max_domains: 10 },
+  Freedom: { max_clicks: 300000, max_domains: 25 },
+  Enterprise: { max_clicks: 1000000, max_domains: 100 },
+};
+const PLAN_OPTIONS = Object.keys(PLAN_LIMITS);
 
 interface ProfileRow {
   id: string;
@@ -121,9 +128,10 @@ export default function InviteCodes() {
 
   const updatePlanMutation = useMutation({
     mutationFn: async ({ userId, planName }: { userId: string; planName: string }) => {
+      const limits = PLAN_LIMITS[planName] || PLAN_LIMITS.Free;
       const { error } = await supabase
         .from("profiles")
-        .update({ plan_name: planName })
+        .update({ plan_name: planName, max_clicks: limits.max_clicks, max_domains: limits.max_domains })
         .eq("user_id", userId);
       if (error) throw error;
     },
