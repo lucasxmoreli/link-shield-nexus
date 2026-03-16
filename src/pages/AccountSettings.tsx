@@ -34,6 +34,7 @@ interface PlanData {
   highlighted: boolean;
   badge?: string;
   isFree: boolean;
+  maxClicksLimit: number;
 }
 
 const PLANS: PlanData[] = [
