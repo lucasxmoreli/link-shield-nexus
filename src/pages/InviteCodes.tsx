@@ -59,6 +59,16 @@ export default function InviteCodes() {
     },
   });
 
+  const { data: allProfiles = [], isLoading: isLoadingProfiles } = useQuery({
+    queryKey: ["admin_all_profiles"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as ProfileRow[];
+    },
+    enabled: isAdmin,
+  });
+
   const createMutation = useMutation({
     mutationFn: async (code: string) => {
       const { error } = await supabase.from("invite_codes").insert({ code });
