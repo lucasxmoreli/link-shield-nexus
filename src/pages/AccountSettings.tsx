@@ -53,6 +53,7 @@ const PLANS: PlanData[] = [
     buttonText: "Current Plan",
     highlighted: false,
     isFree: true,
+    maxClicksLimit: 0,
   },
   {
     name: "BASIC PLAN",
