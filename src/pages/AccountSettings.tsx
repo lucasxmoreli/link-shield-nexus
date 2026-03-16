@@ -122,6 +122,7 @@ const PLANS: PlanData[] = [
     buttonText: "Select Plan",
     highlighted: false,
     isFree: false,
+    maxClicksLimit: 1000000,
   },
 ];
 
