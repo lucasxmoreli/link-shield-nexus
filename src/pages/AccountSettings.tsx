@@ -34,6 +34,7 @@ interface PlanData {
   highlighted: boolean;
   badge?: string;
   isFree: boolean;
+  maxClicksLimit: number;
 }
 
 const PLANS: PlanData[] = [
@@ -52,6 +53,7 @@ const PLANS: PlanData[] = [
     buttonText: "Current Plan",
     highlighted: false,
     isFree: true,
+    maxClicksLimit: 0,
   },
   {
     name: "BASIC PLAN",
@@ -68,6 +70,7 @@ const PLANS: PlanData[] = [
     buttonText: "Select Plan",
     highlighted: false,
     isFree: false,
+    maxClicksLimit: 20000,
   },
   {
     name: "PRO PLAN",
@@ -85,6 +88,7 @@ const PLANS: PlanData[] = [
     highlighted: true,
     badge: "BEST OPTION FOR YOU",
     isFree: false,
+    maxClicksLimit: 100000,
   },
   {
     name: "FREEDOM PLAN",
@@ -101,6 +105,7 @@ const PLANS: PlanData[] = [
     buttonText: "Select Plan",
     highlighted: false,
     isFree: false,
+    maxClicksLimit: 300000,
   },
   {
     name: "ENTERPRISE CONQUEST",
@@ -117,6 +122,7 @@ const PLANS: PlanData[] = [
     buttonText: "Select Plan",
     highlighted: false,
     isFree: false,
+    maxClicksLimit: 1000000,
   },
 ];
 
@@ -138,8 +144,16 @@ export default function AccountSettings() {
     enabled: !!user,
   });
 
-  const maxClicks = profile?.max_clicks ?? 0;
+  // Find the active plan based on the user's profile plan_name (fallback to Free)
+  const activePlan = PLANS.find(
+    (p) => p.name.toLowerCase() === (profile?.plan_name || 'free').toLowerCase()
+  ) || PLANS[0];
+
+  // Prefer the database value, but fallback to the plan's official limit
+  const maxClicks = profile?.max_clicks || activePlan.maxClicksLimit;
   const currentClicks = profile?.current_clicks ?? 0;
+  
+  // Prevent NaN (divide by zero) error for Free users
   const usagePercent = maxClicks > 0 ? Math.round((currentClicks / maxClicks) * 100) : 0;
   const planName = profile?.plan_name ?? "Free";
   const isFreePlan = planName === "Free";
