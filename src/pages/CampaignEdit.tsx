@@ -1,7 +1,7 @@
 import { useState, useEffect, KeyboardEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, X, AlertTriangle, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, X, AlertTriangle, Plus, Trash2, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { TRAFFIC_SOURCES, getPlanByName, getAllowedSources } from "@/lib/plan-config";
 
 const COUNTRIES = [
   { code: "US", name: "United States" }, { code: "BR", name: "Brazil" },
@@ -72,6 +73,20 @@ export default function CampaignEdit() {
     },
     enabled: !!user,
   });
+
+  const { data: profile } = useQuery({
+    queryKey: ["profile", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("profiles").select("*").eq("user_id", user!.id).single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const userPlan = getPlanByName(profile?.plan_name);
+  const allowedSources = getAllowedSources(userPlan);
+  const hasLockedSources = allowedSources.length < TRAFFIC_SOURCES.length;
 
   const { data: campaign } = useQuery({
     queryKey: ["campaign", id],
@@ -202,9 +217,25 @@ export default function CampaignEdit() {
                 <SelectValue placeholder="Select source" />
               </SelectTrigger>
               <SelectContent className="bg-card border-border">
-                <SelectItem value="tiktok">TikTok</SelectItem>
-                <SelectItem value="facebook">Facebook</SelectItem>
-                <SelectItem value="google">Google</SelectItem>
+                {allowedSources.map((src) => {
+                  const Icon = src.icon;
+                  return (
+                    <SelectItem key={src.key} value={src.key}>
+                      <span className="flex items-center gap-2">
+                        <Icon size={14} style={{ color: src.color }} />
+                        {src.name}
+                      </span>
+                    </SelectItem>
+                  );
+                })}
+                {hasLockedSources && (
+                  <SelectItem value="__locked" disabled>
+                    <span className="flex items-center gap-2 text-muted-foreground">
+                      <Lock size={14} />
+                      Upgrade plan to unlock more sources
+                    </span>
+                  </SelectItem>
+                )}
               </SelectContent>
             </Select>
           </div>
