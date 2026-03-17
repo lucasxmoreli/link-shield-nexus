@@ -15,12 +15,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-
-const sourceColors: Record<string, string> = {
-  tiktok: "bg-primary/20 text-primary",
-  facebook: "bg-blue-500/20 text-blue-400",
-  google: "bg-success/20 text-success",
-};
+import { getSourceByKey } from "@/lib/plan-config";
 
 export default function Campaigns() {
   const { user } = useAuth();
