@@ -15,26 +15,11 @@ export default function CampaignRedirect() {
 
     const resolve = async () => {
       try {
-        // Get real visitor IP via public API
-        let visitorIP = "0.0.0.0";
-        try {
-          const ipRes = await fetch("https://api.ipify.org?format=json", {
-            signal: AbortSignal.timeout(3000),
-          });
-          const ipData = await ipRes.json();
-          visitorIP = ipData.ip;
-        } catch {
-          // fallback IP if service is down
-        }
-
-        const visitorUA = navigator.userAgent;
-
-        // Call the filter edge function
+        // Call the filter edge function — IP is extracted server-side from headers
         const { data, error: fnError } = await supabase.functions.invoke("filter", {
           body: {
             campaign_hash: hash,
-            ip: visitorIP,
-            user_agent: visitorUA,
+            user_agent: navigator.userAgent,
             referer: document.referrer || null,
           },
         });
