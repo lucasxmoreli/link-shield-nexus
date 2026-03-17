@@ -36,15 +36,11 @@ export default function Auth() {
     setLoading(true);
     setInviteError("");
 
-    const { data, error } = await supabase
-      .from("invite_codes")
-      .select("id, is_used")
-      .eq("code", inviteCode.trim().toUpperCase())
-      .maybeSingle();
+    const { data: isValid, error } = await supabase.rpc("validate_invite_code", {
+      p_code: inviteCode.trim().toUpperCase(),
+    });
 
-    if (error || !data) {
-      setInviteError("This invite code is invalid or has already been used.");
-    } else if (data.is_used) {
+    if (error || !isValid) {
       setInviteError("This invite code is invalid or has already been used.");
     } else {
       setValidatedCode(inviteCode.trim().toUpperCase());
@@ -68,14 +64,16 @@ export default function Auth() {
       toast.error(error.message);
     } else {
       if (signUpData.user) {
-        await supabase
-          .from("invite_codes")
-          .update({
-            is_used: true,
-            used_by: signUpData.user.id,
-            used_at: new Date().toISOString(),
-          })
-          .eq("code", validatedCode);
+        const { data: used } = await supabase.rpc("use_invite_code", {
+          p_code: validatedCode,
+          p_user_id: signUpData.user.id,
+        });
+        if (!used) {
+          toast.error("Invite code was already consumed. Please contact the administrator.");
+          setView("login");
+          setLoading(false);
+          return;
+        }
       }
       toast.success("Account created! Check your email to confirm.");
       setView("login");
