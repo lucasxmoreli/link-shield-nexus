@@ -99,14 +99,14 @@ export default function Dashboard() {
   const feedData = recentLogs.length > 0 ? recentLogs : MOCK_FEED;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Command Center</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Real-time traffic intelligence & threat monitoring</p>
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Command Center</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 truncate">Real-time traffic intelligence & threat monitoring</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <span className="relative flex h-2.5 w-2.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[hsl(var(--success))] opacity-75" />
             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[hsl(var(--success))]" />
