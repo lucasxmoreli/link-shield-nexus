@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Activity, ShieldCheck, Target, Percent, Globe, Monitor, Smartphone, Tablet, Clock, MapPin } from "lucide-react";
+import { LiveThreatInterceptions } from "@/components/dashboard/LiveThreatInterceptions";
+import { useDopamineToast } from "@/components/dashboard/useDopamineToast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -32,6 +34,7 @@ const MOCK_FEED = [
 export default function Dashboard() {
   const { user } = useAuth();
   const [dateRange, setDateRange] = useState("7");
+  useDopamineToast();
 
   const { data: logs = [], isLoading } = useQuery({
     queryKey: ["requests_log", user?.id],
@@ -263,6 +266,10 @@ export default function Dashboard() {
         </Card>
       </div>
 
+      {/* Threat Interceptions + Live Traffic Log */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
+        <LiveThreatInterceptions />
+
       {/* Live Traffic Log */}
       <Card className="border-border bg-card">
         <CardHeader className="pb-2">
@@ -320,6 +327,7 @@ export default function Dashboard() {
           </Table>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }
