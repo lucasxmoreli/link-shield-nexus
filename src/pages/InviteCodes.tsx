@@ -192,7 +192,7 @@ export default function InviteCodes() {
             </Button>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 gap-2 sm:gap-4">
             {[
               { label: "Total", value: codes.length, color: "text-foreground" },
               { label: "Available", value: availableCount, color: "text-primary" },
