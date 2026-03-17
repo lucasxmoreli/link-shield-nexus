@@ -54,6 +54,8 @@ export default function CampaignEdit() {
   const [safeMethod, setSafeMethod] = useState("redirect");
   const [offerMode, setOfferMode] = useState<"single" | "ab">("single");
   const [offerUrl, setOfferUrl] = useState("");
+  const [offerPageB, setOfferPageB] = useState("");
+  const [abStormEnabled, setAbStormEnabled] = useState(false);
   const [offerMethod, setOfferMethod] = useState("redirect");
   const [abOffers, setAbOffers] = useState<OfferEntry[]>([
     { url: "", weight: 50 },
