@@ -59,8 +59,11 @@ export default function AccountSettings() {
   const maxClicks = (profile?.max_clicks && profile.max_clicks > 0) ? profile.max_clicks : activePlan.maxClicksLimit;
   const currentClicks = profile?.current_clicks ?? 0;
   
-  // Prevent NaN (divide by zero) error for Free users
-  const usagePercent = maxClicks > 0 ? Math.round((currentClicks / maxClicks) * 100) : 0;
+  const rawUsagePercent = maxClicks > 0 ? (currentClicks / maxClicks) * 100 : 0;
+  const usagePercent = Math.round(rawUsagePercent);
+  const usageDisplay = currentClicks > 0 && rawUsagePercent < 1 ? "< 1" : `${usagePercent}`;
+  const progressValue = currentClicks > 0 && usagePercent < 1 ? 1 : usagePercent;
+
   const planName = profile?.plan_name ?? "Free";
   const isFreePlan = planName === "Free";
 
@@ -68,9 +71,8 @@ export default function AccountSettings() {
   const maxDomains = profile?.max_domains || activePlan.maxDomains;
   const domainsPercent = maxDomains > 0 ? Math.round((domainsCount / maxDomains) * 100) : 0;
 
-  // Campaign usage (unlimited for paid plans, 0 for free)
-  const maxCampaigns = isFreePlan ? 0 : Infinity;
-  const campaignsLimited = maxCampaigns === 0;
+  // Campaign usage (unlimited for paid plans)
+  const campaignsUnlimited = !isFreePlan;
 
   const handlePlanClick = (plan: PlanData) => {
     if (plan.isFree) return;
