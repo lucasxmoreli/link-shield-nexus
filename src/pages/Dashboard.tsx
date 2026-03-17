@@ -266,6 +266,10 @@ export default function Dashboard() {
         </Card>
       </div>
 
+      {/* Threat Interceptions + Live Traffic Log */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
+        <LiveThreatInterceptions />
+
       {/* Live Traffic Log */}
       <Card className="border-border bg-card">
         <CardHeader className="pb-2">
