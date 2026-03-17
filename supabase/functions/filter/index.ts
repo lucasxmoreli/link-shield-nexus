@@ -3,95 +3,207 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// ─── GLOBAL BOT DETECTION ───
-const BOT_UA_REGEX = new RegExp(
+// ═══════════════════════════════════════════════════════════════
+// LAYER 1 — GLOBAL BOT DETECTION (catches everything first)
+// ═══════════════════════════════════════════════════════════════
+const GLOBAL_BOT_REGEX = new RegExp(
   [
-    "bot", "crawler", "spider", "scraper", "slurp",
-    "headlesschrome", "phantomjs", "puppeteer", "selenium",
-    "google-inspectiontool", "googlebot", "bingbot",
-    "yandexbot", "baiduspider", "duckduckbot",
+    // Generic bots & crawlers
+    "bot\\b", "crawler", "spider", "scraper", "slurp",
+    // Headless / automation
+    "headlesschrome", "phantomjs", "puppeteer", "selenium", "playwright",
+    "webdriver", "electron", "nightmare",
+    // Search engines
+    "googlebot", "google-inspectiontool", "adsbot-google", "mediapartners-google",
+    "bingbot", "yandexbot", "baiduspider", "duckduckbot", "sogou", "exabot",
+    // Social platform bots (broad catch — source-specific logic refines below)
     "facebookexternalhit", "facebot",
-    "bytespider", "semrushbot", "ahrefsbot", "mj12bot",
-    "dotbot", "rogerbot", "sogou", "exabot",
-    "ia_archiver", "archive.org_bot",
-    "curl", "wget", "httpie", "python-requests", "go-http-client",
-    "java\\/", "libwww", "lwp-trivial",
+    "bytespider", "twitterbot", "linkedinbot", "pinterestbot",
+    "snapchat", "snapbot",
+    // SEO / analytics bots
+    "semrushbot", "ahrefsbot", "mj12bot", "dotbot", "rogerbot", "screaming frog",
+    "majestic", "megaindex", "blexbot",
+    // Archival
+    "ia_archiver", "archive\\.org_bot",
+    // HTTP libraries / programmatic access
+    "curl\\/", "wget\\/", "httpie", "python-requests", "python-urllib",
+    "go-http-client", "java\\/", "libwww", "lwp-trivial", "okhttp",
+    "axios", "node-fetch", "undici", "got\\/", "superagent",
   ].join("|"),
   "i",
 );
 
-// Blocked ASN / datacenter org keywords
+// ═══════════════════════════════════════════════════════════════
+// LAYER 2 — DATACENTER / HOSTING ASN KEYWORDS
+// ═══════════════════════════════════════════════════════════════
 const BLOCKED_ORGS = [
-  "amazon", "google cloud", "facebook", "meta", "bytedance", "tiktok",
-  "datacenter", "hosting", "microsoft", "digitalocean", "ovh",
-  "hetzner", "linode", "vultr", "cloudflare", "oracle",
+  "amazon", "google cloud", "google llc", "facebook", "meta platforms",
+  "bytedance", "tiktok", "datacenter", "data center", "hosting",
+  "microsoft azure", "microsoft corporation", "digitalocean", "ovh",
+  "hetzner", "linode", "vultr", "cloudflare", "oracle cloud",
+  "alibaba cloud", "tencent cloud", "scaleway", "kamatera",
+  "contabo", "leaseweb", "rackspace", "softlayer",
 ];
 
-// ─── SOURCE-SPECIFIC HEURISTICS ───
+// ═══════════════════════════════════════════════════════════════
+// LAYER 3 — SOURCE-SPECIFIC HEURISTIC FUNCTIONS
+// Each returns { block, suspicious, reason }
+// block = hard reject → safe page
+// suspicious = soft flag (logged but allowed through for now)
+// ═══════════════════════════════════════════════════════════════
 
-function checkFacebookInstagram(uaLower: string, referer: string | null, queryParams: Record<string, string>): { block: boolean; reason: string } {
-  // Block Facebook's automated review bots
-  if (/facebookexternalhit|facebot|facebook.*crawler/i.test(uaLower)) {
-    return { block: true, reason: "fb_review_bot" };
-  }
-  // If no fbclid and no Facebook referer, suspicious but not blocking (soft signal)
-  // We allow it through but could flag in the future
-  return { block: false, reason: "" };
+interface HeuristicResult {
+  block: boolean;
+  suspicious: boolean;
+  reason: string;
 }
 
-function checkTikTok(uaLower: string, deviceType: string): { block: boolean; reason: string } {
-  // TikTok in-app browser identifiers
-  const tiktokUASignals = ["bytelocale", "trill", "tiktok", "musical_ly", "bytedance"];
-  const hasTikTokUA = tiktokUASignals.some((sig) => uaLower.includes(sig));
+const PASS: HeuristicResult = { block: false, suspicious: false, reason: "" };
 
+function checkFacebook(ua: string, params: Record<string, string>, referer: string | null): HeuristicResult {
+  // Facebook review bots
+  if (/facebookexternalhit|facebot|facebook.*crawler/i.test(ua)) {
+    return { block: true, suspicious: false, reason: "fb_review_bot" };
+  }
+  // Missing fbclid AND no FB referer → suspicious (could be direct link share)
+  const hasFbclid = !!params.fbclid;
+  const hasFbReferer = referer ? /facebook\.com|fb\.com|fbcdn\.net/i.test(referer) : false;
+  if (!hasFbclid && !hasFbReferer) {
+    return { block: false, suspicious: true, reason: "fb_no_click_id" };
+  }
+  return PASS;
+}
+
+function checkInstagram(ua: string, params: Record<string, string>, referer: string | null): HeuristicResult {
+  // IG shares the Facebook bot infra
+  if (/facebookexternalhit|facebot/i.test(ua)) {
+    return { block: true, suspicious: false, reason: "ig_meta_bot" };
+  }
+  const hasIgshid = !!params.igshid;
+  const hasFbclid = !!params.fbclid;
+  const hasIgReferer = referer ? /instagram\.com|cdninstagram\.com/i.test(referer) : false;
+  if (!hasIgshid && !hasFbclid && !hasIgReferer) {
+    return { block: false, suspicious: true, reason: "ig_no_click_id" };
+  }
+  return PASS;
+}
+
+function checkTikTok(ua: string, deviceType: string, params: Record<string, string>): HeuristicResult {
   // ByteSpider is TikTok's aggressive crawler — always block
-  if (uaLower.includes("bytespider")) {
-    return { block: true, reason: "tiktok_bytespider" };
+  if (/bytespider/i.test(ua)) {
+    return { block: true, suspicious: false, reason: "tiktok_bytespider" };
   }
+  // TikTok in-app browser signatures
+  const tiktokSignals = ["bytelocale", "trill", "tiktok", "musical_ly", "bytedance", "tt_webid"];
+  const hasTikTokUA = tiktokSignals.some((s) => ua.includes(s));
+  const hasTtclid = !!params.ttclid;
 
-  // Desktop browser clicking a TikTok mobile ad is highly suspicious
+  // Desktop browser on a TikTok campaign with no TikTok UA → highly suspicious
   if (deviceType === "desktop" && !hasTikTokUA) {
-    return { block: true, reason: "tiktok_desktop_suspicious" };
+    return { block: true, suspicious: false, reason: "tiktok_desktop_no_app" };
   }
-
-  return { block: false, reason: "" };
+  // Mobile but no TikTok UA and no ttclid → suspicious
+  if (!hasTikTokUA && !hasTtclid) {
+    return { block: false, suspicious: true, reason: "tiktok_no_signature" };
+  }
+  return PASS;
 }
 
-function checkGoogleAds(uaLower: string, queryParams: Record<string, string>): { block: boolean; reason: string } {
-  // Block Google's inspection/review tools
-  if (/google-inspectiontool|adsbot-google|mediapartners-google/i.test(uaLower)) {
-    return { block: true, reason: "google_review_bot" };
+function checkGoogle(ua: string, params: Record<string, string>): HeuristicResult {
+  // Google ad review bots
+  if (/adsbot-google|mediapartners-google|google-inspectiontool|google-adwords/i.test(ua)) {
+    return { block: true, suspicious: false, reason: "google_review_bot" };
   }
-  return { block: false, reason: "" };
+  // Check for Google click IDs
+  const hasGclid = !!params.gclid;
+  const hasWbraid = !!params.wbraid;
+  const hasGbraid = !!params.gbraid;
+  if (!hasGclid && !hasWbraid && !hasGbraid) {
+    return { block: false, suspicious: true, reason: "google_no_click_id" };
+  }
+  return PASS;
 }
 
-function checkSnapchat(uaLower: string): { block: boolean; reason: string } {
-  if (/snapchat.*bot|snapchat.*crawler/i.test(uaLower)) {
-    return { block: true, reason: "snapchat_bot" };
+function checkYouTube(ua: string, params: Record<string, string>): HeuristicResult {
+  // YouTube uses Google's ad infra
+  if (/adsbot-google|mediapartners-google|google-inspectiontool/i.test(ua)) {
+    return { block: true, suspicious: false, reason: "youtube_google_bot" };
   }
-  return { block: false, reason: "" };
+  const hasGclid = !!params.gclid;
+  const hasWbraid = !!params.wbraid;
+  if (!hasGclid && !hasWbraid) {
+    return { block: false, suspicious: true, reason: "youtube_no_click_id" };
+  }
+  return PASS;
 }
 
-function checkTwitter(uaLower: string): { block: boolean; reason: string } {
-  if (/twitterbot/i.test(uaLower)) {
-    return { block: true, reason: "twitter_bot" };
+function checkTwitter(ua: string, params: Record<string, string>): HeuristicResult {
+  if (/twitterbot/i.test(ua)) {
+    return { block: true, suspicious: false, reason: "twitter_bot" };
   }
-  return { block: false, reason: "" };
+  const hasTwclid = !!params.twclid;
+  const hasTwitterRef = false; // referer often stripped by X
+  if (!hasTwclid) {
+    return { block: false, suspicious: true, reason: "twitter_no_click_id" };
+  }
+  return PASS;
 }
 
-function checkLinkedIn(uaLower: string): { block: boolean; reason: string } {
-  if (/linkedinbot/i.test(uaLower)) {
-    return { block: true, reason: "linkedin_bot" };
+function checkPinterest(ua: string, params: Record<string, string>): HeuristicResult {
+  if (/pinterestbot|pinterest.*crawler/i.test(ua)) {
+    return { block: true, suspicious: false, reason: "pinterest_bot" };
   }
-  return { block: false, reason: "" };
+  const hasEpik = !!params.epik;
+  if (!hasEpik) {
+    return { block: false, suspicious: true, reason: "pinterest_no_click_id" };
+  }
+  return PASS;
 }
+
+function checkLinkedIn(ua: string, params: Record<string, string>): HeuristicResult {
+  if (/linkedinbot/i.test(ua)) {
+    return { block: true, suspicious: false, reason: "linkedin_bot" };
+  }
+  const hasLiFatId = !!params.li_fat_id;
+  if (!hasLiFatId) {
+    return { block: false, suspicious: true, reason: "linkedin_no_click_id" };
+  }
+  return PASS;
+}
+
+function checkSnapchat(ua: string, params: Record<string, string>): HeuristicResult {
+  if (/snapchat|snapbot/i.test(ua)) {
+    return { block: true, suspicious: false, reason: "snapchat_bot" };
+  }
+  const hasScCid = !!params.ScCid || !!params.sccid;
+  if (!hasScCid) {
+    return { block: false, suspicious: true, reason: "snapchat_no_click_id" };
+  }
+  return PASS;
+}
+
+function checkKwai(ua: string, referer: string | null): HeuristicResult {
+  // Kwai doesn't have well-known bots yet — rely on referer
+  if (/kwaibot|kwaicrawler/i.test(ua)) {
+    return { block: true, suspicious: false, reason: "kwai_bot" };
+  }
+  const hasKwaiReferer = referer ? /kwai\.com|ksweb/i.test(referer) : false;
+  if (!hasKwaiReferer) {
+    return { block: false, suspicious: true, reason: "kwai_no_referer" };
+  }
+  return PASS;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MAIN HANDLER
+// ═══════════════════════════════════════════════════════════════
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
@@ -145,7 +257,7 @@ serve(async (req) => {
     const uaLower = user_agent.toLowerCase();
     const params: Record<string, string> = query_params || {};
 
-    // Helper: log request and return response
+    // Helper: log & respond
     const logAndRespond = async (action: "safe_page" | "offer_page" | "bot_blocked", countryCode: string) => {
       await supabase.from("requests_log").insert({
         user_id: campaign.user_id,
@@ -164,84 +276,106 @@ serve(async (req) => {
       );
     };
 
-    // ─── STEP 3: Global Bot Detection (baseline) ───
-    if (BOT_UA_REGEX.test(uaLower)) {
+    // ─── STEP 3: LAYER 1 — Global Bot Detection ───
+    if (GLOBAL_BOT_REGEX.test(user_agent)) {
+      console.log(`[BLOCKED] Global bot regex matched for IP ${ip}`);
       return await logAndRespond("bot_blocked", "XX");
     }
 
-    // ─── STEP 4: Source-Specific Heuristics ───
+    // ─── STEP 4: LAYER 2 — Source-Specific Heuristics ───
     const source = (campaign.traffic_source || "").toLowerCase();
-    let sourceCheck: { block: boolean; reason: string } = { block: false, reason: "" };
+    let result: HeuristicResult = PASS;
 
     switch (source) {
       case "facebook":
+        result = checkFacebook(uaLower, params, referer);
+        break;
       case "instagram":
-        sourceCheck = checkFacebookInstagram(uaLower, referer, params);
+        result = checkInstagram(uaLower, params, referer);
         break;
       case "tiktok":
-        sourceCheck = checkTikTok(uaLower, deviceType);
+        result = checkTikTok(uaLower, deviceType, params);
         break;
-      case "google ads":
-        sourceCheck = checkGoogleAds(uaLower, params);
+      case "google":
+        result = checkGoogle(uaLower, params);
         break;
-      case "snapchat":
-        sourceCheck = checkSnapchat(uaLower);
+      case "youtube":
+        result = checkYouTube(uaLower, params);
         break;
       case "twitter":
-        sourceCheck = checkTwitter(uaLower);
+        result = checkTwitter(uaLower, params);
+        break;
+      case "pinterest":
+        result = checkPinterest(uaLower, params);
         break;
       case "linkedin":
-        sourceCheck = checkLinkedIn(uaLower);
+        result = checkLinkedIn(uaLower, params);
         break;
-      // youtube, pinterest, native ads, etc. — fallback to global detection only
+      case "snapchat":
+        result = checkSnapchat(uaLower, params);
+        break;
+      case "kwai":
+        result = checkKwai(uaLower, referer);
+        break;
       default:
+        // Unknown or null source — global bot detection already ran, allow through
         break;
     }
 
-    if (sourceCheck.block) {
-      console.log(`Source-specific block: ${source} — ${sourceCheck.reason}`);
+    if (result.block) {
+      console.log(`[BLOCKED] Source heuristic: ${source} — ${result.reason} — IP ${ip}`);
       return await logAndRespond("bot_blocked", "XX");
     }
 
-    // ─── STEP 5: Proxy/VPN detection via Proxycheck.io ───
-    const proxyCheckKey = Deno.env.get("PROXYCHECK_API_KEY")!;
-    try {
-      const proxyRes = await fetch(`https://proxycheck.io/v2/${ip}?key=${proxyCheckKey}&vpn=1`, {
-        signal: AbortSignal.timeout(3000),
-      });
-      const proxyData = await proxyRes.json();
-      if (proxyData[ip] && (proxyData[ip].proxy === "yes" || proxyData[ip].type === "VPN")) {
-        return await logAndRespond("bot_blocked", proxyData[ip].country || "XX");
-      }
-    } catch {
-      console.warn("Proxycheck.io request failed, skipping");
+    if (result.suspicious) {
+      console.log(`[SUSPICIOUS] ${source} — ${result.reason} — IP ${ip} — allowing through`);
+      // Future: could redirect to safe page in strict mode
     }
 
-    // ─── STEP 6: ASN/Datacenter detection via IPinfo.io ───
-    const ipinfoToken = Deno.env.get("IPINFO_API_KEY")!;
-    let countryCode = "XX";
-    try {
-      const ipRes = await fetch(`https://ipinfo.io/${ip}/json?token=${ipinfoToken}`, {
-        signal: AbortSignal.timeout(3000),
-      });
-      const ipData = await ipRes.json();
-      countryCode = ipData.country || "XX";
-
-      if (ipData.org) {
-        const orgLower = ipData.org.toLowerCase();
-        if (BLOCKED_ORGS.some((keyword) => orgLower.includes(keyword))) {
-          return await logAndRespond("bot_blocked", countryCode);
+    // ─── STEP 5: LAYER 3 — Proxy/VPN detection via Proxycheck.io ───
+    const proxyCheckKey = Deno.env.get("PROXYCHECK_API_KEY");
+    if (proxyCheckKey) {
+      try {
+        const proxyRes = await fetch(`https://proxycheck.io/v2/${ip}?key=${proxyCheckKey}&vpn=1`, {
+          signal: AbortSignal.timeout(3000),
+        });
+        const proxyData = await proxyRes.json();
+        if (proxyData[ip] && (proxyData[ip].proxy === "yes" || proxyData[ip].type === "VPN")) {
+          return await logAndRespond("bot_blocked", proxyData[ip].country || "XX");
         }
+      } catch {
+        console.warn("Proxycheck.io request failed, skipping");
       }
-    } catch {
-      console.warn("IPinfo.io request failed, skipping");
     }
 
-    // ─── STEP 7: User is real — increment clicks & redirect to offer ───
+    // ─── STEP 6: LAYER 4 — ASN/Datacenter detection via IPinfo.io ───
+    const ipinfoToken = Deno.env.get("IPINFO_API_KEY");
+    let countryCode = "XX";
+    if (ipinfoToken) {
+      try {
+        const ipRes = await fetch(`https://ipinfo.io/${ip}/json?token=${ipinfoToken}`, {
+          signal: AbortSignal.timeout(3000),
+        });
+        const ipData = await ipRes.json();
+        countryCode = ipData.country || "XX";
+
+        if (ipData.org) {
+          const orgLower = ipData.org.toLowerCase();
+          if (BLOCKED_ORGS.some((kw) => orgLower.includes(kw))) {
+            console.log(`[BLOCKED] Datacenter ASN: ${ipData.org} — IP ${ip}`);
+            return await logAndRespond("bot_blocked", countryCode);
+          }
+        }
+      } catch {
+        console.warn("IPinfo.io request failed, skipping");
+      }
+    }
+
+    // ─── STEP 7: PASSED — Increment clicks & redirect to offer ───
     if (profile) {
       await supabase
         .from("profiles")
-        .update({ current_clicks: profile.current_clicks + 1 })
+        .update({ current_clicks: (profile.current_clicks ?? 0) + 1 })
         .eq("user_id", campaign.user_id);
     }
 
