@@ -271,6 +271,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      process_billing_renewals: { Args: never; Returns: Json }
       redeem_promo_code: { Args: { p_code: string }; Returns: Json }
       use_invite_code: {
         Args: { p_code: string; p_user_id: string }
