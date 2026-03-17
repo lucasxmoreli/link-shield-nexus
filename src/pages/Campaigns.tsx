@@ -163,7 +163,19 @@ export default function Campaigns() {
                   <TableRow key={c.id} className="border-border">
                     <TableCell className="font-mono text-sm text-primary">{c.hash}</TableCell>
                     <TableCell>{c.name}</TableCell>
-                    <TableCell><Badge variant="outline" className={`${sourceColors[c.traffic_source]} border-0`}>{c.traffic_source}</Badge></TableCell>
+                    <TableCell>
+                      {(() => {
+                        const src = getSourceByKey(c.traffic_source);
+                        if (!src) return <Badge variant="outline" className="border-border">{c.traffic_source}</Badge>;
+                        const Icon = src.icon;
+                        return (
+                          <Badge variant="outline" className="border-border gap-1.5">
+                            <Icon size={12} style={{ color: src.color }} />
+                            {src.name}
+                          </Badge>
+                        );
+                      })()}
+                    </TableCell>
                     <TableCell className="text-muted-foreground text-sm">{new Date(c.created_at).toLocaleDateString("en-US")}</TableCell>
                     <TableCell>
                       <Switch
