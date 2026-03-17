@@ -46,7 +46,7 @@ export const PLANS: PlanData[] = [
     features: [
       { text: "0 clicks", available: false },
       { text: "0 domains", available: false },
-      { text: "No active campaigns permitted", available: false },
+      { text: "0 campaigns", available: false },
       { text: "View-only mode", available: false },
     ],
     visibleSources: 0,
@@ -55,6 +55,7 @@ export const PLANS: PlanData[] = [
     isFree: true,
     maxClicksLimit: 0,
     maxDomains: 0,
+    maxCampaigns: 0,
   },
   {
     name: "BASIC PLAN",
@@ -64,6 +65,7 @@ export const PLANS: PlanData[] = [
     features: [
       { text: "20,000 clicks", available: true },
       { text: "3 domains", available: true },
+      { text: "5 campaigns", available: true },
       { text: "$0.01 per extra click", available: true },
       { text: "Vip support: Text us in the chat", available: true },
     ],
@@ -73,6 +75,7 @@ export const PLANS: PlanData[] = [
     isFree: false,
     maxClicksLimit: 20000,
     maxDomains: 3,
+    maxCampaigns: 5,
   },
   {
     name: "PRO PLAN",
@@ -82,6 +85,7 @@ export const PLANS: PlanData[] = [
     features: [
       { text: "100,000 clicks", available: true },
       { text: "10 domains", available: true },
+      { text: "20 campaigns", available: true },
       { text: "$0.004 per extra click", available: true },
       { text: "Vip support: Text us in the chat", available: true },
     ],
@@ -92,6 +96,7 @@ export const PLANS: PlanData[] = [
     isFree: false,
     maxClicksLimit: 100000,
     maxDomains: 10,
+    maxCampaigns: 20,
   },
   {
     name: "FREEDOM PLAN",
@@ -101,6 +106,7 @@ export const PLANS: PlanData[] = [
     features: [
       { text: "300,000 clicks", available: true },
       { text: "20 domains", available: true },
+      { text: "50 campaigns", available: true },
       { text: "$0.002 per extra click", available: true },
       { text: "Vip support: Text us in the chat", available: true },
     ],
@@ -110,6 +116,7 @@ export const PLANS: PlanData[] = [
     isFree: false,
     maxClicksLimit: 300000,
     maxDomains: 20,
+    maxCampaigns: 50,
   },
   {
     name: "ENTERPRISE CONQUEST",
@@ -119,6 +126,7 @@ export const PLANS: PlanData[] = [
     features: [
       { text: "1,000,000 clicks", available: true },
       { text: "25 domains", available: true },
+      { text: "Unlimited campaigns", available: true },
       { text: "$0.001 per extra click", available: true },
       { text: "Vip support: Text us in the chat", available: true },
     ],
@@ -128,6 +136,7 @@ export const PLANS: PlanData[] = [
     isFree: false,
     maxClicksLimit: 1000000,
     maxDomains: 25,
+    maxCampaigns: -1,
   },
 ];
 
