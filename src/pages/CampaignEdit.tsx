@@ -126,6 +126,7 @@ export default function CampaignEdit() {
         traffic_source: trafficSource,
         safe_url: safeUrl,
         offer_url: offerMode === "single" ? offerUrl : abOffers.map((o) => o.url).join(","),
+        offer_page_b: abStormEnabled && offerPageB.trim() ? offerPageB.trim() : null,
         safe_page_method: safeMethod,
         offer_page_method: offerMethod,
         target_countries: targetCountries,
