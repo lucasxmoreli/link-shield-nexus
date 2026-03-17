@@ -74,6 +74,20 @@ export default function CampaignEdit() {
     enabled: !!user,
   });
 
+  const { data: profile } = useQuery({
+    queryKey: ["profile", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("profiles").select("*").eq("user_id", user!.id).single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const userPlan = getPlanByName(profile?.plan_name);
+  const allowedSources = getAllowedSources(userPlan);
+  const hasLockedSources = allowedSources.length < TRAFFIC_SOURCES.length;
+
   const { data: campaign } = useQuery({
     queryKey: ["campaign", id],
     queryFn: async () => {
