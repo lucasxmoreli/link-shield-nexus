@@ -130,7 +130,7 @@ export default function Dashboard() {
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
         {/* Traffic Area Chart */}
         <Card className="border-border bg-card xl:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
