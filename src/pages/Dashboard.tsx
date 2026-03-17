@@ -48,9 +48,11 @@ export default function Dashboard() {
 
   const stats = {
     total_requests: logs.length,
-    safe_page: logs.filter((l) => l.action_taken === "safe_page").length,
     offer_page: logs.filter((l) => l.action_taken === "offer_page").length,
-    bot_blocked: logs.filter((l) => l.action_taken === "bot_blocked").length,
+    bots_blocked: logs.filter((l) => l.action_taken === "bot_blocked" || l.action_taken === "safe_page").length,
+    pass_rate: logs.length > 0
+      ? ((logs.filter((l) => l.action_taken === "offer_page").length / logs.length) * 100).toFixed(1)
+      : "0.0",
   };
 
   const days = parseInt(dateRange);
