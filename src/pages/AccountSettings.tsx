@@ -6,10 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Check, X, Facebook, Instagram, Youtube, Search, Smartphone, Twitter, Camera, Pin, Linkedin, Flame, ArrowRight } from "lucide-react";
+import { Check, X, Facebook, Instagram, Youtube, Search, Smartphone, Twitter, Camera, Pin, Linkedin, Flame, ArrowRight, Zap } from "lucide-react";
 
 const TRAFFIC_SOURCES = [
   { name: "Facebook", icon: Facebook, color: "hsl(221 44% 41%)" },
