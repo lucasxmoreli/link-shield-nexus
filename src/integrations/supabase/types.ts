@@ -28,7 +28,7 @@ export type Database = {
           tags: string[] | null
           target_countries: string[] | null
           target_devices: string[] | null
-          traffic_source: Database["public"]["Enums"]["traffic_source"]
+          traffic_source: string
           user_id: string
         }
         Insert: {
@@ -44,7 +44,7 @@ export type Database = {
           tags?: string[] | null
           target_countries?: string[] | null
           target_devices?: string[] | null
-          traffic_source: Database["public"]["Enums"]["traffic_source"]
+          traffic_source: string
           user_id: string
         }
         Update: {
@@ -60,7 +60,7 @@ export type Database = {
           tags?: string[] | null
           target_countries?: string[] | null
           target_devices?: string[] | null
-          traffic_source?: Database["public"]["Enums"]["traffic_source"]
+          traffic_source?: string
           user_id?: string
         }
         Relationships: []
@@ -242,7 +242,6 @@ export type Database = {
       action_taken: "safe_page" | "offer_page" | "bot_blocked"
       app_role: "admin" | "moderator" | "user"
       device_type: "mobile" | "desktop"
-      traffic_source: "tiktok" | "facebook" | "google"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -373,7 +372,6 @@ export const Constants = {
       action_taken: ["safe_page", "offer_page", "bot_blocked"],
       app_role: ["admin", "moderator", "user"],
       device_type: ["mobile", "desktop"],
-      traffic_source: ["tiktok", "facebook", "google"],
     },
   },
 } as const
