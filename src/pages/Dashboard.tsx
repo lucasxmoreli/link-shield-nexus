@@ -34,6 +34,7 @@ const MOCK_FEED = [
 export default function Dashboard() {
   const { user } = useAuth();
   const [dateRange, setDateRange] = useState("7");
+  useDopamineToast();
 
   const { data: logs = [], isLoading } = useQuery({
     queryKey: ["requests_log", user?.id],
