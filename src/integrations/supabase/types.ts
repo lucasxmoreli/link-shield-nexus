@@ -21,6 +21,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           name: string
+          offer_page_b: string | null
           offer_page_method: string
           offer_url: string
           safe_page_method: string
@@ -37,6 +38,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name: string
+          offer_page_b?: string | null
           offer_page_method?: string
           offer_url: string
           safe_page_method?: string
@@ -53,6 +55,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name?: string
+          offer_page_b?: string | null
           offer_page_method?: string
           offer_url?: string
           safe_page_method?: string
