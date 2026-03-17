@@ -283,7 +283,7 @@ export default function AccountSettings() {
               <div
                 key={plan.name}
                 className={`
-                  relative min-w-[300px] flex-shrink-0 snap-center flex flex-col rounded-xl border p-6
+                  relative min-w-[260px] sm:min-w-[300px] flex-shrink-0 snap-center flex flex-col rounded-xl border p-4 sm:p-6
                   bg-card text-card-foreground
                   ${plan.highlighted
                     ? "border-primary/50 ring-1 ring-primary/30 shadow-[0_0_30px_hsl(271_81%_56%/0.15)]"

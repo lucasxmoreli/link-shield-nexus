@@ -284,7 +284,7 @@ export default function InviteCodes() {
             ) : allProfiles.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground text-sm">No registered users found.</div>
             ) : (
-              <Table>
+              <Table className="min-w-[650px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead>User Email</TableHead>
