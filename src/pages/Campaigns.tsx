@@ -105,7 +105,8 @@ export default function Campaigns() {
 
   const handleCreateClick = () => {
     if (isFreePlan) {
-      toast.error("Upgrade your plan to create campaigns.");
+      toast.error("Upgrade your plan to create campaigns. Redirecting...");
+      navigate("/billing");
       return;
     }
     navigate("/campaigns/new");

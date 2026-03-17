@@ -170,7 +170,8 @@ export default function Domains() {
 
   const handleAddClick = () => {
     if (isLimitReached) {
-      toast.error("Domain limit reached. Please upgrade your plan to add more domains.");
+      toast.error("Domain limit reached. Redirecting to plans...");
+      navigate("/billing");
       return;
     }
     setOpen(true);
