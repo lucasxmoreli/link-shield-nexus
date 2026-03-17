@@ -12,6 +12,7 @@ import Campaigns from "./pages/Campaigns";
 import CampaignEdit from "./pages/CampaignEdit";
 import Requests from "./pages/Requests";
 import AccountSettings from "./pages/AccountSettings";
+import Billing from "./pages/Billing";
 import Auth from "./pages/Auth";
 import CloakTest from "./pages/CloakTest";
 import InviteCodes from "./pages/InviteCodes";
@@ -58,6 +59,7 @@ const App = () => (
               <Route path="/campaigns/:id/edit" element={<CampaignEdit />} />
               <Route path="/requests" element={<Requests />} />
               <Route path="/cloak-test" element={<CloakTest />} />
+              <Route path="/billing" element={<Billing />} />
               <Route path="/invite-codes" element={<InviteCodes />} />
               <Route path="/settings" element={<AccountSettings />} />
             </Route>

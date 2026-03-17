@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { Plus, CheckCircle, XCircle, Trash2, ShieldCheck, Copy, RefreshCw, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -82,6 +83,7 @@ function DnsSteps({ domain }: { domain: { id: string; url: string } }) {
 export default function Domains() {
   const { user } = useAuth();
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [dnsDialogDomain, setDnsDialogDomain] = useState<{ id: string; url: string } | null>(null);
   const [url, setUrl] = useState("");
@@ -168,7 +170,8 @@ export default function Domains() {
 
   const handleAddClick = () => {
     if (isLimitReached) {
-      toast.error("Domain limit reached. Please upgrade your plan to add more domains.");
+      toast.error("Domain limit reached. Redirecting to plans...");
+      navigate("/billing");
       return;
     }
     setOpen(true);
