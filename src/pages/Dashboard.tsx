@@ -281,7 +281,7 @@ export default function Dashboard() {
           </div>
         </CardHeader>
         <CardContent className="p-0 overflow-x-auto">
-          <Table>
+          <Table className="min-w-[600px]">
             <TableHeader>
               <TableRow className="border-border hover:bg-transparent">
                 <TableHead className="text-muted-foreground text-xs uppercase tracking-wider">Time</TableHead>
