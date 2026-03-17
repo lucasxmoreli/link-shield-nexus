@@ -14,14 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-
-const PLAN_MAX_DOMAINS: Record<string, number> = {
-  free: 0,
-  basic: 3,
-  pro: 10,
-  freedom: 20,
-  enterprise: 25,
-};
+import { getPlanByName } from "@/lib/plan-config";
 
 function DnsSteps({ domain }: { domain: { id: string; url: string } }) {
   const hostname = domain.url.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
@@ -108,8 +101,8 @@ export default function Domains() {
     enabled: !!user,
   });
 
-  const planName = (profile?.plan_name || "Free").toLowerCase();
-  const maxDomains = profile?.max_domains || PLAN_MAX_DOMAINS[planName] || 0;
+  const planConfig = getPlanByName(profile?.plan_name);
+  const maxDomains = planConfig.maxDomains;
   const currentDomains = domains.length;
   const isLimitReached = maxDomains <= 0 || currentDomains >= maxDomains;
   const usagePercent = maxDomains > 0 ? Math.round((currentDomains / maxDomains) * 100) : 0;

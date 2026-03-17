@@ -15,7 +15,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { getSourceByKey } from "@/lib/plan-config";
+import { getSourceByKey, getPlanByName } from "@/lib/plan-config";
 
 export default function Campaigns() {
   const { user } = useAuth();
@@ -36,7 +36,8 @@ export default function Campaigns() {
     enabled: !!user,
   });
 
-  const isFreePlan = (profile?.plan_name || "Free").toLowerCase() === "free" || (profile?.max_clicks ?? 0) === 0;
+  const planConfig = getPlanByName(profile?.plan_name);
+  const isFreePlan = planConfig.isFree;
 
   const { data: campaigns = [], isLoading } = useQuery({
     queryKey: ["campaigns", user?.id],

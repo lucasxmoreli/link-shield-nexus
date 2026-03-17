@@ -179,7 +179,9 @@ export default function Billing() {
       const endDate = new Date(result.billing_cycle_end).toLocaleDateString();
       toast({ title: "Plan upgraded successfully!", description: `You're now on ${result.plan_name}. Valid until ${endDate}.` });
       setPromoCode("");
-      queryClient.invalidateQueries({ queryKey: ["profile", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      queryClient.invalidateQueries({ queryKey: ["domains"] });
+      queryClient.invalidateQueries({ queryKey: ["campaigns"] });
     } catch (err: any) {
       toast({ title: "Redemption failed", description: err.message || "Invalid or expired code", variant: "destructive" });
     } finally {
