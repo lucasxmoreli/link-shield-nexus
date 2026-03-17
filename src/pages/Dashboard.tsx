@@ -122,9 +122,9 @@ export default function Dashboard() {
         ) : (
           <>
             <StatCard title="Total Requests" value={stats.total_requests} icon={Activity} trend={{ value: "+12% this week", positive: true }} />
-            <StatCard title="Safe Page" value={stats.safe_page} icon={ShieldCheck} variant="primary" trend={{ value: "+5% this week", positive: true }} />
+            <StatCard title="Pass Rate" value={`${stats.pass_rate}%`} icon={Percent} variant="primary" trend={{ value: "Real traffic ratio", positive: true }} />
             <StatCard title="Offer Page" value={stats.offer_page} icon={Target} variant="success" trend={{ value: "+18% this week", positive: true }} />
-            <StatCard title="Bots Blocked" value={stats.bot_blocked} icon={Bug} variant="destructive" trend={{ value: "-3% vs last week", positive: false }} />
+            <StatCard title="Bots Blocked" value={stats.bots_blocked} icon={ShieldCheck} variant="destructive" trend={{ value: "All rejected traffic", positive: false }} />
           </>
         )}
       </div>
