@@ -225,7 +225,7 @@ export default function InviteCodes() {
             ) : codes.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground text-sm">No codes created yet.</div>
             ) : (
-              <Table>
+              <Table className="min-w-[600px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Code</TableHead>
