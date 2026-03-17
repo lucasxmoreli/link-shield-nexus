@@ -168,10 +168,7 @@ export default function AccountSettings() {
     enabled: !!user,
   });
 
-  // Find the active plan based on the user's profile plan_name (fallback to Free)
-  const activePlan = PLANS.find(
-    (p) => p.name.toLowerCase() === (profile?.plan_name || 'free').toLowerCase()
-  ) || PLANS[0];
+  const activePlan = getPlanByName(profile?.plan_name);
 
   // Prefer the database value if it's set and non-zero, otherwise derive from plan name
   const maxClicks = (profile?.max_clicks && profile.max_clicks > 0) ? profile.max_clicks : activePlan.maxClicksLimit;
