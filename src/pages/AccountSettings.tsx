@@ -293,7 +293,9 @@ export default function AccountSettings() {
                 key={plan.name}
                 className={`
                   relative min-w-[260px] sm:min-w-[300px] flex-shrink-0 snap-center flex flex-col rounded-xl border p-4 sm:p-6
-                  bg-card text-card-foreground
+                  bg-card text-card-foreground cursor-pointer
+                  hover:-translate-y-3 hover:scale-[1.03] hover:shadow-[0_0_50px_hsl(271,81%,56%,0.25)]
+                  transition-all duration-300 ease-out
                   ${plan.highlighted
                     ? "border-primary/50 ring-1 ring-primary/30 shadow-[0_0_30px_hsl(271_81%_56%/0.15)]"
                     : "border-border"
