@@ -180,8 +180,7 @@ export default function AccountSettings() {
   const isFreePlan = planName === "Free";
 
   // Domain usage
-  const PLAN_MAX_DOMAINS: Record<string, number> = { free: 0, "basic plan": 3, "pro plan": 10, "freedom plan": 20, "enterprise conquest": 25 };
-  const maxDomains = profile?.max_domains || PLAN_MAX_DOMAINS[activePlan.name.toLowerCase()] || 0;
+  const maxDomains = profile?.max_domains || activePlan.maxDomains;
   const domainsPercent = maxDomains > 0 ? Math.round((domainsCount / maxDomains) * 100) : 0;
 
   // Campaign usage (unlimited for paid plans, 0 for free)
