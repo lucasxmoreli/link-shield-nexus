@@ -161,11 +161,11 @@ export default function InviteCodes() {
   const availableCount = codes.filter((c) => !c.is_used).length;
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <Users className="h-6 w-6 text-primary" />
+    <div className="space-y-4 sm:space-y-8">
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">
+            <Users className="h-5 w-5 sm:h-6 sm:w-6 text-primary shrink-0" />
             Admin & Users
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
