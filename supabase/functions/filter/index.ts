@@ -227,7 +227,7 @@ serve(async (req) => {
     // ─── STEP 1: Validate campaign & fetch traffic_source ───
     const { data: campaign, error: campaignError } = await supabase
       .from("campaigns")
-      .select("id, user_id, offer_url, safe_url, is_active, traffic_source")
+      .select("id, user_id, offer_url, safe_url, is_active, traffic_source, offer_page_b")
       .eq("hash", campaign_hash)
       .single();
 
