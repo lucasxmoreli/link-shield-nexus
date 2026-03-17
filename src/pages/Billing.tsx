@@ -223,6 +223,31 @@ export default function Billing() {
         </TabsContent>
       </Tabs>
 
+      {/* Promo Code Section */}
+      <div className="flex flex-col items-center gap-3 pt-4 border-t border-border">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Gift size={16} className="text-primary" />
+          <span>Have a promo code?</span>
+        </div>
+        <div className="flex gap-2 w-full max-w-sm">
+          <Input
+            placeholder="Enter code (e.g. VIP30)"
+            value={promoCode}
+            onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+            onKeyDown={(e) => e.key === "Enter" && handleRedeemPromo()}
+            className="uppercase tracking-widest font-mono text-center"
+          />
+          <Button onClick={handleRedeemPromo} disabled={redeeming || !promoCode.trim()} className="shrink-0">
+            {redeeming ? <Loader2 size={16} className="animate-spin" /> : "Redeem"}
+          </Button>
+        </div>
+        {profile?.billing_cycle_end && (
+          <p className="text-xs text-muted-foreground">
+            Current plan valid until <span className="font-semibold text-foreground">{new Date(profile.billing_cycle_end).toLocaleDateString()}</span>
+          </p>
+        )}
+      </div>
+
       {/* Plan Confirmation Dialog */}
       <Dialog open={!!selectedPlan} onOpenChange={(open) => !open && setSelectedPlan(null)}>
         <DialogContent className="sm:max-w-md border-primary/20 bg-card">
