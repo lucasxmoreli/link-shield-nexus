@@ -52,7 +52,7 @@ export default function Billing() {
         <Badge className="bg-primary/20 text-primary border-0">{userPlan.name}</Badge>
       </div>
 
-      <div className="flex flex-nowrap overflow-x-auto gap-6 pb-12 pt-4 px-2 snap-x snap-mandatory scroll-smooth scrollbar-hide w-full">
+      <div className="flex w-full gap-6 pb-12 pt-4 px-2 flex-nowrap overflow-x-auto snap-x snap-mandatory scroll-smooth scrollbar-hide md:flex-wrap md:justify-center md:overflow-visible md:snap-none">
         {PLANS.map((plan, idx) => {
           const btn = getButtonState(plan, idx);
           return (
