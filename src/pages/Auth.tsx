@@ -36,15 +36,11 @@ export default function Auth() {
     setLoading(true);
     setInviteError("");
 
-    const { data, error } = await supabase
-      .from("invite_codes")
-      .select("id, is_used")
-      .eq("code", inviteCode.trim().toUpperCase())
-      .maybeSingle();
+    const { data: isValid, error } = await supabase.rpc("validate_invite_code", {
+      p_code: inviteCode.trim().toUpperCase(),
+    });
 
-    if (error || !data) {
-      setInviteError("This invite code is invalid or has already been used.");
-    } else if (data.is_used) {
+    if (error || !isValid) {
       setInviteError("This invite code is invalid or has already been used.");
     } else {
       setValidatedCode(inviteCode.trim().toUpperCase());
