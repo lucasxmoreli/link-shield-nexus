@@ -388,6 +388,90 @@ export default function AccountSettings() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Plan Confirmation Dialog */}
+      <Dialog open={!!selectedPlan} onOpenChange={(open) => !open && setSelectedPlan(null)}>
+        <DialogContent className="sm:max-w-md border-primary/20 bg-card">
+          {selectedPlan && (
+            <>
+              <DialogHeader className="text-center sm:text-center space-y-3 pb-2">
+                <Badge className="mx-auto w-fit bg-primary/15 text-primary border-0 text-[10px] tracking-widest px-3 py-1">
+                  SELECTED PLAN
+                </Badge>
+                <DialogTitle className="text-2xl sm:text-3xl font-bold tracking-tight">
+                  {selectedPlan.name}
+                </DialogTitle>
+                <div className="flex items-baseline justify-center gap-1">
+                  <span className="text-4xl sm:text-5xl font-bold font-mono">{selectedPlan.price}</span>
+                  <span className="text-muted-foreground text-sm">/mo</span>
+                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed max-w-xs mx-auto">
+                  {selectedPlan.description}
+                </p>
+              </DialogHeader>
+
+              <div className="space-y-5 py-4">
+                {/* Features checklist */}
+                <div className="space-y-2.5">
+                  <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">What's included</p>
+                  <ul className="space-y-2">
+                    {selectedPlan.features.filter(f => f.available).map((f) => (
+                      <li key={f.text} className="flex items-center gap-2.5 text-sm">
+                        <div className="h-5 w-5 rounded-full bg-success/15 flex items-center justify-center shrink-0">
+                          <Check size={12} className="text-success" />
+                        </div>
+                        <span>{f.text}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Traffic sources */}
+                {selectedPlan.visibleSources > 0 && (
+                  <div className="space-y-2.5">
+                    <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">Included Traffic Sources</p>
+                    <div className="flex flex-wrap gap-2">
+                      {TRAFFIC_SOURCES.slice(0, selectedPlan.visibleSources).map((src) => {
+                        const Icon = src.icon;
+                        return (
+                          <div
+                            key={src.name}
+                            className="flex items-center gap-1.5 rounded-lg border border-border bg-secondary/50 px-2.5 py-1.5"
+                          >
+                            <Icon size={14} style={{ color: src.color }} />
+                            <span className="text-xs font-medium">{src.name}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <DialogFooter className="flex-col sm:flex-row gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setSelectedPlan(null)}
+                  className="sm:flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleConfirmUpgrade}
+                  className={`sm:flex-1 font-semibold ${
+                    selectedPlan.highlighted
+                      ? "bg-orange-500 hover:bg-orange-600 text-white"
+                      : "bg-primary hover:bg-primary/90 text-primary-foreground"
+                  }`}
+                >
+                  <Zap size={16} />
+                  Confirm Upgrade
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
