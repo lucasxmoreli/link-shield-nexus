@@ -175,9 +175,9 @@ export default function Domains() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Domains</h1>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex items-center justify-between gap-2">
+        <h1 className="text-xl sm:text-2xl font-bold">Domains</h1>
         {isLimitReached ? (
           <Button variant="outline" className="border-destructive/30 text-destructive" onClick={handleAddClick}>
             <Lock className="h-4 w-4 mr-1" /> Limit Reached (Upgrade)
@@ -247,8 +247,8 @@ export default function Domains() {
       </Dialog>
 
       <Card className="border-border bg-card">
-        <CardContent className="p-0">
-          <Table>
+        <CardContent className="p-0 overflow-x-auto">
+          <Table className="min-w-[550px]">
             <TableHeader>
               <TableRow className="border-border hover:bg-transparent">
                 <TableHead className="text-muted-foreground">URL</TableHead>

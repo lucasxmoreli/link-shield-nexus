@@ -103,8 +103,8 @@ export default function Requests() {
   };
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Requests Log</h1>
+    <div className="space-y-4 sm:space-y-6">
+      <h1 className="text-xl sm:text-2xl font-bold">Requests Log</h1>
 
       {/* ── Filter Toolbar ── */}
       <Card className="border-border bg-card/60 backdrop-blur-sm">
@@ -112,7 +112,7 @@ export default function Requests() {
           <div className="flex flex-wrap items-center gap-3">
             {/* Search */}
             <div className="relative flex-1 min-w-[200px] max-w-xs">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground shrink-0" />
               <Input
                 placeholder="Search IP or Hash..."
                 value={search}
@@ -197,8 +197,8 @@ export default function Requests() {
 
       {/* ── Table ── */}
       <Card className="border-border bg-card">
-        <CardContent className="p-0">
-          <Table>
+        <CardContent className="p-0 overflow-x-auto">
+          <Table className="min-w-[700px]">
             <TableHeader>
               <TableRow className="border-border hover:bg-transparent">
                 <TableHead className="text-muted-foreground">Created At</TableHead>

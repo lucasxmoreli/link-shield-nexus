@@ -99,14 +99,14 @@ export default function Dashboard() {
   const feedData = recentLogs.length > 0 ? recentLogs : MOCK_FEED;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Command Center</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Real-time traffic intelligence & threat monitoring</p>
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Command Center</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 truncate">Real-time traffic intelligence & threat monitoring</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <span className="relative flex h-2.5 w-2.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[hsl(var(--success))] opacity-75" />
             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[hsl(var(--success))]" />
@@ -130,7 +130,7 @@ export default function Dashboard() {
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
         {/* Traffic Area Chart */}
         <Card className="border-border bg-card xl:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -280,8 +280,8 @@ export default function Dashboard() {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="p-0">
-          <Table>
+        <CardContent className="p-0 overflow-x-auto">
+          <Table className="min-w-[600px]">
             <TableHeader>
               <TableRow className="border-border hover:bg-transparent">
                 <TableHead className="text-muted-foreground text-xs uppercase tracking-wider">Time</TableHead>

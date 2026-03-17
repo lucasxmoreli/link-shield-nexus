@@ -161,11 +161,11 @@ export default function InviteCodes() {
   const availableCount = codes.filter((c) => !c.is_used).length;
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <Users className="h-6 w-6 text-primary" />
+    <div className="space-y-4 sm:space-y-8">
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">
+            <Users className="h-5 w-5 sm:h-6 sm:w-6 text-primary shrink-0" />
             Admin & Users
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
@@ -192,7 +192,7 @@ export default function InviteCodes() {
             </Button>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 gap-2 sm:gap-4">
             {[
               { label: "Total", value: codes.length, color: "text-foreground" },
               { label: "Available", value: availableCount, color: "text-primary" },
@@ -219,13 +219,13 @@ export default function InviteCodes() {
             </div>
           </div>
 
-          <div className="rounded-lg border border-border bg-card overflow-hidden">
+          <div className="rounded-lg border border-border bg-card overflow-x-auto">
             {isLoading ? (
               <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
             ) : codes.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground text-sm">No codes created yet.</div>
             ) : (
-              <Table>
+              <Table className="min-w-[600px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Code</TableHead>
@@ -278,13 +278,13 @@ export default function InviteCodes() {
 
         {/* ── Users Tab ── */}
         <TabsContent value="users" className="space-y-6 mt-4">
-          <div className="rounded-lg border border-border bg-card overflow-hidden">
+          <div className="rounded-lg border border-border bg-card overflow-x-auto">
             {isLoadingProfiles ? (
               <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
             ) : allProfiles.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground text-sm">No registered users found.</div>
             ) : (
-              <Table>
+              <Table className="min-w-[650px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead>User Email</TableHead>

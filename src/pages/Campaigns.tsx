@@ -117,9 +117,9 @@ export default function Campaigns() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Campaigns</h1>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex items-center justify-between gap-2">
+        <h1 className="text-xl sm:text-2xl font-bold">Campaigns</h1>
         {isFreePlan ? (
           <Button variant="outline" className="border-destructive/30 text-destructive" onClick={handleCreateClick}>
             <Lock className="h-4 w-4 mr-1" /> Upgrade to Create
@@ -142,8 +142,8 @@ export default function Campaigns() {
       )}
 
       <Card className="border-border bg-card">
-        <CardContent className="p-0">
-          <Table>
+        <CardContent className="p-0 overflow-x-auto">
+          <Table className="min-w-[650px]">
             <TableHeader>
               <TableRow className="border-border hover:bg-transparent">
                 <TableHead className="text-muted-foreground">Hash</TableHead>

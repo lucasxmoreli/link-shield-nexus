@@ -203,8 +203,8 @@ export default function AccountSettings() {
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Account Settings</h1>
+    <div className="space-y-4 sm:space-y-6">
+      <h1 className="text-xl sm:text-2xl font-bold">Account Settings</h1>
 
       <Tabs defaultValue="account" className="w-full">
         <TabsList className="bg-secondary">
@@ -278,12 +278,12 @@ export default function AccountSettings() {
         </TabsContent>
 
         <TabsContent value="subscription">
-          <div className="flex overflow-x-auto snap-x snap-mandatory gap-6 pt-6 pb-4 scrollbar-hide xl:grid xl:grid-cols-5">
+          <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 sm:gap-6 pt-6 pb-4 scrollbar-hide xl:grid xl:grid-cols-5 -mx-3 px-3 sm:-mx-0 sm:px-0">
             {PLANS.map((plan) => (
               <div
                 key={plan.name}
                 className={`
-                  relative min-w-[300px] flex-shrink-0 snap-center flex flex-col rounded-xl border p-6
+                  relative min-w-[260px] sm:min-w-[300px] flex-shrink-0 snap-center flex flex-col rounded-xl border p-4 sm:p-6
                   bg-card text-card-foreground
                   ${plan.highlighted
                     ? "border-primary/50 ring-1 ring-primary/30 shadow-[0_0_30px_hsl(271_81%_56%/0.15)]"
