@@ -217,9 +217,25 @@ export default function CampaignEdit() {
                 <SelectValue placeholder="Select source" />
               </SelectTrigger>
               <SelectContent className="bg-card border-border">
-                <SelectItem value="tiktok">TikTok</SelectItem>
-                <SelectItem value="facebook">Facebook</SelectItem>
-                <SelectItem value="google">Google</SelectItem>
+                {allowedSources.map((src) => {
+                  const Icon = src.icon;
+                  return (
+                    <SelectItem key={src.key} value={src.key}>
+                      <span className="flex items-center gap-2">
+                        <Icon size={14} style={{ color: src.color }} />
+                        {src.name}
+                      </span>
+                    </SelectItem>
+                  );
+                })}
+                {hasLockedSources && (
+                  <SelectItem value="__locked" disabled>
+                    <span className="flex items-center gap-2 text-muted-foreground">
+                      <Lock size={14} />
+                      Upgrade plan to unlock more sources
+                    </span>
+                  </SelectItem>
+                )}
               </SelectContent>
             </Select>
           </div>
