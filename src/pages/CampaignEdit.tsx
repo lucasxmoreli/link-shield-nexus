@@ -32,7 +32,8 @@ const DEVICES = ["desktop", "mobile", "tablet"] as const;
 
 function generateHash(len = 10) {
   const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  return Array.from({ length: len }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+  const randomBytes = crypto.getRandomValues(new Uint8Array(len));
+  return Array.from(randomBytes, (b) => chars[b % chars.length]).join("");
 }
 
 interface OfferEntry {

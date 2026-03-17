@@ -66,7 +66,6 @@ export default function Auth() {
       if (signUpData.user) {
         const { data: used } = await supabase.rpc("use_invite_code", {
           p_code: validatedCode,
-          p_user_id: signUpData.user.id,
         });
         if (!used) {
           toast.error("Invite code was already consumed. Please contact the administrator.");

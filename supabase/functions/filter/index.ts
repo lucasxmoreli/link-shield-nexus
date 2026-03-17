@@ -271,9 +271,10 @@ serve(async (req) => {
 
       let redirectUrl: string;
       if (action === "offer_page") {
-        // A/B Storm: 50/50 split when offer_page_b exists
+        // A/B Storm: 50/50 split when offer_page_b exists (crypto-secure coin flip)
         const hasB = campaign.offer_page_b && campaign.offer_page_b.trim();
-        redirectUrl = hasB && Math.random() < 0.5 ? campaign.offer_page_b : campaign.offer_url;
+        const coinFlip = crypto.getRandomValues(new Uint8Array(1))[0] < 128;
+        redirectUrl = hasB && coinFlip ? campaign.offer_page_b : campaign.offer_url;
       } else {
         redirectUrl = campaign.safe_url;
       }
