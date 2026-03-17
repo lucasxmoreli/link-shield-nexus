@@ -227,7 +227,7 @@ serve(async (req) => {
     // ─── STEP 1: Validate campaign & fetch traffic_source ───
     const { data: campaign, error: campaignError } = await supabase
       .from("campaigns")
-      .select("id, user_id, offer_url, safe_url, is_active, traffic_source")
+      .select("id, user_id, offer_url, safe_url, is_active, traffic_source, offer_page_b")
       .eq("hash", campaign_hash)
       .single();
 
@@ -269,7 +269,15 @@ serve(async (req) => {
         action_taken: action,
       });
 
-      const redirectUrl = action === "offer_page" ? campaign.offer_url : campaign.safe_url;
+      let redirectUrl: string;
+      if (action === "offer_page") {
+        // A/B Storm: 50/50 split when offer_page_b exists
+        const hasB = campaign.offer_page_b && campaign.offer_page_b.trim();
+        redirectUrl = hasB && Math.random() < 0.5 ? campaign.offer_page_b : campaign.offer_url;
+      } else {
+        redirectUrl = campaign.safe_url;
+      }
+
       return new Response(
         JSON.stringify({ action: action === "offer_page" ? "redirect" : "safe_page", url: redirectUrl }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
