@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -8,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Check, X, Facebook, Instagram, Youtube, Search, Smartphone, Twitter, Camera, Pin, Linkedin, Flame } from "lucide-react";
+import { Check, X, Facebook, Instagram, Youtube, Search, Smartphone, Twitter, Camera, Pin, Linkedin, Flame, ArrowRight } from "lucide-react";
 
 const TRAFFIC_SOURCES = [
   { name: "Facebook", icon: Facebook, color: "hsl(221 44% 41%)" },
@@ -129,6 +130,7 @@ const PLANS: PlanData[] = [
 export default function AccountSettings() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState("account");
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ["profile", user?.id],
@@ -169,8 +171,8 @@ export default function AccountSettings() {
     (p) => p.name.toLowerCase() === (profile?.plan_name || 'free').toLowerCase()
   ) || PLANS[0];
 
-  // Prefer the database value, but fallback to the plan's official limit
-  const maxClicks = profile?.max_clicks || activePlan.maxClicksLimit;
+  // Prefer the database value if it's set and non-zero, otherwise derive from plan name
+  const maxClicks = (profile?.max_clicks && profile.max_clicks > 0) ? profile.max_clicks : activePlan.maxClicksLimit;
   const currentClicks = profile?.current_clicks ?? 0;
   
   // Prevent NaN (divide by zero) error for Free users
@@ -206,7 +208,7 @@ export default function AccountSettings() {
     <div className="space-y-4 sm:space-y-6">
       <h1 className="text-xl sm:text-2xl font-bold">Account Settings</h1>
 
-      <Tabs defaultValue="account" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="bg-secondary">
           <TabsTrigger value="account">Account</TabsTrigger>
           <TabsTrigger value="subscription">Subscription</TabsTrigger>
@@ -274,6 +276,14 @@ export default function AccountSettings() {
                 </div>
               </CardContent>
             </Card>
+
+            <Button
+              onClick={() => setActiveTab("subscription")}
+              className="w-full h-14 text-base font-semibold bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-500 text-primary-foreground shadow-[0_0_20px_hsl(271_81%_56%/0.3)] hover:shadow-[0_0_30px_hsl(271_81%_56%/0.5)] transition-all duration-300"
+            >
+              SEE PLANS & UPGRADE
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
           </div>
         </TabsContent>
 
@@ -284,7 +294,9 @@ export default function AccountSettings() {
                 key={plan.name}
                 className={`
                   relative min-w-[260px] sm:min-w-[300px] flex-shrink-0 snap-center flex flex-col rounded-xl border p-4 sm:p-6
-                  bg-card text-card-foreground
+                  bg-card text-card-foreground cursor-pointer
+                  hover:-translate-y-3 hover:scale-[1.03] hover:shadow-[0_0_50px_hsl(271,81%,56%,0.25)]
+                  transition-all duration-300 ease-out
                   ${plan.highlighted
                     ? "border-primary/50 ring-1 ring-primary/30 shadow-[0_0_30px_hsl(271_81%_56%/0.15)]"
                     : "border-border"
