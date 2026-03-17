@@ -59,8 +59,11 @@ export default function AccountSettings() {
   const maxClicks = (profile?.max_clicks && profile.max_clicks > 0) ? profile.max_clicks : activePlan.maxClicksLimit;
   const currentClicks = profile?.current_clicks ?? 0;
   
-  // Prevent NaN (divide by zero) error for Free users
-  const usagePercent = maxClicks > 0 ? Math.round((currentClicks / maxClicks) * 100) : 0;
+  const rawUsagePercent = maxClicks > 0 ? (currentClicks / maxClicks) * 100 : 0;
+  const usagePercent = Math.round(rawUsagePercent);
+  const usageDisplay = currentClicks > 0 && rawUsagePercent < 1 ? "< 1" : `${usagePercent}`;
+  const progressValue = currentClicks > 0 && usagePercent < 1 ? 1 : usagePercent;
+
   const planName = profile?.plan_name ?? "Free";
   const isFreePlan = planName === "Free";
 
@@ -68,9 +71,8 @@ export default function AccountSettings() {
   const maxDomains = profile?.max_domains || activePlan.maxDomains;
   const domainsPercent = maxDomains > 0 ? Math.round((domainsCount / maxDomains) * 100) : 0;
 
-  // Campaign usage (unlimited for paid plans, 0 for free)
-  const maxCampaigns = isFreePlan ? 0 : Infinity;
-  const campaignsLimited = maxCampaigns === 0;
+  // Campaign usage (unlimited for paid plans)
+  const campaignsUnlimited = !isFreePlan;
 
   const handlePlanClick = (plan: PlanData) => {
     if (plan.isFree) return;
@@ -136,8 +138,8 @@ export default function AccountSettings() {
                     <span className="text-muted-foreground">Clicks used</span>
                     <span className="font-mono">{currentClicks.toLocaleString()} / {maxClicks > 0 ? maxClicks.toLocaleString() : "0"}</span>
                   </div>
-                  <Progress value={usagePercent} className="h-3 bg-secondary" />
-                  <p className="text-xs text-muted-foreground">{usagePercent}% of limit used</p>
+                  <Progress value={progressValue} className="h-3 bg-secondary" />
+                  <p className="text-xs text-muted-foreground">{usageDisplay}% of limit used</p>
                 </div>
 
                 {/* Domains */}
@@ -156,12 +158,16 @@ export default function AccountSettings() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Campaigns created</span>
-                    <span className="font-mono">{campaignsCount}{campaignsLimited ? " / 0" : " / ∞"}</span>
+                    <span className="font-mono">{campaignsCount.toLocaleString()}</span>
                   </div>
-                  <Progress value={campaignsLimited ? 0 : Math.min(campaignsCount, 100)} className="h-3 bg-secondary" />
-                  <p className="text-xs text-muted-foreground">
-                    {campaignsLimited ? "Upgrade to create campaigns" : "Unlimited campaigns on your plan"}
-                  </p>
+                  {campaignsUnlimited ? (
+                    <Badge variant="secondary" className="text-[10px] tracking-wider">Unlimited Access</Badge>
+                  ) : (
+                    <>
+                      <Progress value={0} className="h-3 bg-secondary" />
+                      <p className="text-xs text-muted-foreground">Upgrade to create campaigns</p>
+                    </>
+                  )}
                 </div>
               </CardContent>
             </Card>
