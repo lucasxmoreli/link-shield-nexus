@@ -6,51 +6,98 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Blocked ASN keywords (datacenters, bots, known crawlers)
+// ─── GLOBAL BOT DETECTION ───
+const BOT_UA_REGEX = new RegExp(
+  [
+    "bot", "crawler", "spider", "scraper", "slurp",
+    "headlesschrome", "phantomjs", "puppeteer", "selenium",
+    "google-inspectiontool", "googlebot", "bingbot",
+    "yandexbot", "baiduspider", "duckduckbot",
+    "facebookexternalhit", "facebot",
+    "bytespider", "semrushbot", "ahrefsbot", "mj12bot",
+    "dotbot", "rogerbot", "sogou", "exabot",
+    "ia_archiver", "archive.org_bot",
+    "curl", "wget", "httpie", "python-requests", "go-http-client",
+    "java\\/", "libwww", "lwp-trivial",
+  ].join("|"),
+  "i",
+);
+
+// Blocked ASN / datacenter org keywords
 const BLOCKED_ORGS = [
-  "amazon",
-  "google cloud",
-  "facebook",
-  "meta",
-  "bytedance",
-  "tiktok",
-  "datacenter",
-  "hosting",
-  "microsoft",
-  "digitalocean",
-  "ovh",
-  "hetzner",
-  "linode",
-  "vultr",
+  "amazon", "google cloud", "facebook", "meta", "bytedance", "tiktok",
+  "datacenter", "hosting", "microsoft", "digitalocean", "ovh",
+  "hetzner", "linode", "vultr", "cloudflare", "oracle",
 ];
 
-// Blocked user-agent keywords
-const BLOCKED_UA = [
-  "bot",
-  "crawler",
-  "spider",
-  "tiktok",
-  "facebookexternalhit",
-  "bytespider",
-  "googlebot",
-  "bingbot",
-  "yandexbot",
-  "semrush",
-  "ahrefsbot",
-  "mj12bot",
-  "dotbot",
-];
+// ─── SOURCE-SPECIFIC HEURISTICS ───
+
+function checkFacebookInstagram(uaLower: string, referer: string | null, queryParams: Record<string, string>): { block: boolean; reason: string } {
+  // Block Facebook's automated review bots
+  if (/facebookexternalhit|facebot|facebook.*crawler/i.test(uaLower)) {
+    return { block: true, reason: "fb_review_bot" };
+  }
+  // If no fbclid and no Facebook referer, suspicious but not blocking (soft signal)
+  // We allow it through but could flag in the future
+  return { block: false, reason: "" };
+}
+
+function checkTikTok(uaLower: string, deviceType: string): { block: boolean; reason: string } {
+  // TikTok in-app browser identifiers
+  const tiktokUASignals = ["bytelocale", "trill", "tiktok", "musical_ly", "bytedance"];
+  const hasTikTokUA = tiktokUASignals.some((sig) => uaLower.includes(sig));
+
+  // ByteSpider is TikTok's aggressive crawler — always block
+  if (uaLower.includes("bytespider")) {
+    return { block: true, reason: "tiktok_bytespider" };
+  }
+
+  // Desktop browser clicking a TikTok mobile ad is highly suspicious
+  if (deviceType === "desktop" && !hasTikTokUA) {
+    return { block: true, reason: "tiktok_desktop_suspicious" };
+  }
+
+  return { block: false, reason: "" };
+}
+
+function checkGoogleAds(uaLower: string, queryParams: Record<string, string>): { block: boolean; reason: string } {
+  // Block Google's inspection/review tools
+  if (/google-inspectiontool|adsbot-google|mediapartners-google/i.test(uaLower)) {
+    return { block: true, reason: "google_review_bot" };
+  }
+  return { block: false, reason: "" };
+}
+
+function checkSnapchat(uaLower: string): { block: boolean; reason: string } {
+  if (/snapchat.*bot|snapchat.*crawler/i.test(uaLower)) {
+    return { block: true, reason: "snapchat_bot" };
+  }
+  return { block: false, reason: "" };
+}
+
+function checkTwitter(uaLower: string): { block: boolean; reason: string } {
+  if (/twitterbot/i.test(uaLower)) {
+    return { block: true, reason: "twitter_bot" };
+  }
+  return { block: false, reason: "" };
+}
+
+function checkLinkedIn(uaLower: string): { block: boolean; reason: string } {
+  if (/linkedinbot/i.test(uaLower)) {
+    return { block: true, reason: "linkedin_bot" };
+  }
+  return { block: false, reason: "" };
+}
 
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { campaign_hash, user_agent, referer } = await req.json();
+    const { campaign_hash, user_agent, referer, query_params } = await req.json();
 
-    // Extract real client IP from headers (not from body — prevents spoofing)
+    // Extract real client IP from headers (prevents spoofing)
     const forwarded = req.headers.get("x-forwarded-for");
     const ip = forwarded ? forwarded.split(",")[0].trim() : (req.headers.get("x-real-ip") || "0.0.0.0");
 
@@ -61,15 +108,14 @@ serve(async (req) => {
       });
     }
 
-    // Create Supabase client with service role (bypasses RLS)
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // ─── STEP 1: Validate campaign ───
+    // ─── STEP 1: Validate campaign & fetch traffic_source ───
     const { data: campaign, error: campaignError } = await supabase
       .from("campaigns")
-      .select("id, user_id, offer_url, safe_url, is_active")
+      .select("id, user_id, offer_url, safe_url, is_active, traffic_source")
       .eq("hash", campaign_hash)
       .single();
 
@@ -93,12 +139,14 @@ serve(async (req) => {
       );
     }
 
+    // Device detection
+    const isMobile = /mobile|android|iphone|ipad/i.test(user_agent);
+    const deviceType = isMobile ? "mobile" : "desktop";
+    const uaLower = user_agent.toLowerCase();
+    const params: Record<string, string> = query_params || {};
+
     // Helper: log request and return response
-    const logAndRespond = async (
-      action: "safe_page" | "offer_page" | "bot_blocked",
-      deviceType: "mobile" | "desktop",
-      countryCode: string,
-    ) => {
+    const logAndRespond = async (action: "safe_page" | "offer_page" | "bot_blocked", countryCode: string) => {
       await supabase.from("requests_log").insert({
         user_id: campaign.user_id,
         campaign_id: campaign.id,
@@ -116,17 +164,46 @@ serve(async (req) => {
       );
     };
 
-    // Detect device type from user agent
-    const isMobile = /mobile|android|iphone|ipad/i.test(user_agent);
-    const deviceType = isMobile ? "mobile" : "desktop";
-
-    // ─── STEP 3: User-Agent check (fast, no external API) ───
-    const uaLower = user_agent.toLowerCase();
-    if (BLOCKED_UA.some((keyword) => uaLower.includes(keyword))) {
-      return await logAndRespond("bot_blocked", deviceType, "XX");
+    // ─── STEP 3: Global Bot Detection (baseline) ───
+    if (BOT_UA_REGEX.test(uaLower)) {
+      return await logAndRespond("bot_blocked", "XX");
     }
 
-    // ─── STEP 4: Proxy/VPN detection via Proxycheck.io ───
+    // ─── STEP 4: Source-Specific Heuristics ───
+    const source = (campaign.traffic_source || "").toLowerCase();
+    let sourceCheck: { block: boolean; reason: string } = { block: false, reason: "" };
+
+    switch (source) {
+      case "facebook":
+      case "instagram":
+        sourceCheck = checkFacebookInstagram(uaLower, referer, params);
+        break;
+      case "tiktok":
+        sourceCheck = checkTikTok(uaLower, deviceType);
+        break;
+      case "google ads":
+        sourceCheck = checkGoogleAds(uaLower, params);
+        break;
+      case "snapchat":
+        sourceCheck = checkSnapchat(uaLower);
+        break;
+      case "twitter":
+        sourceCheck = checkTwitter(uaLower);
+        break;
+      case "linkedin":
+        sourceCheck = checkLinkedIn(uaLower);
+        break;
+      // youtube, pinterest, native ads, etc. — fallback to global detection only
+      default:
+        break;
+    }
+
+    if (sourceCheck.block) {
+      console.log(`Source-specific block: ${source} — ${sourceCheck.reason}`);
+      return await logAndRespond("bot_blocked", "XX");
+    }
+
+    // ─── STEP 5: Proxy/VPN detection via Proxycheck.io ───
     const proxyCheckKey = Deno.env.get("PROXYCHECK_API_KEY")!;
     try {
       const proxyRes = await fetch(`https://proxycheck.io/v2/${ip}?key=${proxyCheckKey}&vpn=1`, {
@@ -134,14 +211,13 @@ serve(async (req) => {
       });
       const proxyData = await proxyRes.json();
       if (proxyData[ip] && (proxyData[ip].proxy === "yes" || proxyData[ip].type === "VPN")) {
-        return await logAndRespond("bot_blocked", deviceType, proxyData[ip].country || "XX");
+        return await logAndRespond("bot_blocked", proxyData[ip].country || "XX");
       }
     } catch {
-      // If proxycheck fails, continue (don't block real users)
       console.warn("Proxycheck.io request failed, skipping");
     }
 
-    // ─── STEP 5: ASN/Datacenter detection via IPinfo.io ───
+    // ─── STEP 6: ASN/Datacenter detection via IPinfo.io ───
     const ipinfoToken = Deno.env.get("IPINFO_API_KEY")!;
     let countryCode = "XX";
     try {
@@ -154,14 +230,14 @@ serve(async (req) => {
       if (ipData.org) {
         const orgLower = ipData.org.toLowerCase();
         if (BLOCKED_ORGS.some((keyword) => orgLower.includes(keyword))) {
-          return await logAndRespond("bot_blocked", deviceType, countryCode);
+          return await logAndRespond("bot_blocked", countryCode);
         }
       }
     } catch {
       console.warn("IPinfo.io request failed, skipping");
     }
 
-    // ─── STEP 6: User is real — increment clicks & redirect to offer ───
+    // ─── STEP 7: User is real — increment clicks & redirect to offer ───
     if (profile) {
       await supabase
         .from("profiles")
@@ -169,7 +245,7 @@ serve(async (req) => {
         .eq("user_id", campaign.user_id);
     }
 
-    return await logAndRespond("offer_page", deviceType, countryCode);
+    return await logAndRespond("offer_page", countryCode);
   } catch (error) {
     console.error("Filter error:", error);
     return new Response(JSON.stringify({ action: "safe_page", reason: "internal_error" }), {

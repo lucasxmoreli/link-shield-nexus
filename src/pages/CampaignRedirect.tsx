@@ -16,11 +16,14 @@ export default function CampaignRedirect() {
     const resolve = async () => {
       try {
         // Call the filter edge function — IP is extracted server-side from headers
+        // Pass URL query params so the filter can check fbclid, gclid, etc.
+        const urlParams = Object.fromEntries(new URLSearchParams(window.location.search));
         const { data, error: fnError } = await supabase.functions.invoke("filter", {
           body: {
             campaign_hash: hash,
             user_agent: navigator.userAgent,
             referer: document.referrer || null,
+            query_params: urlParams,
           },
         });
 
