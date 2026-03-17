@@ -129,6 +129,7 @@ const PLANS: PlanData[] = [
 export default function AccountSettings() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState("account");
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ["profile", user?.id],
