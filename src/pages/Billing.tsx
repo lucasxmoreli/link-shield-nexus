@@ -52,16 +52,16 @@ export default function Billing() {
         <Badge className="bg-primary/20 text-primary border-0">{userPlan.name}</Badge>
       </div>
 
-      <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 sm:gap-6 pt-6 pb-4 scrollbar-hide xl:grid xl:grid-cols-5 -mx-3 px-3 sm:-mx-0 sm:px-0">
+      <div className="flex flex-nowrap overflow-x-auto gap-6 pb-12 pt-4 px-2 snap-x snap-mandatory scroll-smooth scrollbar-hide w-full">
         {PLANS.map((plan, idx) => {
           const btn = getButtonState(plan, idx);
           return (
             <div
               key={plan.name}
               className={`
-                relative min-w-[260px] sm:min-w-[300px] flex-shrink-0 snap-center flex flex-col rounded-xl border p-4 sm:p-6
+                relative shrink-0 w-[300px] sm:w-[340px] snap-center flex flex-col rounded-xl border p-4 sm:p-6
                 bg-card text-card-foreground
-                hover:-translate-y-3 hover:scale-[1.03] hover:shadow-[0_0_50px_hsl(271,81%,56%,0.25)]
+                hover:-translate-y-3 hover:scale-[1.03] hover:z-50 hover:shadow-[0_0_50px_hsl(271,81%,56%,0.25)]
                 transition-all duration-300 ease-out
                 ${plan.name === userPlan.name
                   ? "border-primary/50 ring-2 ring-primary/40"
