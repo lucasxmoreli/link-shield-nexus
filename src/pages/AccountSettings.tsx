@@ -275,6 +275,14 @@ export default function AccountSettings() {
                 </div>
               </CardContent>
             </Card>
+
+            <Button
+              onClick={() => setActiveTab("subscription")}
+              className="w-full h-14 text-base font-semibold bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-500 text-primary-foreground shadow-[0_0_20px_hsl(271_81%_56%/0.3)] hover:shadow-[0_0_30px_hsl(271_81%_56%/0.5)] transition-all duration-300"
+            >
+              SEE PLANS & UPGRADE
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
           </div>
         </TabsContent>
 
