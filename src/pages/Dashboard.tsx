@@ -64,7 +64,7 @@ export default function Dashboard() {
     return {
       day: dayLabel,
       offer_page: dayLogs.filter((l) => l.action_taken === "offer_page").length,
-      bot_blocked: dayLogs.filter((l) => l.action_taken === "bot_blocked").length,
+      bot_blocked: dayLogs.filter((l) => l.action_taken === "bot_blocked" || l.action_taken === "safe_page").length,
     };
   });
 
