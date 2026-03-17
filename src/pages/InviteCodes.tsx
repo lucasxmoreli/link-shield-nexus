@@ -290,36 +290,45 @@ export default function InviteCodes() {
                     <TableHead>User Email</TableHead>
                     <TableHead>Registration Date</TableHead>
                     <TableHead>Current Plan</TableHead>
+                    <TableHead>Total Clicks</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {allProfiles.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-mono text-sm">{user.email ?? "—"}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {format(new Date(user.created_at), "MM/dd/yyyy")}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          className={
-                            (user.plan_name ?? "Free") === "Free"
-                              ? "bg-muted text-muted-foreground border-0"
-                              : (user.plan_name ?? "") === "Pro"
-                                ? "bg-primary/20 text-primary border-0"
-                                : "bg-accent text-accent-foreground border-0"
-                          }
-                        >
-                          {user.plan_name ?? "Free"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button size="sm" variant="outline" onClick={() => handleManageUser(user)} className="gap-1.5">
-                          <Settings2 className="h-3.5 w-3.5" /> Manage
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {allProfiles.map((user) => {
+                    const planName = user.plan_name ?? "Free";
+                    const isPro = planName.toLowerCase().includes("pro");
+                    const isFree = planName === "Free";
+                    return (
+                      <TableRow key={user.id}>
+                        <TableCell className="font-mono text-sm">{user.email ?? "—"}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {format(new Date(user.created_at), "MM/dd/yyyy")}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            className={
+                              isFree
+                                ? "bg-muted text-muted-foreground border-0"
+                                : isPro
+                                  ? "bg-primary/20 text-primary border-0"
+                                  : "bg-accent text-accent-foreground border-0"
+                            }
+                          >
+                            {planName}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="font-mono text-sm text-muted-foreground">
+                          {(user.current_clicks ?? 0).toLocaleString()} / {(user.max_clicks ?? 0).toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button size="sm" variant="outline" onClick={() => handleManageUser(user)} className="gap-1.5">
+                            <Settings2 className="h-3.5 w-3.5" /> Manage
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             )}
