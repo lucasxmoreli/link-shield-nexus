@@ -14,14 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-
-const PLAN_MAX_DOMAINS: Record<string, number> = {
-  free: 0,
-  basic: 3,
-  pro: 10,
-  freedom: 20,
-  enterprise: 25,
-};
+import { getPlanByName } from "@/lib/plan-config";
 
 function DnsSteps({ domain }: { domain: { id: string; url: string } }) {
   const hostname = domain.url.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
