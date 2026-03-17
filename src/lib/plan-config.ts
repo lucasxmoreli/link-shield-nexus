@@ -34,6 +34,7 @@ export interface PlanData {
   isFree: boolean;
   maxClicksLimit: number;
   maxDomains: number;
+  maxCampaigns: number; // -1 = unlimited
 }
 
 export const PLANS: PlanData[] = [
