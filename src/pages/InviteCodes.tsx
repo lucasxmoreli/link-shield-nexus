@@ -278,7 +278,7 @@ export default function InviteCodes() {
 
         {/* ── Users Tab ── */}
         <TabsContent value="users" className="space-y-6 mt-4">
-          <div className="rounded-lg border border-border bg-card overflow-hidden">
+          <div className="rounded-lg border border-border bg-card overflow-x-auto">
             {isLoadingProfiles ? (
               <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
             ) : allProfiles.length === 0 ? (
