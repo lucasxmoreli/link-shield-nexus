@@ -198,12 +198,46 @@ function checkKwai(ua: string, referer: string | null): HeuristicResult {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// RATE LIMITER — In-memory sliding window (20 req / 10s per IP)
+// ═══════════════════════════════════════════════════════════════
+const RATE_LIMIT = 20;
+const RATE_WINDOW_MS = 10_000;
+const ipHits = new Map<string, number[]>();
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const hits = ipHits.get(ip) || [];
+  const recent = hits.filter((t) => now - t < RATE_WINDOW_MS);
+  recent.push(now);
+  ipHits.set(ip, recent);
+  // Garbage collect stale IPs periodically
+  if (ipHits.size > 10_000) {
+    for (const [key, val] of ipHits) {
+      if (val.every((t) => now - t >= RATE_WINDOW_MS)) ipHits.delete(key);
+    }
+  }
+  return recent.length > RATE_LIMIT;
+}
+
+// ═══════════════════════════════════════════════════════════════
 // MAIN HANDLER
 // ═══════════════════════════════════════════════════════════════
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
+  }
+
+  // Extract IP early for rate limiting
+  const forwarded = req.headers.get("x-forwarded-for");
+  const ip = forwarded ? forwarded.split(",")[0].trim() : (req.headers.get("x-real-ip") || "0.0.0.0");
+
+  // Rate limit check BEFORE any DB logic
+  if (isRateLimited(ip)) {
+    return new Response(JSON.stringify({ action: "safe_page", reason: "rate_limited" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 429,
+    });
   }
 
   try {
