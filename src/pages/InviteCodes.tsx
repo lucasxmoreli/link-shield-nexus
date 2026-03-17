@@ -21,11 +21,11 @@ function generateCode() {
 }
 
 const PLAN_LIMITS: Record<string, { max_clicks: number; max_domains: number }> = {
-  Free: { max_clicks: 0, max_domains: 0 },
-  Basic: { max_clicks: 20000, max_domains: 3 },
-  Pro: { max_clicks: 100000, max_domains: 10 },
-  Freedom: { max_clicks: 300000, max_domains: 25 },
-  Enterprise: { max_clicks: 1000000, max_domains: 100 },
+  "Free": { max_clicks: 0, max_domains: 0 },
+  "Basic Plan": { max_clicks: 20000, max_domains: 3 },
+  "Pro Plan": { max_clicks: 100000, max_domains: 10 },
+  "Freedom Plan": { max_clicks: 300000, max_domains: 20 },
+  "Enterprise Conquest": { max_clicks: 1000000, max_domains: 25 },
 };
 const PLAN_OPTIONS = Object.keys(PLAN_LIMITS);
 
