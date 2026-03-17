@@ -169,8 +169,8 @@ export default function AccountSettings() {
     (p) => p.name.toLowerCase() === (profile?.plan_name || 'free').toLowerCase()
   ) || PLANS[0];
 
-  // Prefer the database value, but fallback to the plan's official limit
-  const maxClicks = profile?.max_clicks || activePlan.maxClicksLimit;
+  // Prefer the database value if it's set and non-zero, otherwise derive from plan name
+  const maxClicks = (profile?.max_clicks && profile.max_clicks > 0) ? profile.max_clicks : activePlan.maxClicksLimit;
   const currentClicks = profile?.current_clicks ?? 0;
   
   // Prevent NaN (divide by zero) error for Free users
