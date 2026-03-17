@@ -16,7 +16,10 @@ import { format } from "date-fns";
 
 function generateCode() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  const seg = () => Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+  const seg = () => {
+    const bytes = crypto.getRandomValues(new Uint8Array(4));
+    return Array.from(bytes, (b) => chars[b % chars.length]).join("");
+  };
   return `CLOAK-${seg()}-${seg()}`;
 }
 

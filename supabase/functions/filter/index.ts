@@ -198,6 +198,28 @@ function checkKwai(ua: string, referer: string | null): HeuristicResult {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// RATE LIMITER — In-memory sliding window (20 req / 10s per IP)
+// ═══════════════════════════════════════════════════════════════
+const RATE_LIMIT = 20;
+const RATE_WINDOW_MS = 10_000;
+const ipHits = new Map<string, number[]>();
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const hits = ipHits.get(ip) || [];
+  const recent = hits.filter((t) => now - t < RATE_WINDOW_MS);
+  recent.push(now);
+  ipHits.set(ip, recent);
+  // Garbage collect stale IPs periodically
+  if (ipHits.size > 10_000) {
+    for (const [key, val] of ipHits) {
+      if (val.every((t) => now - t >= RATE_WINDOW_MS)) ipHits.delete(key);
+    }
+  }
+  return recent.length > RATE_LIMIT;
+}
+
+// ═══════════════════════════════════════════════════════════════
 // MAIN HANDLER
 // ═══════════════════════════════════════════════════════════════
 
@@ -206,12 +228,20 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  // Extract IP early for rate limiting
+  const forwarded = req.headers.get("x-forwarded-for");
+  const ip = forwarded ? forwarded.split(",")[0].trim() : (req.headers.get("x-real-ip") || "0.0.0.0");
+
+  // Rate limit check BEFORE any DB logic
+  if (isRateLimited(ip)) {
+    return new Response(JSON.stringify({ action: "safe_page", reason: "rate_limited" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 429,
+    });
+  }
+
   try {
     const { campaign_hash, user_agent, referer, query_params } = await req.json();
-
-    // Extract real client IP from headers (prevents spoofing)
-    const forwarded = req.headers.get("x-forwarded-for");
-    const ip = forwarded ? forwarded.split(",")[0].trim() : (req.headers.get("x-real-ip") || "0.0.0.0");
 
     if (!campaign_hash || !user_agent) {
       return new Response(JSON.stringify({ action: "safe_page", reason: "missing_params" }), {
@@ -271,9 +301,10 @@ serve(async (req) => {
 
       let redirectUrl: string;
       if (action === "offer_page") {
-        // A/B Storm: 50/50 split when offer_page_b exists
+        // A/B Storm: 50/50 split when offer_page_b exists (crypto-secure coin flip)
         const hasB = campaign.offer_page_b && campaign.offer_page_b.trim();
-        redirectUrl = hasB && Math.random() < 0.5 ? campaign.offer_page_b : campaign.offer_url;
+        const coinFlip = crypto.getRandomValues(new Uint8Array(1))[0] < 128;
+        redirectUrl = hasB && coinFlip ? campaign.offer_page_b : campaign.offer_url;
       } else {
         redirectUrl = campaign.safe_url;
       }
