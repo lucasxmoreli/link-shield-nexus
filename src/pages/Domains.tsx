@@ -83,6 +83,7 @@ function DnsSteps({ domain }: { domain: { id: string; url: string } }) {
 export default function Domains() {
   const { user } = useAuth();
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [dnsDialogDomain, setDnsDialogDomain] = useState<{ id: string; url: string } | null>(null);
   const [url, setUrl] = useState("");
