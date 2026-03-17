@@ -243,10 +243,6 @@ serve(async (req) => {
   try {
     const { campaign_hash, user_agent, referer, query_params } = await req.json();
 
-    // Extract real client IP from headers (prevents spoofing)
-    const forwarded = req.headers.get("x-forwarded-for");
-    const ip = forwarded ? forwarded.split(",")[0].trim() : (req.headers.get("x-real-ip") || "0.0.0.0");
-
     if (!campaign_hash || !user_agent) {
       return new Response(JSON.stringify({ action: "safe_page", reason: "missing_params" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
