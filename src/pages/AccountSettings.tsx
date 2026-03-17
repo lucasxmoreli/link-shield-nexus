@@ -193,7 +193,13 @@ export default function AccountSettings() {
 
   const handlePlanClick = (plan: PlanData) => {
     if (plan.isFree) return;
-    toast({ title: "Upgrade feature coming soon", description: `You selected ${plan.name}.` });
+    setSelectedPlan(plan);
+  };
+
+  const handleConfirmUpgrade = () => {
+    if (!selectedPlan) return;
+    toast({ title: "Upgrade feature coming soon", description: `You selected ${selectedPlan.name}.` });
+    setSelectedPlan(null);
   };
 
   if (isLoading) {
