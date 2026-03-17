@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Activity, ShieldCheck, Target, Bug, Globe, Monitor, Smartphone, Tablet, Clock, MapPin } from "lucide-react";
+import { Activity, ShieldCheck, Target, Percent, Globe, Monitor, Smartphone, Tablet, Clock, MapPin } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -48,9 +48,11 @@ export default function Dashboard() {
 
   const stats = {
     total_requests: logs.length,
-    safe_page: logs.filter((l) => l.action_taken === "safe_page").length,
     offer_page: logs.filter((l) => l.action_taken === "offer_page").length,
-    bot_blocked: logs.filter((l) => l.action_taken === "bot_blocked").length,
+    bots_blocked: logs.filter((l) => l.action_taken === "bot_blocked" || l.action_taken === "safe_page").length,
+    pass_rate: logs.length > 0
+      ? ((logs.filter((l) => l.action_taken === "offer_page").length / logs.length) * 100).toFixed(1)
+      : "0.0",
   };
 
   const days = parseInt(dateRange);
@@ -62,7 +64,7 @@ export default function Dashboard() {
     return {
       day: dayLabel,
       offer_page: dayLogs.filter((l) => l.action_taken === "offer_page").length,
-      bot_blocked: dayLogs.filter((l) => l.action_taken === "bot_blocked").length,
+      bot_blocked: dayLogs.filter((l) => l.action_taken === "bot_blocked" || l.action_taken === "safe_page").length,
     };
   });
 
@@ -120,9 +122,9 @@ export default function Dashboard() {
         ) : (
           <>
             <StatCard title="Total Requests" value={stats.total_requests} icon={Activity} trend={{ value: "+12% this week", positive: true }} />
-            <StatCard title="Safe Page" value={stats.safe_page} icon={ShieldCheck} variant="primary" trend={{ value: "+5% this week", positive: true }} />
+            <StatCard title="Pass Rate" value={`${stats.pass_rate}%`} icon={Percent} variant="primary" trend={{ value: "Real traffic ratio", positive: true }} />
             <StatCard title="Offer Page" value={stats.offer_page} icon={Target} variant="success" trend={{ value: "+18% this week", positive: true }} />
-            <StatCard title="Bots Blocked" value={stats.bot_blocked} icon={Bug} variant="destructive" trend={{ value: "-3% vs last week", positive: false }} />
+            <StatCard title="Bots Blocked" value={stats.bots_blocked} icon={ShieldCheck} variant="destructive" trend={{ value: "All rejected traffic", positive: false }} />
           </>
         )}
       </div>
