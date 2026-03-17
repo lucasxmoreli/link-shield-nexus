@@ -118,6 +118,8 @@ export type Database = {
       }
       profiles: {
         Row: {
+          billing_cycle_end: string | null
+          billing_cycle_start: string | null
           created_at: string
           current_clicks: number | null
           email: string | null
@@ -130,6 +132,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          billing_cycle_end?: string | null
+          billing_cycle_start?: string | null
           created_at?: string
           current_clicks?: number | null
           email?: string | null
@@ -142,6 +146,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          billing_cycle_end?: string | null
+          billing_cycle_start?: string | null
           created_at?: string
           current_clicks?: number | null
           email?: string | null
@@ -152,6 +158,39 @@ export type Database = {
           subscription_status?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      promo_codes: {
+        Row: {
+          code: string
+          created_at: string
+          current_uses: number
+          duration_days: number
+          id: string
+          is_active: boolean
+          max_uses: number
+          target_plan: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          current_uses?: number
+          duration_days?: number
+          id?: string
+          is_active?: boolean
+          max_uses?: number
+          target_plan: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          current_uses?: number
+          duration_days?: number
+          id?: string
+          is_active?: boolean
+          max_uses?: number
+          target_plan?: string
         }
         Relationships: []
       }
@@ -232,6 +271,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      redeem_promo_code: { Args: { p_code: string }; Returns: Json }
       use_invite_code: {
         Args: { p_code: string; p_user_id: string }
         Returns: boolean

@@ -1,8 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Check, X, Zap } from "lucide-react";
+import { Check, X, Zap, Gift, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
@@ -136,7 +137,10 @@ function PlanCard({
 export default function Billing() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [selectedPlan, setSelectedPlan] = useState<PlanData | null>(null);
+  const [promoCode, setPromoCode] = useState("");
+  const [redeeming, setRedeeming] = useState(false);
 
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
@@ -163,6 +167,24 @@ export default function Billing() {
     if (!selectedPlan) return;
     toast({ title: "Upgrade feature coming soon", description: `You selected ${selectedPlan.name}.` });
     setSelectedPlan(null);
+  };
+
+  const handleRedeemPromo = async () => {
+    if (!promoCode.trim()) return;
+    setRedeeming(true);
+    try {
+      const { data, error } = await supabase.rpc("redeem_promo_code", { p_code: promoCode.trim() });
+      if (error) throw error;
+      const result = data as { plan_name: string; billing_cycle_end: string };
+      const endDate = new Date(result.billing_cycle_end).toLocaleDateString();
+      toast({ title: "Plan upgraded successfully!", description: `You're now on ${result.plan_name}. Valid until ${endDate}.` });
+      setPromoCode("");
+      queryClient.invalidateQueries({ queryKey: ["profile", user?.id] });
+    } catch (err: any) {
+      toast({ title: "Redemption failed", description: err.message || "Invalid or expired code", variant: "destructive" });
+    } finally {
+      setRedeeming(false);
+    }
   };
 
   return (
@@ -200,6 +222,31 @@ export default function Billing() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Promo Code Section */}
+      <div className="flex flex-col items-center gap-3 pt-4 border-t border-border">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Gift size={16} className="text-primary" />
+          <span>Have a promo code?</span>
+        </div>
+        <div className="flex gap-2 w-full max-w-sm">
+          <Input
+            placeholder="Enter code (e.g. VIP30)"
+            value={promoCode}
+            onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+            onKeyDown={(e) => e.key === "Enter" && handleRedeemPromo()}
+            className="uppercase tracking-widest font-mono text-center"
+          />
+          <Button onClick={handleRedeemPromo} disabled={redeeming || !promoCode.trim()} className="shrink-0">
+            {redeeming ? <Loader2 size={16} className="animate-spin" /> : "Redeem"}
+          </Button>
+        </div>
+        {profile?.billing_cycle_end && (
+          <p className="text-xs text-muted-foreground">
+            Current plan valid until <span className="font-semibold text-foreground">{new Date(profile.billing_cycle_end).toLocaleDateString()}</span>
+          </p>
+        )}
+      </div>
 
       {/* Plan Confirmation Dialog */}
       <Dialog open={!!selectedPlan} onOpenChange={(open) => !open && setSelectedPlan(null)}>
