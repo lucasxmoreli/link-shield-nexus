@@ -137,7 +137,10 @@ function PlanCard({
 export default function Billing() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [selectedPlan, setSelectedPlan] = useState<PlanData | null>(null);
+  const [promoCode, setPromoCode] = useState("");
+  const [redeeming, setRedeeming] = useState(false);
 
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
@@ -164,6 +167,24 @@ export default function Billing() {
     if (!selectedPlan) return;
     toast({ title: "Upgrade feature coming soon", description: `You selected ${selectedPlan.name}.` });
     setSelectedPlan(null);
+  };
+
+  const handleRedeemPromo = async () => {
+    if (!promoCode.trim()) return;
+    setRedeeming(true);
+    try {
+      const { data, error } = await supabase.rpc("redeem_promo_code", { p_code: promoCode.trim() });
+      if (error) throw error;
+      const result = data as { plan_name: string; billing_cycle_end: string };
+      const endDate = new Date(result.billing_cycle_end).toLocaleDateString();
+      toast({ title: "Plan upgraded successfully!", description: `You're now on ${result.plan_name}. Valid until ${endDate}.` });
+      setPromoCode("");
+      queryClient.invalidateQueries({ queryKey: ["profile", user?.id] });
+    } catch (err: any) {
+      toast({ title: "Redemption failed", description: err.message || "Invalid or expired code", variant: "destructive" });
+    } finally {
+      setRedeeming(false);
+    }
   };
 
   return (
