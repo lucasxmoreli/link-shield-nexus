@@ -12,6 +12,7 @@ import Campaigns from "./pages/Campaigns";
 import CampaignEdit from "./pages/CampaignEdit";
 import Requests from "./pages/Requests";
 import AccountSettings from "./pages/AccountSettings";
+import Billing from "./pages/Billing";
 import Auth from "./pages/Auth";
 import CloakTest from "./pages/CloakTest";
 import InviteCodes from "./pages/InviteCodes";
