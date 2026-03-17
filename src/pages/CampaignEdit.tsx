@@ -108,6 +108,9 @@ export default function CampaignEdit() {
       setTrafficSource(campaign.traffic_source);
       setSafeUrl(campaign.safe_url);
       setOfferUrl(campaign.offer_url);
+      const bUrl = (campaign as any).offer_page_b ?? "";
+      setOfferPageB(bUrl);
+      setAbStormEnabled(!!bUrl);
       setSafeMethod((campaign as any).safe_page_method ?? "redirect");
       setOfferMethod((campaign as any).offer_page_method ?? "redirect");
       setTargetCountries((campaign as any).target_countries ?? []);
