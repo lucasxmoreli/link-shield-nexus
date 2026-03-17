@@ -278,7 +278,7 @@ export default function AccountSettings() {
         </TabsContent>
 
         <TabsContent value="subscription">
-          <div className="flex overflow-x-auto snap-x snap-mandatory gap-6 pt-6 pb-4 scrollbar-hide xl:grid xl:grid-cols-5">
+          <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 sm:gap-6 pt-6 pb-4 scrollbar-hide xl:grid xl:grid-cols-5 -mx-3 px-3 sm:-mx-0 sm:px-0">
             {PLANS.map((plan) => (
               <div
                 key={plan.name}
