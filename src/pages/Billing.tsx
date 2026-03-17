@@ -59,9 +59,9 @@ export default function Billing() {
             <div
               key={plan.name}
               className={`
-                relative min-w-[260px] sm:min-w-[300px] flex-shrink-0 snap-center flex flex-col rounded-xl border p-4 sm:p-6
+                relative shrink-0 w-[300px] sm:w-[340px] snap-center flex flex-col rounded-xl border p-4 sm:p-6
                 bg-card text-card-foreground
-                hover:-translate-y-3 hover:scale-[1.03] hover:shadow-[0_0_50px_hsl(271,81%,56%,0.25)]
+                hover:-translate-y-3 hover:scale-[1.03] hover:z-50 hover:shadow-[0_0_50px_hsl(271,81%,56%,0.25)]
                 transition-all duration-300 ease-out
                 ${plan.name === userPlan.name
                   ? "border-primary/50 ring-2 ring-primary/40"
