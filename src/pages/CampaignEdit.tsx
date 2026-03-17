@@ -275,46 +275,50 @@ export default function CampaignEdit() {
       {/* BLOCK 3: Offer Page */}
       <section className="rounded-xl bg-[hsl(var(--card))] p-6 space-y-4">
         <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Offer Page</h2>
-        <div className="flex gap-2">
-          <button type="button" onClick={() => setOfferMode("single")} className={`rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${offerMode === "single" ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary text-muted-foreground"}`}>
-            Single Offer
-          </button>
-          <button type="button" onClick={() => setOfferMode("ab")} className={`rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${offerMode === "ab" ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary text-muted-foreground"}`}>
-            A/B Storm
-          </button>
+
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">Primary Offer Page (A)</Label>
+          <Input placeholder="https://offer.example.com/..." className="bg-secondary border-border" value={offerUrl} onChange={(e) => setOfferUrl(e.target.value)} />
         </div>
 
-        {offerMode === "single" ? (
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Offer URL</Label>
-            <Input placeholder="https://offer.example.com/..." className="bg-secondary border-border" value={offerUrl} onChange={(e) => setOfferUrl(e.target.value)} />
+        {/* A/B Storm Toggle */}
+        <div className="flex items-center justify-between rounded-lg border border-border bg-secondary/50 px-4 py-3">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+              <Zap className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm font-medium">⚡ A/B Storm (Split Traffic)</p>
+              <p className="text-xs text-muted-foreground">Split human traffic 50/50 between two offers</p>
+            </div>
           </div>
-        ) : (
-          <div className="space-y-3">
-            {abOffers.map((offer, i) => (
-              <div key={i} className="flex items-end gap-2">
-                <div className="flex-1 space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">Offer URL #{i + 1}</Label>
-                  <Input placeholder="https://offer.example.com/..." className="bg-secondary border-border" value={offer.url} onChange={(e) => updateAbOffer(i, "url", e.target.value)} />
-                </div>
-                <div className="w-24 space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">Weight %</Label>
-                  <Input type="number" min={0} max={100} className="bg-secondary border-border" value={offer.weight} onChange={(e) => updateAbOffer(i, "weight", Number(e.target.value))} />
-                </div>
-                {abOffers.length > 2 && (
-                  <Button variant="ghost" size="icon" className="mb-0.5 text-destructive" onClick={() => removeAbOffer(i)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
+          <Switch
+            checked={abStormEnabled}
+            onCheckedChange={(checked) => {
+              setAbStormEnabled(checked);
+              if (!checked) setOfferPageB("");
+            }}
+          />
+        </div>
+
+        <Collapsible open={abStormEnabled}>
+          <CollapsibleContent className="overflow-hidden data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-up-2 data-[state=open]:slide-down-2">
+            <div className="space-y-3 rounded-lg border border-primary/20 bg-primary/5 p-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Test Offer Page (B)</Label>
+                <Input
+                  placeholder="https://alternative-offer.example.com/..."
+                  className="bg-secondary border-border"
+                  value={offerPageB}
+                  onChange={(e) => setOfferPageB(e.target.value)}
+                />
               </div>
-            ))}
-            {abOffers.length < 3 && (
-              <Button variant="outline" size="sm" onClick={addAbOffer} className="border-dashed border-border text-muted-foreground">
-                <Plus className="h-3.5 w-3.5 mr-1" /> Add Offer
-              </Button>
-            )}
-          </div>
-        )}
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                When enabled, CloakGuard will automatically split your approved human traffic <span className="font-semibold text-primary">50/50</span> between Offer A and Offer B. Bots will still be sent to the Safe Page.
+              </p>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
 
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Method</Label>
