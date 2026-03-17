@@ -1,4 +1,4 @@
-import { LayoutDashboard, Globe, Megaphone, FileText, Settings, Shield, LogOut, FlaskConical, Ticket } from "lucide-react";
+import { LayoutDashboard, Globe, Megaphone, FileText, Settings, Shield, LogOut, FlaskConical, Ticket, CreditCard } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -20,6 +20,7 @@ const baseItems = [
   { title: "Campaigns", url: "/campaigns", icon: Megaphone },
   { title: "Requests", url: "/requests", icon: FileText },
   { title: "Cloak Test", url: "/cloak-test", icon: FlaskConical },
+  { title: "Billing & Plans", url: "/billing", icon: CreditCard },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 
