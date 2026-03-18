@@ -199,7 +199,7 @@ export default function Campaigns() {
               <label className="text-sm font-medium text-muted-foreground">{t("campaigns.campaignUrl")}</label>
               <Input readOnly value={getFullLink()} className="font-mono text-sm border-border bg-muted/30 cursor-default" />
             </div>
-            <Button className="w-full neon-glow" onClick={handleCopyLink} disabled={copied}>
+            <Button className="w-full neon-glow" onClick={handleCopyLink} disabled={copied || !selectedDomain}>
               {copied ? (<><Check className="h-4 w-4 mr-2" /> {t("common.copied")}</>) : (<><Copy className="h-4 w-4 mr-2" /> {t("campaigns.copyLink")}</>)}
             </Button>
           </div>
