@@ -220,7 +220,7 @@ export default function Requests() {
                 ))
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-12">
+                  <TableCell colSpan={8} className="text-center py-12">
                     <p className="text-muted-foreground font-medium">No requests found matching these filters.</p>
                     {hasActiveFilters && (
                       <Button variant="link" size="sm" className="mt-2 text-primary text-xs" onClick={clearFilters}>
