@@ -14,28 +14,25 @@ serve(async (req) => {
   try {
     const cfZoneId = Deno.env.get("CLOUDFLARE_ZONE_ID");
     const cfToken = Deno.env.get("CLOUDFLARE_API_TOKEN");
+    const cfEmail = Deno.env.get("CLOUDFLARE_EMAIL");
 
-    if (!cfZoneId || !cfToken) {
+    if (!cfZoneId || !cfToken || !cfEmail) {
       return new Response(
         JSON.stringify({
           status: "error",
-          message: "Missing secrets: CLOUDFLARE_ZONE_ID or CLOUDFLARE_API_TOKEN not configured.",
-          secrets: {
-            CLOUDFLARE_ZONE_ID: !!cfZoneId,
-            CLOUDFLARE_API_TOKEN: !!cfToken,
-          },
+          message: "Missing secrets: CLOUDFLARE_ZONE_ID, CLOUDFLARE_API_TOKEN, or CLOUDFLARE_EMAIL not configured.",
         }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Verify token by hitting the Cloudflare API (list custom hostnames, limit 1)
     const cfResponse = await fetch(
       `https://api.cloudflare.com/client/v4/zones/${cfZoneId}/custom_hostnames?per_page=1`,
       {
         method: "GET",
         headers: {
-          Authorization: `Bearer ${cfToken}`,
+          "X-Auth-Key": cfToken,
+          "X-Auth-Email": cfEmail,
           "Content-Type": "application/json",
         },
       }
@@ -47,7 +44,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           status: "success",
-          message: "✅ Cloudflare API connection verified. Token and Zone ID are valid.",
+          message: "✅ Cloudflare API connection verified. Global Key and Zone ID are valid.",
           hostname_count: cfData.result_info?.total_count ?? "unknown",
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -58,7 +55,6 @@ serve(async (req) => {
         JSON.stringify({
           status: "unauthorized",
           message: `❌ Cloudflare API rejected the request: ${errMsg}`,
-          errors: cfData.errors,
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
