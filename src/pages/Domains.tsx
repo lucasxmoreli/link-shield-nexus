@@ -81,6 +81,9 @@ export default function Domains() {
   const [open, setOpen] = useState(false);
   const [setupDomain, setSetupDomain] = useState<string | null>(null);
   const [url, setUrl] = useState("");
+  const [debugMode, setDebugMode] = useState(false);
+  const [apiTestResult, setApiTestResult] = useState<{ status: string; message: string } | null>(null);
+  const [apiTestLoading, setApiTestLoading] = useState(false);
 
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
