@@ -729,8 +729,8 @@ serve(async (req) => {
     }
 
     if (profile) {
-      // Click deduplication: check if this IP already triggered a click for this campaign in the last 60s
-      const dedupeWindow = new Date(Date.now() - 60_000).toISOString();
+      // Click deduplication: 5-minute window per IP+campaign
+      const dedupeWindow = new Date(Date.now() - 5 * 60_000).toISOString();
       const { count: recentClicks } = await supabase
         .from("requests_log")
         .select("id", { count: "exact", head: true })
@@ -739,13 +739,26 @@ serve(async (req) => {
         .eq("action_taken", "offer_page")
         .gte("created_at", dedupeWindow);
 
-      if (!recentClicks || recentClicks === 0) {
+      // Daily IP cap: max 10 offer clicks per IP per campaign per day
+      const dayStart = new Date();
+      dayStart.setUTCHours(0, 0, 0, 0);
+      const { count: dailyClicks } = await supabase
+        .from("requests_log")
+        .select("id", { count: "exact", head: true })
+        .eq("campaign_id", campaign.id)
+        .eq("ip_address", ip)
+        .eq("action_taken", "offer_page")
+        .gte("created_at", dayStart.toISOString());
+
+      if ((dailyClicks ?? 0) >= 10) {
+        console.log(`[DEDUP] Daily IP cap reached — IP ${ip} campaign ${campaign.id}`);
+      } else if (!recentClicks || recentClicks === 0) {
         await supabase
           .from("profiles")
           .update({ current_clicks: (profile.current_clicks ?? 0) + 1 })
           .eq("user_id", campaign.user_id);
       } else {
-        console.log(`[DEDUP] Skipping click increment — IP ${ip} already clicked campaign ${campaign.id} within 60s`);
+        console.log(`[DEDUP] Skipping click increment — IP ${ip} already clicked campaign ${campaign.id} within 5min`);
       }
     }
 
