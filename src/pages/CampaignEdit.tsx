@@ -527,6 +527,93 @@ export default function CampaignEdit() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Success Modal */}
+      <Dialog open={!!successModal} onOpenChange={(open) => { if (!open) { setSuccessModal(null); navigate("/campaigns"); } }}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-xl">🚀 Campaign is Live!</DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground pt-1">
+              Your campaign <span className="font-semibold text-foreground">{name}</span> is ready to receive traffic.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 pt-2">
+            {/* Campaign Link */}
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Your Tracking Link</Label>
+              <div className="relative">
+                <Input
+                  readOnly
+                  value={successModal?.link || ""}
+                  className="bg-secondary border-border pr-20 font-mono text-sm"
+                />
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 gap-1.5 text-xs"
+                  onClick={() => {
+                    navigator.clipboard.writeText(successModal?.link || "");
+                    setLinkCopied(true);
+                    toast.success("Link copied!");
+                    setTimeout(() => setLinkCopied(false), 2000);
+                  }}
+                >
+                  {linkCopied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                  {linkCopied ? "Copied" : "Copy"}
+                </Button>
+              </div>
+            </div>
+
+            {/* URL Previews */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-lg border border-border bg-secondary/50 p-3 space-y-1.5">
+                <div className="flex items-center gap-1.5">
+                  <Globe className="h-3.5 w-3.5 text-primary" />
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Offer Page</span>
+                </div>
+                <p className="text-xs font-mono text-foreground truncate" title={successModal?.offerUrl}>
+                  {successModal?.offerUrl || "—"}
+                </p>
+              </div>
+              <div className="rounded-lg border border-border bg-secondary/50 p-3 space-y-1.5">
+                <div className="flex items-center gap-1.5">
+                  <Shield className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Safe Page</span>
+                </div>
+                <p className="text-xs font-mono text-foreground truncate" title={successModal?.safeUrl}>
+                  {successModal?.safeUrl || "—"}
+                </p>
+              </div>
+            </div>
+
+            {/* Tutorial Steps */}
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-2.5">
+              <p className="text-xs font-semibold uppercase tracking-wider text-primary">Quick Setup Guide</p>
+              <div className="space-y-2">
+                <div className="flex items-start gap-2.5">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold text-primary">1</span>
+                  <p className="text-sm text-muted-foreground">Copy this link and use it in your <span className="font-medium text-foreground">Ad Manager</span> (Facebook, TikTok, Google, etc).</p>
+                </div>
+                <div className="flex items-start gap-2.5">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold text-primary">2</span>
+                  <p className="text-sm text-muted-foreground">Make sure your domain is <span className="font-medium text-foreground">verified</span> in the Domains tab for this link to work.</p>
+                </div>
+                <div className="flex items-start gap-2.5">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold text-primary">3</span>
+                  <p className="text-sm text-muted-foreground">Test your link using a <span className="font-medium text-foreground">VPN or Incognito window</span> to verify the redirection works correctly.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button onClick={() => { setSuccessModal(null); navigate("/campaigns"); }} className="w-full">
+              Go to Campaigns
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
