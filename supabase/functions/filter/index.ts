@@ -214,6 +214,88 @@ function redirectResponse(targetUrl: string): Response {
   });
 }
 
+// ═══════════════════════════════════════════════════════════════
+// TRANSPARENT CONTENT FETCH — Proxy HTML with rewritten paths
+// ═══════════════════════════════════════════════════════════════
+function rewriteRelativeUrls(html: string, baseUrl: string): string {
+  const base = new URL(baseUrl);
+  const origin = base.origin;
+
+  // Rewrite src="/ and href="/ to absolute
+  html = html.replace(/((?:src|href|action|poster|data)\s*=\s*["'])\/(?!\/)/gi, `$1${origin}/`);
+
+  // Rewrite src="./ or src="path (relative, no protocol)
+  const basePath = base.pathname.replace(/\/[^/]*$/, "/");
+  html = html.replace(/((?:src|href|action)\s*=\s*["'])(?!https?:\/\/|\/\/|\/|#|data:|javascript:|mailto:)([^"']+)/gi, `$1${origin}${basePath}$2`);
+
+  // Rewrite url(/) in inline CSS
+  html = html.replace(/(url\(\s*['"]?)\/(?!\/)/gi, `$1${origin}/`);
+
+  // Add <base> tag if not present so any remaining relative refs resolve
+  if (!/<base\s/i.test(html)) {
+    html = html.replace(/(<head[^>]*>)/i, `$1<base href="${origin}${basePath}">`);
+  }
+
+  return html;
+}
+
+async function contentFetchResponse(targetUrl: string, campaignDomain?: string): Promise<Response> {
+  try {
+    // Same-domain loop prevention: if target matches campaign domain, fetch root
+    if (campaignDomain) {
+      const cleanCampaignDomain = campaignDomain.replace(/^(https?:\/\/)?(www\.)?/, "").replace(/\/+$/, "");
+      try {
+        const targetHost = new URL(targetUrl).hostname.replace(/^www\./, "");
+        if (targetHost === cleanCampaignDomain || targetHost.endsWith(`.${cleanCampaignDomain}`)) {
+          const targetPath = new URL(targetUrl).pathname;
+          // If it's the root or /c/ path, serve a minimal page to prevent loop
+          if (targetPath === "/" || /^\/c(\/|$)/i.test(targetPath)) {
+            console.warn(`[CONTENT-FETCH] Same-domain loop detected for ${targetUrl}, serving fallback`);
+            return new Response(
+              `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Page</title></head><body><p>Content unavailable. Please configure a different domain for your safe/offer page.</p></body></html>`,
+              { headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" } },
+            );
+          }
+        }
+      } catch { /* parsing error, continue normally */ }
+    }
+
+    const res = await fetch(targetUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.5",
+      },
+      redirect: "follow",
+      signal: AbortSignal.timeout(8000),
+    });
+
+    const contentType = res.headers.get("content-type") || "text/html";
+
+    // For non-HTML content, stream directly
+    if (!contentType.includes("text/html")) {
+      return new Response(res.body, {
+        headers: { ...corsHeaders, "Content-Type": contentType, "Cache-Control": "no-store" },
+      });
+    }
+
+    let html = await res.text();
+    html = rewriteRelativeUrls(html, targetUrl);
+
+    return new Response(html, {
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/html; charset=utf-8",
+        "Cache-Control": "no-store",
+      },
+    });
+  } catch (err) {
+    console.error(`[CONTENT-FETCH] Failed to fetch ${targetUrl}:`, err);
+    // Fallback to redirect if content fetch fails
+    return redirectResponse(targetUrl);
+  }
+}
+
 function sanitizeRedirectUrl(url: string | null | undefined, safeFallback: string): string {
   const fallback = safeFallback || "https://google.com";
   const rawValue = (url || "").trim();
@@ -313,7 +395,7 @@ serve(async (req) => {
 
     const { data: campaign, error: campaignError } = await supabase
       .from("campaigns")
-      .select("id, user_id, offer_url, safe_url, is_active, traffic_source, offer_page_b, target_countries, target_devices, strict_mode")
+      .select("id, user_id, offer_url, safe_url, is_active, traffic_source, offer_page_b, target_countries, target_devices, strict_mode, safe_page_method, offer_page_method, domain")
       .eq("hash", campaign_hash)
       .single();
 
@@ -395,9 +477,18 @@ serve(async (req) => {
         }
       }
 
+      // Determine delivery method based on action and campaign settings
+      const method = action === "offer_page"
+        ? (campaign.offer_page_method || "redirect")
+        : (campaign.safe_page_method || "redirect");
+
+      if (responseMode === "redirect" && method === "content_fetch") {
+        return contentFetchResponse(redirectUrl, campaign.domain || undefined);
+      }
+
       return responseMode === "redirect"
         ? redirectResponse(redirectUrl)
-        : jsonResponse({ action: action === "offer_page" ? "redirect" : "safe_page", url: redirectUrl });
+        : jsonResponse({ action: action === "offer_page" ? "redirect" : "safe_page", url: redirectUrl, method });
     };
 
     const { data: blockedIp } = await supabase
