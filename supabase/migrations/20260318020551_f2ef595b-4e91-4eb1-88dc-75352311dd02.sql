@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS idx_blocked_ips_ip_user ON public.blocked_ips (ip_address, user_id);
