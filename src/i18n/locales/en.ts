@@ -224,6 +224,7 @@ const en = {
     domainUrlPlaceholder: "e.g. track.mysite.com",
     domainAdded: "Domain registered! Set up your CNAME record to activate.",
     domainRemoved: "Domain removed",
+    domainRemovedCloudflare: "Domain removed from Cloudflare and system.",
     domainDuplicate: "This domain has already been added.",
     domainRequired: "Domain URL is required.",
     setupDomain: "Setup Domain",
