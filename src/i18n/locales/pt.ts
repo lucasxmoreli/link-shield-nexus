@@ -230,6 +230,7 @@ const pt = {
     cnameStep1: "Acesse o painel DNS do seu domínio (Hostinger, GoDaddy, Namecheap, Cloudflare, etc.).",
     cnameStep2: "Crie um registro CNAME apontando para:",
     cnameStep3: "Salve e clique em Verificar abaixo.",
+    cnameStep3Add: "Salve as alterações no DNS e clique em Adicionar abaixo.",
     type: "Tipo",
     nameHost: "Nome / Host",
     value: "Valor",

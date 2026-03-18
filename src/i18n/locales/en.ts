@@ -241,6 +241,7 @@ const en = {
     cnameStep1: "Access your DNS provider panel (Hostinger, GoDaddy, Namecheap, Cloudflare, etc.).",
     cnameStep2: "Create a CNAME record pointing to:",
     cnameStep3: "Save and click Verify below.",
+    cnameStep3Add: "Save your DNS changes and click Add below.",
     type: "Type",
     nameHost: "Name / Host",
     value: "Value",
