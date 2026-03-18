@@ -468,10 +468,49 @@ export default function CampaignEdit() {
       {/* Footer */}
       <div className="flex justify-end gap-3 pt-2">
         <Button variant="outline" onClick={() => navigate("/campaigns")}>Cancel</Button>
-        <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || !isFormValid}>
+        <Button
+          onClick={() => {
+            // Domain conflict check
+            if (domain && offerUrl) {
+              try {
+                const offerHost = new URL(ensureAbsoluteUrl(offerUrl)).hostname.replace(/^www\./, "");
+                const selectedDomain = domain.replace(/^(https?:\/\/)?(www\.)?/, "").replace(/\/+$/, "");
+                if (offerHost === selectedDomain || offerHost.endsWith(`.${selectedDomain}`)) {
+                  setConflictDialogOpen(true);
+                  return;
+                }
+              } catch { /* invalid URL, let save handle it */ }
+            }
+            saveMutation.mutate();
+          }}
+          disabled={saveMutation.isPending || !isFormValid}
+        >
           {saveMutation.isPending ? "Saving..." : "Save Campaign"}
         </Button>
       </div>
+
+      {/* Domain Conflict Dialog */}
+      <Dialog open={conflictDialogOpen} onOpenChange={setConflictDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              Conflict Detected
+            </DialogTitle>
+            <DialogDescription className="text-sm leading-relaxed pt-2">
+              You are using the same domain (<span className="font-semibold text-foreground">{domain}</span>) for both the cloaker tracking link and the Offer Page URL. This might cause 404 errors or redirect loops.
+              <br /><br />
+              We strongly recommend using <span className="font-semibold text-foreground">different domains or subdomains</span> for the tracking link and the offer page.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setConflictDialogOpen(false)}>Go Back & Fix</Button>
+            <Button variant="destructive" onClick={() => { setConflictDialogOpen(false); saveMutation.mutate(); }}>
+              Save Anyway
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
