@@ -125,8 +125,9 @@ const en = {
     copyLink: "Copy Link",
     campaignLinkCopied: "Campaign link copied!",
     campaignRemoved: "Campaign removed",
-    alwaysWorks: "Recommended",
-    customDomainDnsWarning: "⚠️ Custom domains only work if the DNS A record points to 185.158.133.1. If not configured, visitors will see a 404 error. Use the default domain for guaranteed reliability.",
+    noDomainsWarning: "⚠️ No domains available. You must connect and verify a custom domain in the Domains tab before generating a campaign link.",
+    goToDomains: "Go to Domains",
+    dnsReminder: "⚠️ DNS Reminder: Ensure your domain has an A Record pointing to 185.158.133.1 and the Cloudflare Proxy (🟠) is ENABLED to protect the network.",
   },
 
   // Campaign Edit / New
