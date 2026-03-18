@@ -171,9 +171,9 @@ const pt = {
     campaignUpdated: "Campanha atualizada!",
     campaignCreated: "Campanha criada!",
 
-    conflictTitle: "Conflito Detectado",
-    conflictDesc: "Você está usando o mesmo domínio ({{domain}}) tanto para o link de rastreamento do cloaker quanto para a URL da Página de Oferta. Isso pode causar erros 404 ou loops de redirecionamento.",
-    conflictRecommend: "Recomendamos fortemente usar domínios ou subdomínios diferentes para o link de rastreamento e a página de oferta.",
+    conflictTitle: "⚠️ Aviso: Mesmo Domínio Detectado",
+    conflictDesc: "Você está usando o mesmo domínio ({{domain}}) para o link de rastreamento e a página de destino. Isso causará um erro 404, a menos que você esteja usando um subdiretório específico.",
+    conflictRecommend: "Recomendamos fortemente usar um domínio diferente ou um link externo para sua Página de Oferta e Página Segura.",
 
     successTitle: "🚀 Campanha Ativa!",
     successDesc: "Sua campanha {{name}} está pronta para receber tráfego.",
