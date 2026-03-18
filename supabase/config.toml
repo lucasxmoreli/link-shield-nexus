@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.cf-api-test]
 verify_jwt = false
+
+[functions.delete-custom-hostname]
+verify_jwt = false

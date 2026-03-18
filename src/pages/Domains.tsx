@@ -136,13 +136,18 @@ export default function Domains() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("domains").delete().eq("id", id);
+      const { data, error } = await supabase.functions.invoke("delete-custom-hostname", {
+        body: { domain_id: id },
+      });
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["domains"] });
-      toast.success(t("domains.domainRemoved"));
+      toast.success(t("domains.domainRemovedCloudflare"));
     },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const checkStatusMutation = useMutation({
