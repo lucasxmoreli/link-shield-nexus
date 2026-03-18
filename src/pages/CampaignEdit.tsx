@@ -1,7 +1,7 @@
 import { useState, useEffect, KeyboardEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, X, AlertTriangle, Plus, Trash2, Lock, Zap, ShieldAlert, Info } from "lucide-react";
+import { ArrowLeft, X, AlertTriangle, Plus, Trash2, Lock, Zap, ShieldAlert, Info, Copy, Check, ExternalLink, Shield, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
