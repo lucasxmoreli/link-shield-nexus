@@ -217,21 +217,37 @@ function redirectResponse(targetUrl: string): Response {
 // ═══════════════════════════════════════════════════════════════
 // TRANSPARENT CONTENT FETCH — Proxy HTML with rewritten paths
 // ═══════════════════════════════════════════════════════════════
+
+const MAINTENANCE_HTML = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Page Under Maintenance</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f8f9fa;color:#333}main{text-align:center;padding:2rem;max-width:480px}h1{font-size:1.5rem;margin-bottom:.75rem}p{font-size:.95rem;color:#666;line-height:1.6}</style></head><body><main><h1>🔧 Under Maintenance</h1><p>This page is temporarily unavailable. We are performing scheduled maintenance to improve your experience. Please check back shortly.</p><p style="margin-top:1.5rem;font-size:.8rem;color:#999">If you believe this is an error, please contact support.</p></main></body></html>`;
+
 function rewriteRelativeUrls(html: string, baseUrl: string): string {
   const base = new URL(baseUrl);
   const origin = base.origin;
-
-  // Rewrite src="/ and href="/ to absolute
-  html = html.replace(/((?:src|href|action|poster|data)\s*=\s*["'])\/(?!\/)/gi, `$1${origin}/`);
-
-  // Rewrite src="./ or src="path (relative, no protocol)
   const basePath = base.pathname.replace(/\/[^/]*$/, "/");
-  html = html.replace(/((?:src|href|action)\s*=\s*["'])(?!https?:\/\/|\/\/|\/|#|data:|javascript:|mailto:)([^"']+)/gi, `$1${origin}${basePath}$2`);
 
-  // Rewrite url(/) in inline CSS
-  html = html.replace(/(url\(\s*['"]?)\/(?!\/)/gi, `$1${origin}/`);
+  // Rewrite src="/ href='/ action="/ etc. (double quotes, single quotes)
+  html = html.replace(/((?:src|href|action|poster|data|srcset)\s*=\s*)(["'])\/(?!\/)/gi, `$1$2${origin}/`);
 
-  // Add <base> tag if not present so any remaining relative refs resolve
+  // Rewrite relative paths (no protocol, no leading slash, no fragment/data/js/mailto)
+  html = html.replace(
+    /((?:src|href|action|poster|data)\s*=\s*)(["'])(?!https?:\/\/|\/\/|\/|#|data:|javascript:|mailto:|blob:)([^"'>\s]+)/gi,
+    `$1$2${origin}${basePath}$3`,
+  );
+
+  // Rewrite unquoted attributes: src=/path or href=/path
+  html = html.replace(/((?:src|href|action)\s*=\s*)\/(?!\/|["'])/gi, `$1${origin}/`);
+
+  // Rewrite url() in inline styles — handles url('/path'), url("/path"), url(/path)
+  html = html.replace(/(url\(\s*)(["']?)\/(?!\/)/gi, `$1$2${origin}/`);
+  html = html.replace(
+    /(url\(\s*)(["']?)(?!https?:\/\/|\/\/|\/|data:|blob:)([^"')>\s]+)/gi,
+    `$1$2${origin}${basePath}$3`,
+  );
+
+  // Rewrite @import "/path" or @import '/path'
+  html = html.replace(/(@import\s*)(["'])\/(?!\/)/gi, `$1$2${origin}/`);
+
+  // Add <base> tag if not present
   if (!/<base\s/i.test(html)) {
     html = html.replace(/(<head[^>]*>)/i, `$1<base href="${origin}${basePath}">`);
   }
@@ -239,60 +255,78 @@ function rewriteRelativeUrls(html: string, baseUrl: string): string {
   return html;
 }
 
-async function contentFetchResponse(targetUrl: string, campaignDomain?: string): Promise<Response> {
-  try {
-    // Same-domain loop prevention: if target matches campaign domain, fetch root
-    if (campaignDomain) {
-      const cleanCampaignDomain = campaignDomain.replace(/^(https?:\/\/)?(www\.)?/, "").replace(/\/+$/, "");
-      try {
-        const targetHost = new URL(targetUrl).hostname.replace(/^www\./, "");
-        if (targetHost === cleanCampaignDomain || targetHost.endsWith(`.${cleanCampaignDomain}`)) {
-          const targetPath = new URL(targetUrl).pathname;
-          // If it's the root or /c/ path, serve a minimal page to prevent loop
-          if (targetPath === "/" || /^\/c(\/|$)/i.test(targetPath)) {
-            console.warn(`[CONTENT-FETCH] Same-domain loop detected for ${targetUrl}, serving fallback`);
-            return new Response(
-              `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Page</title></head><body><p>Content unavailable. Please configure a different domain for your safe/offer page.</p></body></html>`,
-              { headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" } },
-            );
-          }
+async function contentFetchResponse(
+  targetUrl: string,
+  clientUA: string,
+  clientLang: string | null,
+  campaignDomain?: string,
+): Promise<Response> {
+  // Same-domain loop prevention
+  if (campaignDomain) {
+    const cleanCampaignDomain = campaignDomain.replace(/^(https?:\/\/)?(www\.)?/, "").replace(/\/+$/, "");
+    try {
+      const parsed = new URL(targetUrl);
+      const targetHost = parsed.hostname.replace(/^www\./, "");
+      if (targetHost === cleanCampaignDomain || targetHost.endsWith(`.${cleanCampaignDomain}`)) {
+        if (parsed.pathname === "/" || /^\/c(\/|$)/i.test(parsed.pathname)) {
+          console.warn(`[CONTENT-FETCH] Same-domain loop for ${targetUrl}, serving maintenance`);
+          return new Response(MAINTENANCE_HTML, {
+            headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" },
+          });
         }
-      } catch { /* parsing error, continue normally */ }
-    }
+      }
+    } catch { /* continue */ }
+  }
 
+  try {
     const res = await fetch(targetUrl, {
       headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "User-Agent": clientUA || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.5",
+        "Accept-Language": clientLang || "en-US,en;q=0.5",
       },
       redirect: "follow",
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(4000),
     });
+
+    // 4xx/5xx → serve maintenance page
+    if (res.status >= 400) {
+      console.error(`[CONTENT-FETCH] Destination returned ${res.status} for ${targetUrl}`);
+      await res.text(); // consume body
+      return new Response(MAINTENANCE_HTML, {
+        headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" },
+      });
+    }
 
     const contentType = res.headers.get("content-type") || "text/html";
 
-    // For non-HTML content, stream directly
+    // Build forwarded headers
+    const fwdHeaders: Record<string, string> = {
+      ...corsHeaders,
+      "Cache-Control": "no-store",
+    };
+    // Forward critical headers from destination
+    for (const h of ["content-type", "set-cookie", "content-language", "x-frame-options"]) {
+      const val = res.headers.get(h);
+      if (val) fwdHeaders[h] = val;
+    }
+
+    // Non-HTML → stream directly with forwarded headers
     if (!contentType.includes("text/html")) {
-      return new Response(res.body, {
-        headers: { ...corsHeaders, "Content-Type": contentType, "Cache-Control": "no-store" },
-      });
+      return new Response(res.body, { headers: fwdHeaders });
     }
 
     let html = await res.text();
     html = rewriteRelativeUrls(html, targetUrl);
 
-    return new Response(html, {
-      headers: {
-        ...corsHeaders,
-        "Content-Type": "text/html; charset=utf-8",
-        "Cache-Control": "no-store",
-      },
-    });
+    fwdHeaders["Content-Type"] = "text/html; charset=utf-8";
+
+    return new Response(html, { headers: fwdHeaders });
   } catch (err) {
-    console.error(`[CONTENT-FETCH] Failed to fetch ${targetUrl}:`, err);
-    // Fallback to redirect if content fetch fails
-    return redirectResponse(targetUrl);
+    console.error(`[CONTENT-FETCH] Failed for ${targetUrl}:`, err);
+    return new Response(MAINTENANCE_HTML, {
+      headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" },
+    });
   }
 }
 
@@ -483,7 +517,7 @@ serve(async (req) => {
         : (campaign.safe_page_method || "redirect");
 
       if (responseMode === "redirect" && method === "content_fetch") {
-        return contentFetchResponse(redirectUrl, campaign.domain || undefined);
+        return contentFetchResponse(redirectUrl, user_agent, req.headers.get("accept-language"), campaign.domain || undefined);
       }
 
       return responseMode === "redirect"
