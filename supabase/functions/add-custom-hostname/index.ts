@@ -98,7 +98,15 @@ serve(async (req) => {
 
     if (!cfData.success) {
       const errMsg = cfData.errors?.[0]?.message || "Cloudflare API error";
-      console.error(`Cloudflare API Error: ${cfResponse.status} - ${errMsg}`);
+      const errCode = cfData.errors?.[0]?.code;
+      // Handle duplicate hostname (code 1406 or message contains "duplicate")
+      if (errCode === 1406 || errMsg.toLowerCase().includes("duplicate")) {
+        return new Response(JSON.stringify({ error: "This domain is already registered. Please delete it first or use a different domain." }), {
+          status: 409,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      console.error("Domain registration failed");
       return new Response(JSON.stringify({ error: errMsg }), {
         status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
