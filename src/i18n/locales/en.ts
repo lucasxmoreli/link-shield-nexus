@@ -362,6 +362,7 @@ const en = {
     minChars: "Minimum 6 characters",
     inviteConsumed: "Invite code was already consumed. Please contact the administrator.",
     accountCreated: "Account created! Check your email to confirm.",
+    registrationFailed: "Registration failed. Please try again.",
     accessRestricted: "Access is restricted. If you don't have an invite code, contact the administrator.",
     invisibleProtection: "Invisible protection.",
     realResults: "Real results.",

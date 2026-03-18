@@ -346,6 +346,7 @@ const es = {
     minChars: "Mínimo 6 caracteres",
     inviteConsumed: "El código de invitación ya fue consumido. Contacta al administrador.",
     accountCreated: "¡Cuenta creada! Revisa tu email para confirmar.",
+    registrationFailed: "Error en el registro. Inténtalo de nuevo.",
     accessRestricted: "El acceso es restringido. Si no tienes un código de invitación, contacta al administrador.",
     invisibleProtection: "Protección invisible.",
     realResults: "Resultados reales.",

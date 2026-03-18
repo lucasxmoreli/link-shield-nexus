@@ -3,5 +3,8 @@ project_id = "pvgkyyvicsexediwttwv"
 [functions.filter]
 verify_jwt = false
 
+[functions.register]
+verify_jwt = false
+
 [functions.verify-domains-cron]
 verify_jwt = false

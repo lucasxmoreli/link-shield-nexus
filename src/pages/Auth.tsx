@@ -53,27 +53,20 @@ export default function Auth() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { data: signUpData, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { emailRedirectTo: window.location.origin },
-    });
-    if (error) {
-      toast.error(error.message);
-    } else {
-      if (signUpData.user) {
-        const { data: used } = await supabase.rpc("use_invite_code", {
-          p_code: validatedCode,
-        });
-        if (!used) {
-          toast.error(t("auth.inviteConsumed"));
-          setView("login");
-          setLoading(false);
-          return;
-        }
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke("register", {
+        body: { email, password, invite_code: validatedCode },
+      });
+      if (fnError) {
+        toast.error(fnError.message || t("auth.registrationFailed"));
+      } else if (data?.error) {
+        toast.error(data.error);
+      } else {
+        toast.success(t("auth.accountCreated"));
+        setView("login");
       }
-      toast.success(t("auth.accountCreated"));
-      setView("login");
+    } catch {
+      toast.error(t("auth.registrationFailed"));
     }
     setLoading(false);
   };
