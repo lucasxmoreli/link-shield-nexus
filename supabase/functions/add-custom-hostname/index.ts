@@ -135,7 +135,7 @@ serve(async (req) => {
       throw insertError;
     }
 
-    return new Response(JSON.stringify({ domain, cloudflare: cfData.result }), {
+    return new Response(JSON.stringify({ domain, cloudflare: cfData.result, ownership_verification: ownershipVerification, ssl_validation_records: sslValidationRecords }), {
       status: 201,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
