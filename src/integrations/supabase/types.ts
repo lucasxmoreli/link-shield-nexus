@@ -346,6 +346,7 @@ export type Database = {
       process_billing_renewals: { Args: never; Returns: Json }
       redeem_promo_code: { Args: { p_code: string }; Returns: Json }
       use_invite_code: { Args: { p_code: string }; Returns: boolean }
+      use_invite_code_admin: { Args: { p_code: string }; Returns: boolean }
       validate_invite_code: { Args: { p_code: string }; Returns: boolean }
     }
     Enums: {
