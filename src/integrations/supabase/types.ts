@@ -103,23 +103,29 @@ export type Database = {
       }
       domains: {
         Row: {
+          cloudflare_hostname_id: string | null
           created_at: string
           id: string
           is_verified: boolean | null
+          ssl_status: string | null
           url: string
           user_id: string
         }
         Insert: {
+          cloudflare_hostname_id?: string | null
           created_at?: string
           id?: string
           is_verified?: boolean | null
+          ssl_status?: string | null
           url: string
           user_id: string
         }
         Update: {
+          cloudflare_hostname_id?: string | null
           created_at?: string
           id?: string
           is_verified?: boolean | null
+          ssl_status?: string | null
           url?: string
           user_id?: string
         }
