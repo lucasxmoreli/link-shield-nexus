@@ -208,6 +208,7 @@ export default function Requests() {
                 <TableHead className="text-muted-foreground">IP</TableHead>
                 <TableHead className="text-muted-foreground">Device</TableHead>
                 <TableHead className="text-muted-foreground">Action</TableHead>
+                <TableHead className="text-muted-foreground">Reason</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
