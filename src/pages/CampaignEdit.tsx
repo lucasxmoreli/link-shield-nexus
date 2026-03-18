@@ -1,7 +1,7 @@
 import { useState, useEffect, KeyboardEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, X, AlertTriangle, Plus, Trash2, Lock, Zap } from "lucide-react";
+import { ArrowLeft, X, AlertTriangle, Plus, Trash2, Lock, Zap, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -64,6 +64,7 @@ export default function CampaignEdit() {
   ]);
   const [targetCountries, setTargetCountries] = useState<string[]>([]);
   const [targetDevices, setTargetDevices] = useState<string[]>([]);
+  const [strictMode, setStrictMode] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [countrySearch, setCountrySearch] = useState("");
@@ -117,6 +118,7 @@ export default function CampaignEdit() {
       setTargetCountries((campaign as any).target_countries ?? []);
       setTargetDevices((campaign as any).target_devices ?? []);
       setTags((campaign as any).tags ?? []);
+      setStrictMode((campaign as any).strict_mode ?? false);
     }
   }, [campaign]);
 
@@ -133,6 +135,7 @@ export default function CampaignEdit() {
         target_countries: targetCountries,
         target_devices: targetDevices,
         tags,
+        strict_mode: strictMode,
       };
       if (isEditing) {
         const { error } = await supabase.from("campaigns").update(payload).eq("id", id!);
@@ -329,6 +332,23 @@ export default function CampaignEdit() {
               Redirect
             </label>
           </RadioGroup>
+        </div>
+      </section>
+
+      {/* BLOCK 3.5: Strict Mode */}
+      <section className="rounded-xl bg-[hsl(var(--card))] p-6 space-y-4">
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Security</h2>
+        <div className="flex items-center justify-between rounded-lg border border-border bg-secondary/50 px-4 py-3">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-destructive/10">
+              <ShieldAlert className="h-4 w-4 text-destructive" />
+            </div>
+            <div>
+              <p className="text-sm font-medium">🛡️ Strict Mode</p>
+              <p className="text-xs text-muted-foreground">Block suspicious traffic (missing click IDs, unknown referers)</p>
+            </div>
+          </div>
+          <Switch checked={strictMode} onCheckedChange={setStrictMode} />
         </div>
       </section>
 

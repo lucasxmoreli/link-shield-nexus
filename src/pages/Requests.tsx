@@ -208,18 +208,19 @@ export default function Requests() {
                 <TableHead className="text-muted-foreground">IP</TableHead>
                 <TableHead className="text-muted-foreground">Device</TableHead>
                 <TableHead className="text-muted-foreground">Action</TableHead>
+                <TableHead className="text-muted-foreground">Reason</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i} className="border-border">
-                    {Array.from({ length: 7 }).map((_, j) => <TableCell key={j}><Skeleton className="h-5 w-20" /></TableCell>)}
+                    {Array.from({ length: 8 }).map((_, j) => <TableCell key={j}><Skeleton className="h-5 w-20" /></TableCell>)}
                   </TableRow>
                 ))
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-12">
+                  <TableCell colSpan={8} className="text-center py-12">
                     <p className="text-muted-foreground font-medium">No requests found matching these filters.</p>
                     {hasActiveFilters && (
                       <Button variant="link" size="sm" className="mt-2 text-primary text-xs" onClick={clearFilters}>
@@ -247,6 +248,9 @@ export default function Requests() {
                       <Badge variant="outline" className={actionStyles[r.action_taken] ?? ""}>
                         {actionLabel[r.action_taken] ?? r.action_taken.replace("_", " ")}
                       </Badge>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground font-mono">
+                      {(r as any).block_reason ?? "—"}
                     </TableCell>
                   </TableRow>
                 ))

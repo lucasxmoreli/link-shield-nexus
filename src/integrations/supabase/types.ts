@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      blocked_ips: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          ip_address: string
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          ip_address: string
+          reason: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          ip_address?: string
+          reason?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       campaigns: {
         Row: {
           created_at: string
@@ -26,6 +53,7 @@ export type Database = {
           offer_url: string
           safe_page_method: string
           safe_url: string
+          strict_mode: boolean
           tags: string[] | null
           target_countries: string[] | null
           target_devices: string[] | null
@@ -43,6 +71,7 @@ export type Database = {
           offer_url: string
           safe_page_method?: string
           safe_url: string
+          strict_mode?: boolean
           tags?: string[] | null
           target_countries?: string[] | null
           target_devices?: string[] | null
@@ -60,6 +89,7 @@ export type Database = {
           offer_url?: string
           safe_page_method?: string
           safe_url?: string
+          strict_mode?: boolean
           tags?: string[] | null
           target_countries?: string[] | null
           target_devices?: string[] | null
@@ -200,6 +230,7 @@ export type Database = {
       requests_log: {
         Row: {
           action_taken: Database["public"]["Enums"]["action_taken"]
+          block_reason: string | null
           campaign_id: string
           country_code: string | null
           created_at: string
@@ -211,6 +242,7 @@ export type Database = {
         }
         Insert: {
           action_taken: Database["public"]["Enums"]["action_taken"]
+          block_reason?: string | null
           campaign_id: string
           country_code?: string | null
           created_at?: string
@@ -222,6 +254,7 @@ export type Database = {
         }
         Update: {
           action_taken?: Database["public"]["Enums"]["action_taken"]
+          block_reason?: string | null
           campaign_id?: string
           country_code?: string | null
           created_at?: string
