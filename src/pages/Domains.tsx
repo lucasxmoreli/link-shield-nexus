@@ -450,24 +450,30 @@ export default function Domains() {
                   <TableRow key={d.id} className="border-border">
                     <TableCell className="font-mono text-sm">{d.url}</TableCell>
                     <TableCell>
-                      {d.is_verified ? (
+                      {d.ssl_status === "active" && d.is_verified ? (
                         <Badge variant="outline" className="border-[hsl(var(--success))]/30 bg-[hsl(var(--success))]/10 text-[hsl(var(--success))]">
                           <CheckCircle className="h-3 w-3 mr-1" /> {t("domains.verified")}
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="border-destructive/30 bg-destructive/10 text-destructive cursor-pointer hover:bg-destructive/20 transition-colors" onClick={() => setSetupDomain(d.url)}>
+                        <Badge variant="outline" className="border-yellow-500/30 bg-yellow-500/10 text-yellow-500 cursor-pointer hover:bg-yellow-500/20 transition-colors" onClick={() => setSetupDomain(d.url)}>
                           <XCircle className="h-3 w-3 mr-1" /> {t("domains.pending")}
                         </Badge>
                       )}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary" className="text-xs capitalize">
-                        {(d as any).ssl_status || "pending"}
-                      </Badge>
+                      {d.ssl_status === "active" ? (
+                        <Badge variant="outline" className="border-[hsl(var(--success))]/30 bg-[hsl(var(--success))]/10 text-[hsl(var(--success))] text-xs">
+                          <Lock className="h-3 w-3 mr-1" /> Active
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="border-yellow-500/30 bg-yellow-500/10 text-yellow-500 text-xs capitalize">
+                          {d.ssl_status || "pending"}
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">{new Date(d.created_at).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right space-x-1">
-                      {!d.is_verified && (
+                      {d.ssl_status !== "active" && (
                         <Button variant="ghost" size="sm" className="text-primary hover:text-primary" onClick={() => setSetupDomain(d.url)}>
                           <ShieldCheck className="h-4 w-4 mr-1" /> {t("domains.checkStatus")}
                         </Button>
