@@ -299,6 +299,50 @@ export default function Domains() {
                     onKeyDown={(e) => { if (e.key === "Enter" && url) createMutation.mutate(); }}
                   />
                 </div>
+
+                {/* Inline DNS Instructions */}
+                <div className="flex flex-col space-y-2.5">
+                  <div className="rounded-lg border border-border/30 bg-secondary/10 p-3">
+                    <div className="flex items-center gap-2">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-bold">1</span>
+                      <p className="text-sm font-medium text-foreground">{t("domains.cnameStep1")}</p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border border-border/30 bg-secondary/10 p-3 space-y-2.5">
+                    <div className="flex items-center gap-2">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-bold">2</span>
+                      <p className="text-sm font-medium text-foreground">{t("domains.cnameStep2")}</p>
+                    </div>
+                    <div className="relative">
+                      <Input readOnly value={CNAME_TARGET} className="pr-9 bg-background border-border font-mono text-sm h-9" />
+                      <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => { navigator.clipboard.writeText(CNAME_TARGET); toast.success(t("domains.valueCopied")); }}>
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border border-border/30 bg-secondary/10 p-3">
+                    <div className="flex items-center gap-2">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-bold">3</span>
+                      <p className="text-sm font-medium text-foreground">{t("domains.cnameStep3Add")}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* TXT fallback link */}
+                <button
+                  className="text-xs text-primary/70 hover:text-primary underline underline-offset-2 transition-colors text-left"
+                  onClick={() => setShowTxtFallback((v) => !v)}
+                >
+                  {t("domains.txtFallbackLink")}
+                </button>
+                {showTxtFallback && (
+                  <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/5 p-3">
+                    <p className="text-xs text-muted-foreground">{t("domains.txtFallbackWarning")}</p>
+                  </div>
+                )}
+
                 <Button className="w-full" onClick={() => createMutation.mutate()} disabled={createMutation.isPending || !url}>
                   {createMutation.isPending ? t("domains.checking") : t("common.add")}
                 </Button>

@@ -230,6 +230,7 @@ const es = {
     cnameStep1: "Accede al panel DNS de tu dominio (Hostinger, GoDaddy, Namecheap, Cloudflare, etc.).",
     cnameStep2: "Crea un registro CNAME apuntando a:",
     cnameStep3: "Guarda y haz clic en Verificar abajo.",
+    cnameStep3Add: "Guarda los cambios de DNS y haz clic en Añadir abajo.",
     type: "Tipo",
     nameHost: "Nombre / Host",
     value: "Valor",
