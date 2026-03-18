@@ -222,17 +222,46 @@ export default function CampaignEdit() {
             <Input placeholder="e.g. TTK 10 - FREE [TRESH-$500]" className="bg-secondary border-border" value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Domain</Label>
-            <Select value={domain} onValueChange={setDomain}>
-              <SelectTrigger className="bg-secondary border-border">
-                <SelectValue placeholder="Select a domain" />
-              </SelectTrigger>
-              <SelectContent className="bg-card border-border">
-                {domains.map((d) => (
-                  <SelectItem key={d.id} value={d.url}>{d.url}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-1.5">
+              <Label className="text-xs text-muted-foreground">Domain</Label>
+              <TooltipProvider delayDuration={200}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="max-w-[280px] text-xs leading-relaxed">
+                    <p>Example: If you select <span className="font-semibold text-primary">"mysite.com"</span>, your cloaker link will be <span className="font-mono text-primary">mysite.com/c/xyz</span>.</p>
+                    <p className="mt-1">This link will then redirect users to your Offer Page or Safe Page.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            {domains.length === 0 ? (
+              <div className="flex items-start gap-2 rounded-lg border border-yellow-500/30 bg-yellow-500/5 p-3">
+                <AlertTriangle className="h-4 w-4 mt-0.5 text-yellow-500 shrink-0" />
+                <p className="text-sm text-yellow-200/80">
+                  No verified domains found.{" "}
+                  <button type="button" onClick={() => navigate("/domains")} className="underline text-primary hover:text-primary/80 transition-colors">
+                    Go to the Domains tab
+                  </button>{" "}
+                  to add one first.
+                </p>
+              </div>
+            ) : (
+              <>
+                <Select value={domain} onValueChange={setDomain}>
+                  <SelectTrigger className="bg-secondary border-border">
+                    <SelectValue placeholder="Select a domain" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card border-border">
+                    {domains.map((d) => (
+                      <SelectItem key={d.id} value={d.url}>{d.url}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">Select the verified domain that will host your tracking link. This is NOT your offer page.</p>
+              </>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">Traffic Source</Label>
