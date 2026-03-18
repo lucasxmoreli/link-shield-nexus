@@ -59,20 +59,12 @@ export default function Campaigns() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["campaigns"] }); toast.success(t("campaigns.campaignRemoved")); },
   });
 
-  const publishedBase = "cloakguard.lovable.app";
-  const defaultBase = window.location.origin;
-  const FALLBACK_DOMAIN = "__default__";
-
   const getFullLink = () => {
-    if (!selectedDomain || selectedDomain === FALLBACK_DOMAIN) {
-      return `https://${publishedBase}/c/${linkModal.hash}`;
-    }
+    if (!selectedDomain) return "";
     const base = selectedDomain.trim().replace(/\/+$/, "");
     const dm = base.startsWith("http") ? base : `https://${base}`;
     return `${dm}/c/${linkModal.hash}`;
   };
-
-  const isCustomDomainSelected = selectedDomain && selectedDomain !== FALLBACK_DOMAIN;
 
   const openLinkModal = (hash: string, name: string) => {
     setCopied(false);
