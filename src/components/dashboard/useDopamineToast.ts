@@ -55,8 +55,8 @@ export function useDopamineToast() {
     firedRef.current = true;
     const timer = setTimeout(() => {
       toast({
-        title: t("dopamine.title") as string,
-        description: t("dopamine.description", { count: blockedCount.toLocaleString() }) as string,
+        title: String(t("dopamine.title")),
+        description: String(t("dopamine.description", { count: blockedCount.toLocaleString() })),
       });
     }, 2800);
     return () => clearTimeout(timer);
