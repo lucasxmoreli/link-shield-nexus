@@ -246,9 +246,15 @@ export default function Domains() {
     },
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["domains"] });
+      // Store TXT validation data for the UI
+      setTxtValidationData({
+        ownership_verification: data.ownership_verification,
+        ssl_validation_records: data.ssl_validation_records,
+      });
       if (data.active) {
         toast.success("✅ " + t("domains.domainActive"));
         setSetupDomain(null);
+        setTxtValidationData(null);
       } else {
         toast.info(t("domains.domainPending"), { duration: 6000 });
       }
