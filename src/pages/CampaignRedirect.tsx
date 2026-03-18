@@ -1,51 +1,64 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function CampaignRedirect() {
   const { hash } = useParams<{ hash: string }>();
-  const navigate = useNavigate();
-  const [error, setError] = useState(false);
+  const [status, setStatus] = useState<"loading" | "not_found">("loading");
 
   useEffect(() => {
     if (!hash) {
-      navigate("/", { replace: true });
+      setStatus("not_found");
       return;
     }
 
-    try {
-      const backendUrl = import.meta.env.VITE_SUPABASE_URL;
-      if (!backendUrl) {
-        throw new Error("Missing backend URL");
+    const resolve = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("campaigns")
+          .select("offer_url, safe_url, is_active")
+          .eq("hash", hash)
+          .maybeSingle();
+
+        if (error || !data || !data.is_active) {
+          setStatus("not_found");
+          return;
+        }
+
+        const destination = data.offer_url || data.safe_url;
+        if (destination) {
+          window.location.replace(destination);
+        } else {
+          setStatus("not_found");
+        }
+      } catch {
+        setStatus("not_found");
       }
+    };
 
-      const redirectUrl = new URL(`${backendUrl}/functions/v1/filter`);
-      redirectUrl.searchParams.set("campaign_hash", hash);
+    resolve();
+  }, [hash]);
 
-      const visitorParams = new URLSearchParams(window.location.search);
-      visitorParams.forEach((value, key) => {
-        redirectUrl.searchParams.append(key, value);
-      });
-
-      window.location.replace(redirectUrl.toString());
-    } catch {
-      setError(true);
-      setTimeout(() => navigate("/", { replace: true }), 2000);
-    }
-  }, [hash, navigate]);
+  if (status === "not_found") {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-background px-4 text-center">
+        <div className="rounded-full bg-destructive/10 p-4">
+          <svg className="h-8 w-8 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+          </svg>
+        </div>
+        <h1 className="text-xl font-semibold text-foreground">Campaign Not Found</h1>
+        <p className="max-w-sm text-sm text-muted-foreground">
+          This campaign link is inactive or doesn't exist. Please check the URL and try again.
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background">
-      {error ? (
-        <>
-          <p className="font-medium text-destructive">Campaign not found or inactive.</p>
-          <p className="text-sm text-muted-foreground">Redirecting...</p>
-        </>
-      ) : (
-        <>
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="text-sm text-muted-foreground">Redirecting...</p>
-        </>
-      )}
+    <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-background">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      <p className="text-sm text-muted-foreground">Redirecting…</p>
     </div>
   );
 }
