@@ -125,6 +125,8 @@ const en = {
     copyLink: "Copy Link",
     campaignLinkCopied: "Campaign link copied!",
     campaignRemoved: "Campaign removed",
+    alwaysWorks: "Recommended",
+    customDomainDnsWarning: "⚠️ Custom domains only work if the DNS A record points to 185.158.133.1. If not configured, visitors will see a 404 error. Use the default domain for guaranteed reliability.",
   },
 
   // Campaign Edit / New
@@ -235,6 +237,9 @@ const en = {
     value: "Value",
     hostCopied: "Host copied!",
     valueCopied: "Value copied!",
+    dnsStepATitle: "A Record (Required for campaign links)",
+    dnsStepADesc: "Point your domain to CloakGuard's server so campaign links (/c/hash) work on your domain. Without this, visitors will see a 404 error.",
+    verification: "Verification",
   },
 
   // Requests Log

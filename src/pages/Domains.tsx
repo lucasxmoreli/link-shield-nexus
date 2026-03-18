@@ -34,7 +34,30 @@ function DnsSteps({ domain, t }: { domain: { id: string; url: string }; t: any }
         <p className="text-sm text-foreground">{t("domains.dnsStep1")}</p>
       </div>
       <div className="rounded-lg border border-border/30 bg-secondary/10 p-4 space-y-4">
-        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Step 2</p>
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Step 2 — {t("domains.dnsStepATitle")}</p>
+        <p className="text-sm text-foreground">{t("domains.dnsStepADesc")}</p>
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">{t("domains.type")}</Label>
+          <div className="rounded-md bg-background border border-border px-3 py-2.5 text-sm font-mono text-foreground">A</div>
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">{t("domains.nameHost")}</Label>
+          <div className="relative w-full">
+            <Input readOnly value="@" className="w-full pr-10 bg-background border-border font-mono text-sm" />
+          </div>
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">{t("domains.value")}</Label>
+          <div className="relative w-full">
+            <Input readOnly value="185.158.133.1" className="w-full pr-10 bg-background border-border font-mono text-sm" />
+            <Button variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => copyToClipboard("185.158.133.1", t("domains.valueCopied"))}>
+              <Copy className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
+      </div>
+      <div className="rounded-lg border border-border/30 bg-secondary/10 p-4 space-y-4">
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Step 3 — TXT {t("domains.verification")}</p>
         <p className="text-sm text-foreground">{t("domains.dnsStep2")}</p>
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">{t("domains.type")}</Label>
@@ -60,7 +83,7 @@ function DnsSteps({ domain, t }: { domain: { id: string; url: string }; t: any }
         </div>
       </div>
       <div className="rounded-lg border border-border/30 bg-secondary/10 p-4">
-        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Step 3</p>
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Step 4</p>
         <p className="text-sm text-foreground">{t("domains.dnsStep3")}</p>
       </div>
     </div>

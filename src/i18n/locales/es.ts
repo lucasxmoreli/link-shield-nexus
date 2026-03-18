@@ -118,6 +118,8 @@ const es = {
     copyLink: "Copiar Enlace",
     campaignLinkCopied: "¡Enlace de campaña copiado!",
     campaignRemoved: "Campaña eliminada",
+    alwaysWorks: "Recomendado",
+    customDomainDnsWarning: "⚠️ Los dominios personalizados solo funcionan si el registro DNS A apunta a 185.158.133.1. De lo contrario, los visitantes verán un error 404. Usa el dominio predeterminado para mayor confiabilidad.",
   },
 
   campaignEdit: {
@@ -224,6 +226,9 @@ const es = {
     value: "Valor",
     hostCopied: "¡Host copiado!",
     valueCopied: "¡Valor copiado!",
+    dnsStepATitle: "Registro A (Requerido para enlaces de campaña)",
+    dnsStepADesc: "Apunta tu dominio al servidor de CloakGuard para que los enlaces de campaña (/c/hash) funcionen en tu dominio. Sin esto, los visitantes verán un error 404.",
+    verification: "Verificación",
   },
 
   requests: {
