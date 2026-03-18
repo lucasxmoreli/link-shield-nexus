@@ -27,7 +27,9 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
 
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
@@ -43,14 +45,14 @@ serve(async (req) => {
       });
     }
 
-    const cleanHostname = hostname.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+    const cleanHostname = hostname
+      .trim()
+      .toLowerCase()
+      .replace(/^https?:\/\//, "")
+      .replace(/\/.*$/, "");
 
     // Check for duplicate in user's domains
-    const { data: existing } = await supabase
-      .from("domains")
-      .select("id")
-      .eq("url", cleanHostname)
-      .maybeSingle();
+    const { data: existing } = await supabase.from("domains").select("id").eq("url", cleanHostname).maybeSingle();
 
     if (existing) {
       return new Response(JSON.stringify({ error: "Domain already exists" }), {
@@ -78,21 +80,18 @@ serve(async (req) => {
       });
     }
 
-    const cfResponse = await fetch(
-      `https://api.cloudflare.com/client/v4/zones/${cfZoneId}/custom_hostnames`,
-      {
-        method: "POST",
-        headers: {
-          "X-Auth-Key": cfToken,
-          "X-Auth-Email": cfEmail,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          hostname: cleanHostname,
-          ssl: { method: "txt", type: "dv" },
-        }),
-      }
-    );
+    const cfResponse = await fetch(`https://api.cloudflare.com/client/v4/zones/${cfZoneId}/custom_hostnames`, {
+      method: "POST",
+      headers: {
+        "X-Auth-Key": cfToken,
+        "X-Auth-Email": cfEmail,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        hostname: cleanHostname,
+        ssl: { method: "http", type: "dv" },
+      }),
+    });
 
     const cfData = await cfResponse.json();
 
@@ -105,10 +104,15 @@ serve(async (req) => {
       console.error("[CF ERROR] Code:", errCode, "Message:", errMsg, "Full errors:", JSON.stringify(cfData.errors));
       // Handle duplicate hostname (code 1406 or message contains "duplicate")
       if (errCode === 1406 || errMsg.toLowerCase().includes("duplicate")) {
-        return new Response(JSON.stringify({ error: "This domain is already registered. Please delete it first or use a different domain." }), {
-          status: 409,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({
+            error: "This domain is already registered. Please delete it first or use a different domain.",
+          }),
+          {
+            status: 409,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
       }
       return new Response(JSON.stringify({ error: errMsg }), {
         status: 502,
@@ -136,24 +140,29 @@ serve(async (req) => {
 
     if (insertError) {
       // Cleanup: delete from Cloudflare if DB insert fails
-      await fetch(
-        `https://api.cloudflare.com/client/v4/zones/${cfZoneId}/custom_hostnames/${customHostnameId}`,
-        {
-          method: "DELETE",
-          headers: {
-            "X-Auth-Key": cfToken,
-            "X-Auth-Email": cfEmail,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      await fetch(`https://api.cloudflare.com/client/v4/zones/${cfZoneId}/custom_hostnames/${customHostnameId}`, {
+        method: "DELETE",
+        headers: {
+          "X-Auth-Key": cfToken,
+          "X-Auth-Email": cfEmail,
+          "Content-Type": "application/json",
+        },
+      });
       throw insertError;
     }
 
-    return new Response(JSON.stringify({ domain, cloudflare: cfData.result, ownership_verification: ownershipVerification, ssl_validation_records: sslValidationRecords }), {
-      status: 201,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        domain,
+        cloudflare: cfData.result,
+        ownership_verification: ownershipVerification,
+        ssl_validation_records: sslValidationRecords,
+      }),
+      {
+        status: 201,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   } catch (err) {
     console.error("Error:", err);
     return new Response(JSON.stringify({ error: "Internal server error" }), {
