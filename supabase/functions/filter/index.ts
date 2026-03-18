@@ -11,24 +11,17 @@ const corsHeaders = {
 // ═══════════════════════════════════════════════════════════════
 const GLOBAL_BOT_REGEX = new RegExp(
   [
-    // Generic bots & crawlers
     "bot\\b", "crawler", "spider", "scraper", "slurp",
-    // Headless / automation
     "headlesschrome", "phantomjs", "puppeteer", "selenium", "playwright",
     "webdriver", "electron", "nightmare",
-    // Search engines
     "googlebot", "google-inspectiontool", "adsbot-google", "mediapartners-google",
     "bingbot", "yandexbot", "baiduspider", "duckduckbot", "sogou", "exabot",
-    // Social platform bots (broad catch — source-specific logic refines below)
     "facebookexternalhit", "facebot",
     "bytespider", "twitterbot", "linkedinbot", "pinterestbot",
     "snapchat", "snapbot",
-    // SEO / analytics bots
     "semrushbot", "ahrefsbot", "mj12bot", "dotbot", "rogerbot", "screaming frog",
     "majestic", "megaindex", "blexbot",
-    // Archival
     "ia_archiver", "archive\\.org_bot",
-    // HTTP libraries / programmatic access
     "curl\\/", "wget\\/", "httpie", "python-requests", "python-urllib",
     "go-http-client", "java\\/", "libwww", "lwp-trivial", "okhttp",
     "axios", "node-fetch", "undici", "got\\/", "superagent",
@@ -50,9 +43,6 @@ const BLOCKED_ORGS = [
 
 // ═══════════════════════════════════════════════════════════════
 // LAYER 3 — SOURCE-SPECIFIC HEURISTIC FUNCTIONS
-// Each returns { block, suspicious, reason }
-// block = hard reject → safe page
-// suspicious = soft flag (logged but allowed through for now)
 // ═══════════════════════════════════════════════════════════════
 
 interface HeuristicResult {
@@ -64,11 +54,9 @@ interface HeuristicResult {
 const PASS: HeuristicResult = { block: false, suspicious: false, reason: "" };
 
 function checkFacebook(ua: string, params: Record<string, string>, referer: string | null): HeuristicResult {
-  // Facebook review bots
   if (/facebookexternalhit|facebot|facebook.*crawler/i.test(ua)) {
     return { block: true, suspicious: false, reason: "fb_review_bot" };
   }
-  // Missing fbclid AND no FB referer → suspicious (could be direct link share)
   const hasFbclid = !!params.fbclid;
   const hasFbReferer = referer ? /facebook\.com|fb\.com|fbcdn\.net/i.test(referer) : false;
   if (!hasFbclid && !hasFbReferer) {
@@ -78,7 +66,6 @@ function checkFacebook(ua: string, params: Record<string, string>, referer: stri
 }
 
 function checkInstagram(ua: string, params: Record<string, string>, referer: string | null): HeuristicResult {
-  // IG shares the Facebook bot infra
   if (/facebookexternalhit|facebot/i.test(ua)) {
     return { block: true, suspicious: false, reason: "ig_meta_bot" };
   }
@@ -92,20 +79,15 @@ function checkInstagram(ua: string, params: Record<string, string>, referer: str
 }
 
 function checkTikTok(ua: string, deviceType: string, params: Record<string, string>): HeuristicResult {
-  // ByteSpider is TikTok's aggressive crawler — always block
   if (/bytespider/i.test(ua)) {
     return { block: true, suspicious: false, reason: "tiktok_bytespider" };
   }
-  // TikTok in-app browser signatures
   const tiktokSignals = ["bytelocale", "trill", "tiktok", "musical_ly", "bytedance", "tt_webid"];
   const hasTikTokUA = tiktokSignals.some((s) => ua.includes(s));
   const hasTtclid = !!params.ttclid;
-
-  // Desktop browser on a TikTok campaign with no TikTok UA → highly suspicious
   if (deviceType === "desktop" && !hasTikTokUA) {
     return { block: true, suspicious: false, reason: "tiktok_desktop_no_app" };
   }
-  // Mobile but no TikTok UA and no ttclid → suspicious
   if (!hasTikTokUA && !hasTtclid) {
     return { block: false, suspicious: true, reason: "tiktok_no_signature" };
   }
@@ -113,28 +95,20 @@ function checkTikTok(ua: string, deviceType: string, params: Record<string, stri
 }
 
 function checkGoogle(ua: string, params: Record<string, string>): HeuristicResult {
-  // Google ad review bots
   if (/adsbot-google|mediapartners-google|google-inspectiontool|google-adwords/i.test(ua)) {
     return { block: true, suspicious: false, reason: "google_review_bot" };
   }
-  // Check for Google click IDs
-  const hasGclid = !!params.gclid;
-  const hasWbraid = !!params.wbraid;
-  const hasGbraid = !!params.gbraid;
-  if (!hasGclid && !hasWbraid && !hasGbraid) {
+  if (!params.gclid && !params.wbraid && !params.gbraid) {
     return { block: false, suspicious: true, reason: "google_no_click_id" };
   }
   return PASS;
 }
 
 function checkYouTube(ua: string, params: Record<string, string>): HeuristicResult {
-  // YouTube uses Google's ad infra
   if (/adsbot-google|mediapartners-google|google-inspectiontool/i.test(ua)) {
     return { block: true, suspicious: false, reason: "youtube_google_bot" };
   }
-  const hasGclid = !!params.gclid;
-  const hasWbraid = !!params.wbraid;
-  if (!hasGclid && !hasWbraid) {
+  if (!params.gclid && !params.wbraid) {
     return { block: false, suspicious: true, reason: "youtube_no_click_id" };
   }
   return PASS;
@@ -144,9 +118,7 @@ function checkTwitter(ua: string, params: Record<string, string>): HeuristicResu
   if (/twitterbot/i.test(ua)) {
     return { block: true, suspicious: false, reason: "twitter_bot" };
   }
-  const hasTwclid = !!params.twclid;
-  const hasTwitterRef = false; // referer often stripped by X
-  if (!hasTwclid) {
+  if (!params.twclid) {
     return { block: false, suspicious: true, reason: "twitter_no_click_id" };
   }
   return PASS;
@@ -156,8 +128,7 @@ function checkPinterest(ua: string, params: Record<string, string>): HeuristicRe
   if (/pinterestbot|pinterest.*crawler/i.test(ua)) {
     return { block: true, suspicious: false, reason: "pinterest_bot" };
   }
-  const hasEpik = !!params.epik;
-  if (!hasEpik) {
+  if (!params.epik) {
     return { block: false, suspicious: true, reason: "pinterest_no_click_id" };
   }
   return PASS;
@@ -167,32 +138,34 @@ function checkLinkedIn(ua: string, params: Record<string, string>): HeuristicRes
   if (/linkedinbot/i.test(ua)) {
     return { block: true, suspicious: false, reason: "linkedin_bot" };
   }
-  const hasLiFatId = !!params.li_fat_id;
-  if (!hasLiFatId) {
+  if (!params.li_fat_id) {
     return { block: false, suspicious: true, reason: "linkedin_no_click_id" };
   }
   return PASS;
 }
 
-function checkSnapchat(ua: string, params: Record<string, string>): HeuristicResult {
+function checkSnapchat(ua: string, params: Record<string, string>, referer: string | null): HeuristicResult {
   if (/snapchat|snapbot/i.test(ua)) {
     return { block: true, suspicious: false, reason: "snapchat_bot" };
   }
   const hasScCid = !!params.ScCid || !!params.sccid;
-  if (!hasScCid) {
+  const hasSnapReferer = referer ? /snapchat\.com/i.test(referer) : false;
+  // Improved: require click ID OR snapchat referer
+  if (!hasScCid && !hasSnapReferer) {
     return { block: false, suspicious: true, reason: "snapchat_no_click_id" };
   }
   return PASS;
 }
 
-function checkKwai(ua: string, referer: string | null): HeuristicResult {
-  // Kwai doesn't have well-known bots yet — rely on referer
+function checkKwai(ua: string, params: Record<string, string>, referer: string | null): HeuristicResult {
   if (/kwaibot|kwaicrawler/i.test(ua)) {
     return { block: true, suspicious: false, reason: "kwai_bot" };
   }
   const hasKwaiReferer = referer ? /kwai\.com|ksweb/i.test(referer) : false;
-  if (!hasKwaiReferer) {
-    return { block: false, suspicious: true, reason: "kwai_no_referer" };
+  const hasDid = !!params.did; // Kwai device ID
+  // Improved: require referer OR device ID
+  if (!hasKwaiReferer && !hasDid) {
+    return { block: false, suspicious: true, reason: "kwai_no_referer_no_did" };
   }
   return PASS;
 }
@@ -210,7 +183,6 @@ function isRateLimited(ip: string): boolean {
   const recent = hits.filter((t) => now - t < RATE_WINDOW_MS);
   recent.push(now);
   ipHits.set(ip, recent);
-  // Garbage collect stale IPs periodically
   if (ipHits.size > 10_000) {
     for (const [key, val] of ipHits) {
       if (val.every((t) => now - t >= RATE_WINDOW_MS)) ipHits.delete(key);
@@ -228,7 +200,6 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
-  // Extract IP early for rate limiting
   const forwarded = req.headers.get("x-forwarded-for");
   const ip = forwarded ? forwarded.split(",")[0].trim() : (req.headers.get("x-real-ip") || "0.0.0.0");
 
@@ -254,10 +225,10 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // ─── STEP 1: Validate campaign & fetch traffic_source ───
+    // ─── STEP 1: Validate campaign ───
     const { data: campaign, error: campaignError } = await supabase
       .from("campaigns")
-      .select("id, user_id, offer_url, safe_url, is_active, traffic_source, offer_page_b")
+      .select("id, user_id, offer_url, safe_url, is_active, traffic_source, offer_page_b, target_countries, target_devices, strict_mode")
       .eq("hash", campaign_hash)
       .single();
 
@@ -265,6 +236,35 @@ serve(async (req) => {
       return new Response(JSON.stringify({ action: "safe_page", reason: "campaign_invalid" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // ─── STEP 1.5: Check persistent IP blocklist ───
+    const { data: blockedIp } = await supabase
+      .from("blocked_ips")
+      .select("id")
+      .eq("ip_address", ip)
+      .eq("user_id", campaign.user_id)
+      .gt("expires_at", new Date().toISOString())
+      .limit(1)
+      .maybeSingle();
+
+    if (blockedIp) {
+      console.log(`[BLOCKED] Persistent blocklist — IP ${ip}`);
+      // Log and return early
+      await supabase.from("requests_log").insert({
+        user_id: campaign.user_id,
+        campaign_id: campaign.id,
+        ip_address: ip,
+        country_code: "XX",
+        device_type: "desktop",
+        user_agent,
+        action_taken: "bot_blocked",
+        block_reason: "ip_blocklist",
+      });
+      return new Response(
+        JSON.stringify({ action: "safe_page", url: campaign.safe_url }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     // ─── STEP 2: Check user click limit ───
@@ -287,8 +287,12 @@ serve(async (req) => {
     const uaLower = user_agent.toLowerCase();
     const params: Record<string, string> = query_params || {};
 
-    // Helper: log & respond
-    const logAndRespond = async (action: "safe_page" | "offer_page" | "bot_blocked", countryCode: string) => {
+    // Helper: log & respond (now with block_reason)
+    const logAndRespond = async (
+      action: "safe_page" | "offer_page" | "bot_blocked",
+      countryCode: string,
+      blockReason?: string,
+    ) => {
       await supabase.from("requests_log").insert({
         user_id: campaign.user_id,
         campaign_id: campaign.id,
@@ -297,11 +301,39 @@ serve(async (req) => {
         device_type: deviceType,
         user_agent: user_agent,
         action_taken: action,
+        block_reason: blockReason || null,
       });
+
+      // Auto-blocklist: after 3 blocks from same IP in 24h, add to blocklist
+      if (action === "bot_blocked") {
+        try {
+          const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+          const { count } = await supabase
+            .from("requests_log")
+            .select("id", { count: "exact", head: true })
+            .eq("ip_address", ip)
+            .eq("user_id", campaign.user_id)
+            .eq("action_taken", "bot_blocked")
+            .gte("created_at", since);
+
+          if (count && count >= 3) {
+            await supabase.from("blocked_ips").upsert(
+              {
+                ip_address: ip,
+                user_id: campaign.user_id,
+                reason: blockReason || "auto_repeat_offender",
+                expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+              },
+              { onConflict: "ip_address,user_id", ignoreDuplicates: true },
+            ).select();
+          }
+        } catch {
+          // Non-critical, don't fail the request
+        }
+      }
 
       let redirectUrl: string;
       if (action === "offer_page") {
-        // A/B Storm: 50/50 split when offer_page_b exists (crypto-secure coin flip)
         const hasB = campaign.offer_page_b && campaign.offer_page_b.trim();
         const coinFlip = crypto.getRandomValues(new Uint8Array(1))[0] < 128;
         redirectUrl = hasB && coinFlip ? campaign.offer_page_b : campaign.offer_url;
@@ -315,10 +347,43 @@ serve(async (req) => {
       );
     };
 
+    // ─── STEP 2.5: GEOFENCING — Country & Device filtering ───
+    // We need countryCode for geo check; fetch it early from IPinfo
+    const ipinfoToken = Deno.env.get("IPINFO_API_KEY");
+    let countryCode = "XX";
+    let ipOrg = "";
+
+    if (ipinfoToken) {
+      try {
+        const ipRes = await fetch(`https://ipinfo.io/${ip}/json?token=${ipinfoToken}`, {
+          signal: AbortSignal.timeout(3000),
+        });
+        const ipData = await ipRes.json();
+        countryCode = ipData.country || "XX";
+        ipOrg = ipData.org || "";
+      } catch {
+        console.warn("IPinfo.io request failed, skipping");
+      }
+    }
+
+    // Geofencing: if campaign has target_countries and visitor is outside them → safe page
+    const targetCountries: string[] = campaign.target_countries || [];
+    if (targetCountries.length > 0 && countryCode !== "XX" && !targetCountries.includes(countryCode)) {
+      console.log(`[BLOCKED] Geofence: ${countryCode} not in ${targetCountries.join(",")} — IP ${ip}`);
+      return await logAndRespond("safe_page", countryCode, "geo_blocked");
+    }
+
+    // Device filtering: if campaign has target_devices and visitor device not in them → safe page
+    const targetDevices: string[] = campaign.target_devices || [];
+    if (targetDevices.length > 0 && !targetDevices.includes(deviceType)) {
+      console.log(`[BLOCKED] Device filter: ${deviceType} not in ${targetDevices.join(",")} — IP ${ip}`);
+      return await logAndRespond("safe_page", countryCode, "device_blocked");
+    }
+
     // ─── STEP 3: LAYER 1 — Global Bot Detection ───
     if (GLOBAL_BOT_REGEX.test(user_agent)) {
       console.log(`[BLOCKED] Global bot regex matched for IP ${ip}`);
-      return await logAndRespond("bot_blocked", "XX");
+      return await logAndRespond("bot_blocked", countryCode, "global_bot_regex");
     }
 
     // ─── STEP 4: LAYER 2 — Source-Specific Heuristics ───
@@ -351,24 +416,27 @@ serve(async (req) => {
         result = checkLinkedIn(uaLower, params);
         break;
       case "snapchat":
-        result = checkSnapchat(uaLower, params);
+        result = checkSnapchat(uaLower, params, referer);
         break;
       case "kwai":
-        result = checkKwai(uaLower, referer);
+        result = checkKwai(uaLower, params, referer);
         break;
       default:
-        // Unknown or null source — global bot detection already ran, allow through
         break;
     }
 
     if (result.block) {
       console.log(`[BLOCKED] Source heuristic: ${source} — ${result.reason} — IP ${ip}`);
-      return await logAndRespond("bot_blocked", "XX");
+      return await logAndRespond("bot_blocked", countryCode, result.reason);
     }
 
+    // STRICT MODE: if campaign.strict_mode is on, block suspicious traffic
     if (result.suspicious) {
+      if (campaign.strict_mode) {
+        console.log(`[BLOCKED-STRICT] ${source} — ${result.reason} — IP ${ip}`);
+        return await logAndRespond("bot_blocked", countryCode, `strict_${result.reason}`);
+      }
       console.log(`[SUSPICIOUS] ${source} — ${result.reason} — IP ${ip} — allowing through`);
-      // Future: could redirect to safe page in strict mode
     }
 
     // ─── STEP 5: LAYER 3 — Proxy/VPN detection via Proxycheck.io ───
@@ -380,33 +448,19 @@ serve(async (req) => {
         });
         const proxyData = await proxyRes.json();
         if (proxyData[ip] && (proxyData[ip].proxy === "yes" || proxyData[ip].type === "VPN")) {
-          return await logAndRespond("bot_blocked", proxyData[ip].country || "XX");
+          return await logAndRespond("bot_blocked", proxyData[ip].country || countryCode, "vpn_proxy");
         }
       } catch {
         console.warn("Proxycheck.io request failed, skipping");
       }
     }
 
-    // ─── STEP 6: LAYER 4 — ASN/Datacenter detection via IPinfo.io ───
-    const ipinfoToken = Deno.env.get("IPINFO_API_KEY");
-    let countryCode = "XX";
-    if (ipinfoToken) {
-      try {
-        const ipRes = await fetch(`https://ipinfo.io/${ip}/json?token=${ipinfoToken}`, {
-          signal: AbortSignal.timeout(3000),
-        });
-        const ipData = await ipRes.json();
-        countryCode = ipData.country || "XX";
-
-        if (ipData.org) {
-          const orgLower = ipData.org.toLowerCase();
-          if (BLOCKED_ORGS.some((kw) => orgLower.includes(kw))) {
-            console.log(`[BLOCKED] Datacenter ASN: ${ipData.org} — IP ${ip}`);
-            return await logAndRespond("bot_blocked", countryCode);
-          }
-        }
-      } catch {
-        console.warn("IPinfo.io request failed, skipping");
+    // ─── STEP 6: LAYER 4 — ASN/Datacenter detection (already fetched ipOrg above) ───
+    if (ipOrg) {
+      const orgLower = ipOrg.toLowerCase();
+      if (BLOCKED_ORGS.some((kw) => orgLower.includes(kw))) {
+        console.log(`[BLOCKED] Datacenter ASN: ${ipOrg} — IP ${ip}`);
+        return await logAndRespond("bot_blocked", countryCode, "datacenter_asn");
       }
     }
 

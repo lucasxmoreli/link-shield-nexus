@@ -135,6 +135,7 @@ export default function CampaignEdit() {
         target_countries: targetCountries,
         target_devices: targetDevices,
         tags,
+        strict_mode: strictMode,
       };
       if (isEditing) {
         const { error } = await supabase.from("campaigns").update(payload).eq("id", id!);
