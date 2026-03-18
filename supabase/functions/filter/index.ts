@@ -393,39 +393,12 @@ function sanitizeRedirectUrl(url: string | null | undefined, safeFallback: strin
     return fallback;
   }
 }
-  const fallback = safeFallback || "https://google.com";
-  const rawValue = (url || "").trim();
-
-  if (!rawValue) {
-    return fallback;
-  }
-
-  const cleanedValue = rawValue.replace(/^\/+/, "");
-  const absoluteUrl = /^https?:\/\//i.test(cleanedValue)
-    ? cleanedValue
-    : `https://${cleanedValue}`;
-
-  try {
-    const parsedUrl = new URL(absoluteUrl);
-
-    if (!/^https?:$/i.test(parsedUrl.protocol)) {
-      console.error(`[INVALID-URL] Unsupported protocol in redirect URL "${absoluteUrl}"`);
-      return fallback;
-    }
-
-    if (/^\/c(\/|$)/i.test(parsedUrl.pathname)) {
-      console.error(`[LOOP-GUARD] Redirect URL "${absoluteUrl}" contains a cloaker path — aborting to safe page`);
-      return fallback;
-    }
-
-    return parsedUrl.toString();
-  } catch {
-    console.error(`[INVALID-URL] "${absoluteUrl}" is not a valid absolute URL — falling back to safe page`);
-    return fallback;
-  }
-}
-
 async function checkUrlHealth(url: string, timeoutMs = 2000): Promise<boolean> {
+  // SSRF protection
+  if (isInternalUrl(url)) {
+    console.error(`[SSRF-BLOCKED] Health check blocked for internal URL: ${url}`);
+    return false;
+  }
   try {
     const res = await fetch(url, {
       method: "HEAD",
