@@ -212,14 +212,43 @@ export default function CampaignEdit() {
     setTargetDevices((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
   };
 
+  const normalizeUrlInput = (url: string): string => url.trim().replace(/^\/+/, "");
+
   const ensureAbsoluteUrl = (url: string): string => {
-    const trimmed = url.trim();
-    if (!trimmed) return trimmed;
-    if (/^https?:\/\//i.test(trimmed)) return trimmed;
-    return `https://${trimmed}`;
+    const cleaned = normalizeUrlInput(url);
+    if (!cleaned) return "";
+    if (/^https?:\/\//i.test(cleaned)) return cleaned;
+    return `https://${cleaned}`;
   };
 
-  const isFormValid = name && trafficSource && safeUrl && (offerMode === "single" ? offerUrl : abOffers.every((o) => o.url));
+  const isValidAbsoluteUrl = (url: string): boolean => {
+    const normalized = ensureAbsoluteUrl(url);
+    if (!normalized) return false;
+
+    try {
+      const parsed = new URL(normalized);
+      return /^https?:$/i.test(parsed.protocol) && Boolean(parsed.hostname);
+    } catch {
+      return false;
+    }
+  };
+
+  const normalizeUrlField = (setter: (value: string) => void) => (value: string) => {
+    setter(ensureAbsoluteUrl(value));
+  };
+
+  const areDestinationUrlsValid =
+    isValidAbsoluteUrl(safeUrl) &&
+    (offerMode === "single" ? isValidAbsoluteUrl(offerUrl) : abOffers.every((o) => isValidAbsoluteUrl(o.url))) &&
+    (!abStormEnabled || !offerPageB.trim() || isValidAbsoluteUrl(offerPageB));
+
+  const isFormValid = Boolean(
+    name &&
+      trafficSource &&
+      safeUrl &&
+      (offerMode === "single" ? offerUrl : abOffers.every((o) => o.url)) &&
+      areDestinationUrlsValid,
+  );
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 pb-12">
@@ -316,7 +345,13 @@ export default function CampaignEdit() {
         <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("campaignEdit.safePageSection")}</h2>
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">{t("campaignEdit.safePageUrl")}</Label>
-          <Input placeholder={t("campaignEdit.safePagePlaceholder")} className="bg-secondary border-border" value={safeUrl} onChange={(e) => setSafeUrl(e.target.value)} />
+          <Input
+            placeholder={t("campaignEdit.safePagePlaceholder")}
+            className="bg-secondary border-border"
+            value={safeUrl}
+            onChange={(e) => setSafeUrl(e.target.value)}
+            onBlur={(e) => normalizeUrlField(setSafeUrl)(e.target.value)}
+          />
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">{t("campaignEdit.method")}</Label>
@@ -339,7 +374,13 @@ export default function CampaignEdit() {
 
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">{t("campaignEdit.primaryOffer")}</Label>
-          <Input placeholder={t("campaignEdit.offerPlaceholder")} className="bg-secondary border-border" value={offerUrl} onChange={(e) => setOfferUrl(e.target.value)} />
+          <Input
+            placeholder={t("campaignEdit.offerPlaceholder")}
+            className="bg-secondary border-border"
+            value={offerUrl}
+            onChange={(e) => setOfferUrl(e.target.value)}
+            onBlur={(e) => normalizeUrlField(setOfferUrl)(e.target.value)}
+          />
         </div>
 
         {/* A/B Storm Toggle */}
@@ -372,6 +413,7 @@ export default function CampaignEdit() {
                   className="bg-secondary border-border"
                   value={offerPageB}
                   onChange={(e) => setOfferPageB(e.target.value)}
+                  onBlur={(e) => normalizeUrlField(setOfferPageB)(e.target.value)}
                 />
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
@@ -490,6 +532,17 @@ export default function CampaignEdit() {
         <Button variant="outline" onClick={() => navigate("/campaigns")}>{t("common.cancel")}</Button>
         <Button
           onClick={() => {
+            normalizeUrlField(setSafeUrl)(safeUrl);
+            normalizeUrlField(setOfferUrl)(offerUrl);
+            if (abStormEnabled && offerPageB.trim()) {
+              normalizeUrlField(setOfferPageB)(offerPageB);
+            }
+
+            if (!areDestinationUrlsValid) {
+              toast.error(t("campaignEdit.invalidUrl"));
+              return;
+            }
+
             if (domain && offerUrl) {
               try {
                 const offerHost = new URL(ensureAbsoluteUrl(offerUrl)).hostname.replace(/^www\./, "");
@@ -498,7 +551,10 @@ export default function CampaignEdit() {
                   setConflictDialogOpen(true);
                   return;
                 }
-              } catch { /* invalid URL, let save handle it */ }
+              } catch {
+                toast.error(t("campaignEdit.invalidUrl"));
+                return;
+              }
             }
             saveMutation.mutate();
           }}

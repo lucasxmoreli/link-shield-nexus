@@ -196,6 +196,7 @@ const en = {
     step3: "Test your link using a <bold>VPN or Incognito window</bold> to verify the redirection works correctly.",
     goToCampaigns: "Go to Campaigns",
     linkCopied: "Link copied!",
+    invalidUrl: "Please enter a valid destination URL.",
   },
 
   // Domains

@@ -186,6 +186,7 @@ const pt = {
     step3: "Teste seu link usando uma <bold>VPN ou janela Anônima</bold> para verificar se o redirecionamento funciona corretamente.",
     goToCampaigns: "Ir para Campanhas",
     linkCopied: "Link copiado!",
+    invalidUrl: "Insira uma URL de destino válida.",
   },
 
   domains: {

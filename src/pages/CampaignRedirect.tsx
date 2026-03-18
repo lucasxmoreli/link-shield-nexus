@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 
 export default function CampaignRedirect() {
   const { hash } = useParams<{ hash: string }>();
@@ -13,48 +12,32 @@ export default function CampaignRedirect() {
       return;
     }
 
-    const resolve = async () => {
-      try {
-        // Call the filter edge function — IP is extracted server-side from headers
-        // Pass URL query params so the filter can check fbclid, gclid, etc.
-        const urlParams = Object.fromEntries(new URLSearchParams(window.location.search));
-        const { data, error: fnError } = await supabase.functions.invoke("filter", {
-          body: {
-            campaign_hash: hash,
-            user_agent: navigator.userAgent,
-            referer: document.referrer || null,
-            query_params: urlParams,
-          },
-        });
-
-        if (fnError || !data?.url) {
-          setError(true);
-          setTimeout(() => navigate("/", { replace: true }), 2000);
-          return;
-        }
-
-        // FIX: Ensure URL format is correct for redirection
-        let finalUrl = data.url;
-        if (!finalUrl.startsWith("http://") && !finalUrl.startsWith("https://")) {
-          finalUrl = "https://" + finalUrl;
-        }
-
-        // Redirect to the destination decided by the cloaking engine
-        window.location.replace(finalUrl);
-      } catch {
-        setError(true);
-        setTimeout(() => navigate("/", { replace: true }), 2000);
+    try {
+      const backendUrl = import.meta.env.VITE_SUPABASE_URL;
+      if (!backendUrl) {
+        throw new Error("Missing backend URL");
       }
-    };
 
-    resolve();
+      const redirectUrl = new URL(`${backendUrl}/functions/v1/filter`);
+      redirectUrl.searchParams.set("campaign_hash", hash);
+
+      const visitorParams = new URLSearchParams(window.location.search);
+      visitorParams.forEach((value, key) => {
+        redirectUrl.searchParams.append(key, value);
+      });
+
+      window.location.replace(redirectUrl.toString());
+    } catch {
+      setError(true);
+      setTimeout(() => navigate("/", { replace: true }), 2000);
+    }
   }, [hash, navigate]);
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background gap-4">
+    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background">
       {error ? (
         <>
-          <p className="text-destructive font-medium">Campaign not found or inactive.</p>
+          <p className="font-medium text-destructive">Campaign not found or inactive.</p>
           <p className="text-sm text-muted-foreground">Redirecting...</p>
         </>
       ) : (
