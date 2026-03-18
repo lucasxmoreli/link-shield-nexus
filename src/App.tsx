@@ -62,6 +62,7 @@ const App = () => (
               <Route path="/cloak-test" element={<CloakTest />} />
               <Route path="/billing" element={<Billing />} />
               <Route path="/invite-codes" element={<InviteCodes />} />
+              <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/settings" element={<AccountSettings />} />
             </Route>
             <Route path="/c/:hash" element={<CampaignRedirect />} />

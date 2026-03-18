@@ -587,9 +587,17 @@ serve(async (req) => {
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("max_clicks, current_clicks")
+      .select("max_clicks, current_clicks, is_suspended")
       .eq("user_id", campaign.user_id)
       .single();
+
+    // Block all traffic if user is suspended
+    if (profile?.is_suspended) {
+      console.log(`[SUSPENDED] User ${campaign.user_id} is suspended — routing to safe page`);
+      return responseMode === "redirect"
+        ? redirectResponse(safeUrl)
+        : jsonResponse({ action: "safe_page", url: safeUrl, reason: "account_suspended" });
+    }
 
     if (profile && profile.max_clicks > 0 && profile.current_clicks >= profile.max_clicks) {
       return responseMode === "redirect"
