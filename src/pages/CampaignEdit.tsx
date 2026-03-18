@@ -374,7 +374,13 @@ export default function CampaignEdit() {
 
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">{t("campaignEdit.primaryOffer")}</Label>
-          <Input placeholder={t("campaignEdit.offerPlaceholder")} className="bg-secondary border-border" value={offerUrl} onChange={(e) => setOfferUrl(e.target.value)} />
+          <Input
+            placeholder={t("campaignEdit.offerPlaceholder")}
+            className="bg-secondary border-border"
+            value={offerUrl}
+            onChange={(e) => setOfferUrl(e.target.value)}
+            onBlur={(e) => normalizeUrlField(setOfferUrl)(e.target.value)}
+          />
         </div>
 
         {/* A/B Storm Toggle */}
