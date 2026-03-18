@@ -127,6 +127,7 @@ export default function CampaignEdit() {
     mutationFn: async () => {
       const payload: any = {
         name,
+        domain: domain || null,
         traffic_source: trafficSource,
         safe_url: safeUrl,
         offer_url: offerMode === "single" ? offerUrl : abOffers.map((o) => o.url).join(","),
