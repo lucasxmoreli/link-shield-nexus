@@ -194,6 +194,22 @@ function isRateLimited(ip: string): boolean {
 // ═══════════════════════════════════════════════════════════════
 // MAIN HANDLER
 // ═══════════════════════════════════════════════════════════════
+// URL HEALTH CHECK — Verify offer page is reachable (2s timeout)
+// ═══════════════════════════════════════════════════════════════
+async function checkUrlHealth(url: string, timeoutMs = 2000): Promise<boolean> {
+  try {
+    const res = await fetch(url, {
+      method: "HEAD",
+      signal: AbortSignal.timeout(timeoutMs),
+      redirect: "follow",
+    });
+    // 2xx and 3xx are healthy
+    return res.status < 400;
+  } catch {
+    return false;
+  }
+}
+
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -336,7 +352,29 @@ serve(async (req) => {
       if (action === "offer_page") {
         const hasB = campaign.offer_page_b && campaign.offer_page_b.trim();
         const coinFlip = crypto.getRandomValues(new Uint8Array(1))[0] < 128;
-        redirectUrl = hasB && coinFlip ? campaign.offer_page_b : campaign.offer_url;
+        const candidateUrl = hasB && coinFlip ? campaign.offer_page_b : campaign.offer_url;
+
+        // Health check: verify offer page is reachable before redirecting
+        const isHealthy = await checkUrlHealth(candidateUrl);
+        if (isHealthy) {
+          redirectUrl = candidateUrl;
+        } else {
+          // If A/B was active, try the other offer before falling back to safe page
+          if (hasB) {
+            const fallbackOffer = candidateUrl === campaign.offer_page_b ? campaign.offer_url : campaign.offer_page_b;
+            const fallbackHealthy = await checkUrlHealth(fallbackOffer);
+            if (fallbackHealthy) {
+              console.warn(`[FALLBACK] Primary offer ${candidateUrl} is down, using alternate: ${fallbackOffer}`);
+              redirectUrl = fallbackOffer;
+            } else {
+              console.error(`[FALLBACK] Both offer pages are down (${campaign.offer_url}, ${campaign.offer_page_b}). Redirecting to safe page.`);
+              redirectUrl = campaign.safe_url;
+            }
+          } else {
+            console.error(`[FALLBACK] Offer page ${candidateUrl} is down. Redirecting to safe page: ${campaign.safe_url}`);
+            redirectUrl = campaign.safe_url;
+          }
+        }
       } else {
         redirectUrl = campaign.safe_url;
       }
