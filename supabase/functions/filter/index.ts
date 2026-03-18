@@ -477,9 +477,18 @@ serve(async (req) => {
         }
       }
 
+      // Determine delivery method based on action and campaign settings
+      const method = action === "offer_page"
+        ? (campaign.offer_page_method || "redirect")
+        : (campaign.safe_page_method || "redirect");
+
+      if (responseMode === "redirect" && method === "content_fetch") {
+        return contentFetchResponse(redirectUrl, campaign.domain || undefined);
+      }
+
       return responseMode === "redirect"
         ? redirectResponse(redirectUrl)
-        : jsonResponse({ action: action === "offer_page" ? "redirect" : "safe_page", url: redirectUrl });
+        : jsonResponse({ action: action === "offer_page" ? "redirect" : "safe_page", url: redirectUrl, method });
     };
 
     const { data: blockedIp } = await supabase
