@@ -1,7 +1,7 @@
 import { useState, useEffect, KeyboardEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, X, AlertTriangle, Plus, Trash2, Lock, Zap, ShieldAlert } from "lucide-react";
+import { ArrowLeft, X, AlertTriangle, Plus, Trash2, Lock, Zap, ShieldAlert, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +10,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -69,6 +71,7 @@ export default function CampaignEdit() {
   const [tagInput, setTagInput] = useState("");
   const [countrySearch, setCountrySearch] = useState("");
   const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
+  const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
 
   const { data: domains = [] } = useQuery({
     queryKey: ["domains", user?.id],
@@ -219,17 +222,46 @@ export default function CampaignEdit() {
             <Input placeholder="e.g. TTK 10 - FREE [TRESH-$500]" className="bg-secondary border-border" value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Domain</Label>
-            <Select value={domain} onValueChange={setDomain}>
-              <SelectTrigger className="bg-secondary border-border">
-                <SelectValue placeholder="Select a domain" />
-              </SelectTrigger>
-              <SelectContent className="bg-card border-border">
-                {domains.map((d) => (
-                  <SelectItem key={d.id} value={d.url}>{d.url}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-1.5">
+              <Label className="text-xs text-muted-foreground">Domain</Label>
+              <TooltipProvider delayDuration={200}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="max-w-[280px] text-xs leading-relaxed">
+                    <p>Example: If you select <span className="font-semibold text-primary">"mysite.com"</span>, your cloaker link will be <span className="font-mono text-primary">mysite.com/c/xyz</span>.</p>
+                    <p className="mt-1">This link will then redirect users to your Offer Page or Safe Page.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            {domains.length === 0 ? (
+              <div className="flex items-start gap-2 rounded-lg border border-yellow-500/30 bg-yellow-500/5 p-3">
+                <AlertTriangle className="h-4 w-4 mt-0.5 text-yellow-500 shrink-0" />
+                <p className="text-sm text-yellow-200/80">
+                  No verified domains found.{" "}
+                  <button type="button" onClick={() => navigate("/domains")} className="underline text-primary hover:text-primary/80 transition-colors">
+                    Go to the Domains tab
+                  </button>{" "}
+                  to add one first.
+                </p>
+              </div>
+            ) : (
+              <>
+                <Select value={domain} onValueChange={setDomain}>
+                  <SelectTrigger className="bg-secondary border-border">
+                    <SelectValue placeholder="Select a domain" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card border-border">
+                    {domains.map((d) => (
+                      <SelectItem key={d.id} value={d.url}>{d.url}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">Select the verified domain that will host your tracking link. This is NOT your offer page.</p>
+              </>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">Traffic Source</Label>
@@ -436,10 +468,49 @@ export default function CampaignEdit() {
       {/* Footer */}
       <div className="flex justify-end gap-3 pt-2">
         <Button variant="outline" onClick={() => navigate("/campaigns")}>Cancel</Button>
-        <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || !isFormValid}>
+        <Button
+          onClick={() => {
+            // Domain conflict check
+            if (domain && offerUrl) {
+              try {
+                const offerHost = new URL(ensureAbsoluteUrl(offerUrl)).hostname.replace(/^www\./, "");
+                const selectedDomain = domain.replace(/^(https?:\/\/)?(www\.)?/, "").replace(/\/+$/, "");
+                if (offerHost === selectedDomain || offerHost.endsWith(`.${selectedDomain}`)) {
+                  setConflictDialogOpen(true);
+                  return;
+                }
+              } catch { /* invalid URL, let save handle it */ }
+            }
+            saveMutation.mutate();
+          }}
+          disabled={saveMutation.isPending || !isFormValid}
+        >
           {saveMutation.isPending ? "Saving..." : "Save Campaign"}
         </Button>
       </div>
+
+      {/* Domain Conflict Dialog */}
+      <Dialog open={conflictDialogOpen} onOpenChange={setConflictDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              Conflict Detected
+            </DialogTitle>
+            <DialogDescription className="text-sm leading-relaxed pt-2">
+              You are using the same domain (<span className="font-semibold text-foreground">{domain}</span>) for both the cloaker tracking link and the Offer Page URL. This might cause 404 errors or redirect loops.
+              <br /><br />
+              We strongly recommend using <span className="font-semibold text-foreground">different domains or subdomains</span> for the tracking link and the offer page.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setConflictDialogOpen(false)}>Go Back & Fix</Button>
+            <Button variant="destructive" onClick={() => { setConflictDialogOpen(false); saveMutation.mutate(); }}>
+              Save Anyway
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
