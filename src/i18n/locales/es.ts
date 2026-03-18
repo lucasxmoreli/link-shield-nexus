@@ -237,6 +237,10 @@ const es = {
     hostCopied: "¡Host copiado!",
     valueCopied: "¡Valor copiado!",
     cnameNote: "Este CNAME enruta automáticamente tu dominio a través de nuestro proxy seguro con aprovisionamiento SSL. No se requiere configuración manual de Cloudflare.",
+    txtFallbackTitle: "⚡ Verificación Alternativa (Para Dominios Raíz)",
+    txtFallbackWarning: "Si tu proveedor de DNS no soporta CNAME en el raíz (@), agrega estos dos registros TXT en su lugar.",
+    txtOwnership: "Verificación de Propiedad del Hostname",
+    txtSslCert: "Verificación del Certificado SSL",
   },
 
   requests: {
