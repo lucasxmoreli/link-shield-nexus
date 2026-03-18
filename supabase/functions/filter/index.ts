@@ -517,7 +517,7 @@ serve(async (req) => {
         : (campaign.safe_page_method || "redirect");
 
       if (responseMode === "redirect" && method === "content_fetch") {
-        return contentFetchResponse(redirectUrl, campaign.domain || undefined);
+        return contentFetchResponse(redirectUrl, user_agent, req.headers.get("accept-language"), campaign.domain || undefined);
       }
 
       return responseMode === "redirect"
