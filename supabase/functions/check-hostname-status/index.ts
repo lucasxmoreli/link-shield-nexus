@@ -91,7 +91,10 @@ serve(async (req) => {
 
     if (!cfData.success) {
       const errMsg = cfData.errors?.[0]?.message || "Cloudflare API error";
-      return new Response(JSON.stringify({ error: errMsg }), {
+      console.error("Cloudflare FULL response:", JSON.stringify(cfData, null, 2));
+      console.error("CF Zone ID used:", cfZoneId);
+      console.error("CF HTTP status:", cfResponse.status);
+      return new Response(JSON.stringify({ error: errMsg, cf_response: cfData }), {
         status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
