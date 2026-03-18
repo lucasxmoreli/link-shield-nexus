@@ -118,6 +118,8 @@ const es = {
     copyLink: "Copiar Enlace",
     campaignLinkCopied: "¡Enlace de campaña copiado!",
     campaignRemoved: "Campaña eliminada",
+    alwaysWorks: "Recomendado",
+    customDomainDnsWarning: "⚠️ Los dominios personalizados solo funcionan si el registro DNS A apunta a 185.158.133.1. De lo contrario, los visitantes verán un error 404. Usa el dominio predeterminado para mayor confiabilidad.",
   },
 
   campaignEdit: {
