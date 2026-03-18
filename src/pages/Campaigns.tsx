@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Plus, Copy, Pencil, Trash2, Link, Check, Lock } from "lucide-react";
+import { Plus, Copy, Pencil, Trash2, Link, Check, Lock, AlertTriangle, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
