@@ -180,9 +180,9 @@ const en = {
     campaignCreated: "Campaign created!",
 
     // Conflict dialog
-    conflictTitle: "Conflict Detected",
-    conflictDesc: "You are using the same domain ({{domain}}) for both the cloaker tracking link and the Offer Page URL. This might cause 404 errors or redirect loops.",
-    conflictRecommend: "We strongly recommend using different domains or subdomains for the tracking link and the offer page.",
+    conflictTitle: "⚠️ Warning: Same Domain Detected",
+    conflictDesc: "You are using the same domain ({{domain}}) for your tracking link and your destination page. This will cause a 404 error unless you are using a specific subdirectory.",
+    conflictRecommend: "We strongly recommend using a different domain or an external link for your Offer Page and Safe Page.",
 
     // Success modal
     successTitle: "🚀 Campaign is Live!",
