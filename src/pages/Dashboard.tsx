@@ -12,6 +12,7 @@ import { StatCard } from "@/components/StatCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useTranslation } from "react-i18next";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
   PieChart, Pie, Cell,
@@ -19,22 +20,15 @@ import {
 import { format, subDays, formatDistanceToNow } from "date-fns";
 
 const DEVICE_COLORS = [
-  "hsl(271, 81%, 56%)",   // desktop - purple
-  "hsl(142, 71%, 45%)",   // mobile - green
-  "hsl(45, 100%, 51%)",   // tablet - amber
-];
-
-const MOCK_FEED = [
-  { time: "2 mins ago", ip: "191.193.70.18", country: "BR", device: "Desktop", action: "Passed" },
-  { time: "5 mins ago", ip: "73.162.214.101", country: "US", device: "Mobile", action: "Blocked" },
-  { time: "8 mins ago", ip: "177.79.99.151", country: "BR", device: "Mobile", action: "Passed" },
-  { time: "12 mins ago", ip: "8.8.8.8", country: "US", device: "Desktop", action: "Blocked" },
-  { time: "15 mins ago", ip: "189.29.108.45", country: "DE", device: "Desktop", action: "Passed" },
+  "hsl(271, 81%, 56%)",
+  "hsl(142, 71%, 45%)",
+  "hsl(45, 100%, 51%)",
 ];
 
 export default function Dashboard() {
   const { user } = useAuth();
   const [dateRange, setDateRange] = useState("7");
+  const { t } = useTranslation();
   useDopamineToast();
 
   const { data: logs = [], isLoading } = useQuery({
@@ -72,7 +66,6 @@ export default function Dashboard() {
     };
   });
 
-  // Device breakdown from real data, fallback to mock proportions
   const deviceCounts = {
     desktop: logs.filter((l) => l.device_type === "desktop").length || 0,
     mobile: logs.filter((l) => l.device_type === "mobile").length || 0,
@@ -81,75 +74,77 @@ export default function Dashboard() {
   const totalDevices = deviceCounts.desktop + deviceCounts.mobile + deviceCounts.tablet;
   const deviceData = totalDevices > 0
     ? [
-        { name: "Desktop", value: deviceCounts.desktop, icon: Monitor },
-        { name: "Mobile", value: deviceCounts.mobile, icon: Smartphone },
-        { name: "Tablet", value: deviceCounts.tablet || 1, icon: Tablet },
+        { name: t("dashboard.desktop"), value: deviceCounts.desktop, icon: Monitor },
+        { name: t("dashboard.mobile"), value: deviceCounts.mobile, icon: Smartphone },
+        { name: t("dashboard.tablet"), value: deviceCounts.tablet || 1, icon: Tablet },
       ]
     : [
-        { name: "Desktop", value: 40, icon: Monitor },
-        { name: "Mobile", value: 55, icon: Smartphone },
-        { name: "Tablet", value: 5, icon: Tablet },
+        { name: t("dashboard.desktop"), value: 40, icon: Monitor },
+        { name: t("dashboard.mobile"), value: 55, icon: Smartphone },
+        { name: t("dashboard.tablet"), value: 5, icon: Tablet },
       ];
   const deviceTotal = deviceData.reduce((a, b) => a + b.value, 0);
 
-  // Recent interceptions from real data
+  const MOCK_FEED = [
+    { time: "2 mins ago", ip: "191.193.70.18", country: "BR", device: t("dashboard.desktop"), action: t("dashboard.passed") },
+    { time: "5 mins ago", ip: "73.162.214.101", country: "US", device: t("dashboard.mobile"), action: t("dashboard.blocked") },
+    { time: "8 mins ago", ip: "177.79.99.151", country: "BR", device: t("dashboard.mobile"), action: t("dashboard.passed") },
+    { time: "12 mins ago", ip: "8.8.8.8", country: "US", device: t("dashboard.desktop"), action: t("dashboard.blocked") },
+    { time: "15 mins ago", ip: "189.29.108.45", country: "DE", device: t("dashboard.desktop"), action: t("dashboard.passed") },
+  ];
+
   const recentLogs = logs.slice(0, 5).map((l) => ({
     time: formatDistanceToNow(new Date(l.created_at), { addSuffix: true }),
     ip: l.ip_address ?? "—",
     country: l.country_code ?? "—",
-    device: l.device_type === "mobile" ? "Mobile" : "Desktop",
-    action: l.action_taken === "bot_blocked" ? "Blocked" : "Passed",
+    device: l.device_type === "mobile" ? t("dashboard.mobile") : t("dashboard.desktop"),
+    action: l.action_taken === "bot_blocked" ? t("dashboard.blocked") : t("dashboard.passed"),
   }));
   const feedData = recentLogs.length > 0 ? recentLogs : MOCK_FEED;
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Command Center</h1>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 truncate">Real-time traffic intelligence & threat monitoring</p>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">{t("dashboard.title")}</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 truncate">{t("dashboard.subtitle")}</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <span className="relative flex h-2.5 w-2.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[hsl(var(--success))] opacity-75" />
             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[hsl(var(--success))]" />
           </span>
-          <span className="text-xs text-muted-foreground font-mono">LIVE</span>
+          <span className="text-xs text-muted-foreground font-mono">{t("common.live")}</span>
         </div>
       </div>
 
-      {/* Volatility Radar */}
       <VolatilityRadar />
 
-      {/* Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {isLoading ? (
           Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-[88px] rounded-lg" />)
         ) : (
           <>
-            <StatCard title="Total Requests" value={stats.total_requests} icon={Activity} trend={{ value: "+12% this week", positive: true }} />
-            <StatCard title="Pass Rate" value={`${stats.pass_rate}%`} icon={Percent} variant="primary" trend={{ value: "Real traffic ratio", positive: true }} />
-            <StatCard title="Offer Page" value={stats.offer_page} icon={Target} variant="success" trend={{ value: "+18% this week", positive: true }} />
-            <StatCard title="Bots Blocked" value={stats.bots_blocked} icon={ShieldCheck} variant="destructive" trend={{ value: "All rejected traffic", positive: false }} />
+            <StatCard title={t("dashboard.totalRequests")} value={stats.total_requests} icon={Activity} trend={{ value: t("dashboard.thisWeek"), positive: true }} />
+            <StatCard title={t("dashboard.passRate")} value={`${stats.pass_rate}%`} icon={Percent} variant="primary" trend={{ value: t("dashboard.realTrafficRatio"), positive: true }} />
+            <StatCard title={t("dashboard.offerPage")} value={stats.offer_page} icon={Target} variant="success" trend={{ value: t("dashboard.offerWeek"), positive: true }} />
+            <StatCard title={t("dashboard.botsBlocked")} value={stats.bots_blocked} icon={ShieldCheck} variant="destructive" trend={{ value: t("dashboard.allRejected"), positive: false }} />
           </>
         )}
       </div>
 
-      {/* Charts Row */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
-        {/* Traffic Area Chart */}
         <Card className="border-border bg-card xl:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-base font-semibold">Traffic Overview</CardTitle>
+            <CardTitle className="text-base font-semibold">{t("dashboard.trafficOverview")}</CardTitle>
             <Select value={dateRange} onValueChange={setDateRange}>
               <SelectTrigger className="w-[140px] h-8 text-xs border-border bg-secondary/50">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="1">Today</SelectItem>
-                <SelectItem value="7">Last 7 Days</SelectItem>
-                <SelectItem value="30">Last 30 Days</SelectItem>
+                <SelectItem value="1">{t("dashboard.today")}</SelectItem>
+                <SelectItem value="7">{t("dashboard.last7Days")}</SelectItem>
+                <SelectItem value="30">{t("dashboard.last30Days")}</SelectItem>
               </SelectContent>
             </Select>
           </CardHeader>
@@ -184,26 +179,8 @@ export default function Dashboard() {
                       }}
                     />
                     <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
-                    <Area
-                      type="monotone"
-                      dataKey="offer_page"
-                      stroke="hsl(142, 71%, 45%)"
-                      strokeWidth={2.5}
-                      fill="url(#gradientOffer)"
-                      name="Offer Page"
-                      dot={false}
-                      activeDot={{ r: 5, strokeWidth: 2, stroke: "hsl(142, 71%, 45%)", fill: "hsl(0 0% 9%)" }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="bot_blocked"
-                      stroke="hsl(0, 84%, 60%)"
-                      strokeWidth={2.5}
-                      fill="url(#gradientBot)"
-                      name="Bots Blocked"
-                      dot={false}
-                      activeDot={{ r: 5, strokeWidth: 2, stroke: "hsl(0, 84%, 60%)", fill: "hsl(0 0% 9%)" }}
-                    />
+                    <Area type="monotone" dataKey="offer_page" stroke="hsl(142, 71%, 45%)" strokeWidth={2.5} fill="url(#gradientOffer)" name={t("dashboard.offerPage")} dot={false} activeDot={{ r: 5, strokeWidth: 2, stroke: "hsl(142, 71%, 45%)", fill: "hsl(0 0% 9%)" }} />
+                    <Area type="monotone" dataKey="bot_blocked" stroke="hsl(0, 84%, 60%)" strokeWidth={2.5} fill="url(#gradientBot)" name={t("dashboard.botsBlocked")} dot={false} activeDot={{ r: 5, strokeWidth: 2, stroke: "hsl(0, 84%, 60%)", fill: "hsl(0 0% 9%)" }} />
                   </AreaChart>
                 </ResponsiveContainer>
               )}
@@ -211,44 +188,23 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Device Donut Chart */}
         <Card className="border-border bg-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
               <Globe className="h-4 w-4 text-primary" />
-              Traffic by Device
+              {t("dashboard.trafficByDevice")}
             </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col items-center justify-center">
             <div className="h-[200px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie
-                    data={deviceData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={85}
-                    paddingAngle={4}
-                    dataKey="value"
-                    strokeWidth={0}
-                  >
-                    {deviceData.map((_, idx) => (
-                      <Cell key={idx} fill={DEVICE_COLORS[idx]} />
-                    ))}
+                  <Pie data={deviceData} cx="50%" cy="50%" innerRadius={60} outerRadius={85} paddingAngle={4} dataKey="value" strokeWidth={0}>
+                    {deviceData.map((_, idx) => (<Cell key={idx} fill={DEVICE_COLORS[idx]} />))}
                   </Pie>
                   <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(0 0% 9%)",
-                      border: "1px solid hsl(0 0% 18%)",
-                      borderRadius: "10px",
-                      color: "hsl(0 0% 95%)",
-                      fontSize: 12,
-                    }}
-                    formatter={(value: number) => {
-                      const pct = deviceTotal > 0 ? Math.round((value / deviceTotal) * 100) : 0;
-                      return [`${pct}%`, ""];
-                    }}
+                    contentStyle={{ backgroundColor: "hsl(0 0% 9%)", border: "1px solid hsl(0 0% 18%)", borderRadius: "10px", color: "hsl(0 0% 95%)", fontSize: 12 }}
+                    formatter={(value: number) => { const pct = deviceTotal > 0 ? Math.round((value / deviceTotal) * 100) : 0; return [`${pct}%`, ""]; }}
                   />
                 </PieChart>
               </ResponsiveContainer>
@@ -270,67 +226,65 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Threat Interceptions + Live Traffic Log */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
         <LiveThreatInterceptions />
 
-      {/* Live Traffic Log */}
-      <Card className="border-border bg-card">
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <Clock className="h-4 w-4 text-primary" />
-              Live Traffic Log
-            </CardTitle>
-            <div className="flex items-center gap-2">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[hsl(var(--success))] opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-[hsl(var(--success))]" />
-              </span>
-              <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-mono">Real-time</span>
+        <Card className="border-border bg-card">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <Clock className="h-4 w-4 text-primary" />
+                {t("dashboard.liveTrafficLog")}
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[hsl(var(--success))] opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[hsl(var(--success))]" />
+                </span>
+                <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-mono">{t("common.realTime")}</span>
+              </div>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0 overflow-x-auto">
-          <Table className="min-w-[600px]">
-            <TableHeader>
-              <TableRow className="border-border hover:bg-transparent">
-                <TableHead className="text-muted-foreground text-xs uppercase tracking-wider">Time</TableHead>
-                <TableHead className="text-muted-foreground text-xs uppercase tracking-wider">IP Address</TableHead>
-                <TableHead className="text-muted-foreground text-xs uppercase tracking-wider">Country</TableHead>
-                <TableHead className="text-muted-foreground text-xs uppercase tracking-wider">Device</TableHead>
-                <TableHead className="text-muted-foreground text-xs uppercase tracking-wider text-right">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {feedData.map((row, i) => (
-                <TableRow key={i} className="border-border">
-                  <TableCell className="text-sm text-muted-foreground font-mono">{row.time}</TableCell>
-                  <TableCell className="text-sm font-mono">{row.ip}</TableCell>
-                  <TableCell>
-                    <span className="flex items-center gap-1.5 text-sm">
-                      <MapPin className="h-3 w-3 text-muted-foreground" />
-                      {row.country}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{row.device}</TableCell>
-                  <TableCell className="text-right">
-                    {row.action === "Blocked" ? (
-                      <Badge variant="outline" className="border-destructive/30 bg-destructive/10 text-destructive text-[11px] font-mono">
-                        Blocked
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="border-[hsl(var(--success))]/30 bg-[hsl(var(--success))]/10 text-[hsl(var(--success))] text-[11px] font-mono">
-                        Passed
-                      </Badge>
-                    )}
-                  </TableCell>
+          </CardHeader>
+          <CardContent className="p-0 overflow-x-auto">
+            <Table className="min-w-[600px]">
+              <TableHeader>
+                <TableRow className="border-border hover:bg-transparent">
+                  <TableHead className="text-muted-foreground text-xs uppercase tracking-wider">{t("dashboard.time")}</TableHead>
+                  <TableHead className="text-muted-foreground text-xs uppercase tracking-wider">{t("dashboard.ipAddress")}</TableHead>
+                  <TableHead className="text-muted-foreground text-xs uppercase tracking-wider">{t("dashboard.country")}</TableHead>
+                  <TableHead className="text-muted-foreground text-xs uppercase tracking-wider">{t("dashboard.device")}</TableHead>
+                  <TableHead className="text-muted-foreground text-xs uppercase tracking-wider text-right">{t("dashboard.action")}</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+              </TableHeader>
+              <TableBody>
+                {feedData.map((row, i) => (
+                  <TableRow key={i} className="border-border">
+                    <TableCell className="text-sm text-muted-foreground font-mono">{row.time}</TableCell>
+                    <TableCell className="text-sm font-mono">{row.ip}</TableCell>
+                    <TableCell>
+                      <span className="flex items-center gap-1.5 text-sm">
+                        <MapPin className="h-3 w-3 text-muted-foreground" />
+                        {row.country}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{row.device}</TableCell>
+                    <TableCell className="text-right">
+                      {row.action === t("dashboard.blocked") ? (
+                        <Badge variant="outline" className="border-destructive/30 bg-destructive/10 text-destructive text-[11px] font-mono">
+                          {t("dashboard.blocked")}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="border-[hsl(var(--success))]/30 bg-[hsl(var(--success))]/10 text-[hsl(var(--success))] text-[11px] font-mono">
+                          {t("dashboard.passed")}
+                        </Badge>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

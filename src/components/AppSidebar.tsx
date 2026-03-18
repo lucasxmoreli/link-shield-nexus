@@ -3,6 +3,7 @@ import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdmin } from "@/hooks/useAdmin";
+import { useTranslation } from "react-i18next";
 import {
   Sidebar,
   SidebarContent,
@@ -14,26 +15,27 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-const baseItems = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Domains", url: "/domains", icon: Globe },
-  { title: "Campaigns", url: "/campaigns", icon: Megaphone },
-  { title: "Requests", url: "/requests", icon: FileText },
-  { title: "Cloak Test", url: "/cloak-test", icon: FlaskConical },
-  { title: "Billing & Plans", url: "/billing", icon: CreditCard },
-  { title: "Settings", url: "/settings", icon: Settings },
-];
-
-const adminItems = [
-  { title: "Admin & Users", url: "/invite-codes", icon: Ticket },
-];
-
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
   const { signOut } = useAuth();
   const { isAdmin } = useAdmin();
+  const { t } = useTranslation();
+
+  const baseItems = [
+    { title: t("nav.dashboard"), url: "/dashboard", icon: LayoutDashboard },
+    { title: t("nav.domains"), url: "/domains", icon: Globe },
+    { title: t("nav.campaigns"), url: "/campaigns", icon: Megaphone },
+    { title: t("nav.requests"), url: "/requests", icon: FileText },
+    { title: t("nav.cloakTest"), url: "/cloak-test", icon: FlaskConical },
+    { title: t("nav.billing"), url: "/billing", icon: CreditCard },
+    { title: t("nav.settings"), url: "/settings", icon: Settings },
+  ];
+
+  const adminItems = [
+    { title: t("nav.adminUsers"), url: "/invite-codes", icon: Ticket },
+  ];
 
   const items = [...baseItems, ...(isAdmin ? adminItems : [])];
 
@@ -52,7 +54,7 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
-                <SidebarMenuItem key={item.title}>
+                <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton asChild>
                     <NavLink
                       to={item.url}
@@ -79,7 +81,7 @@ export function AppSidebar() {
                     className="flex items-center gap-3 px-3 py-2.5 rounded-md text-destructive hover:bg-destructive/10 transition-colors w-full"
                   >
                     <LogOut className="h-5 w-5 shrink-0" />
-                    {!collapsed && <span>Sair</span>}
+                    {!collapsed && <span>{t("common.signOut")}</span>}
                   </button>
                 </SidebarMenuButton>
               </SidebarMenuItem>
