@@ -240,6 +240,11 @@ const en = {
     dnsStepATitle: "A Record (Required for campaign links)",
     dnsStepADesc: "Point your domain to CloakGuard's server so campaign links (/c/hash) work on your domain. Without this, visitors will see a 404 error.",
     verification: "Verification",
+    cloudflareTitle: "Cloudflare Protection (Recommended)",
+    cloudflareDesc: "Protect your domain with Cloudflare to hide your server IP from ad platform bots and crawlers.",
+    cloudflareStep1: "Enable the Orange Cloud (Proxy) on your A record in Cloudflare DNS.",
+    cloudflareStep2: "Set SSL/TLS mode to 'Full' in Cloudflare settings.",
+    cloudflareStep3: "This prevents Facebook, TikTok and Google bots from discovering your real server IP.",
   },
 
   // Requests Log
