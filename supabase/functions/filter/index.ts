@@ -395,7 +395,7 @@ serve(async (req) => {
 
     const { data: campaign, error: campaignError } = await supabase
       .from("campaigns")
-      .select("id, user_id, offer_url, safe_url, is_active, traffic_source, offer_page_b, target_countries, target_devices, strict_mode")
+      .select("id, user_id, offer_url, safe_url, is_active, traffic_source, offer_page_b, target_countries, target_devices, strict_mode, safe_page_method, offer_page_method, domain")
       .eq("hash", campaign_hash)
       .single();
 
