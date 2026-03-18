@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Shield, Loader2, ArrowLeft, Eye, EyeOff, Mail, Lock, Ticket, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 type AuthView = "login" | "invite" | "register";
 
@@ -18,6 +19,7 @@ export default function Auth() {
   const [inviteError, setInviteError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,17 +37,15 @@ export default function Auth() {
     e.preventDefault();
     setLoading(true);
     setInviteError("");
-
     const { data: isValid, error } = await supabase.rpc("validate_invite_code", {
       p_code: inviteCode.trim().toUpperCase(),
     });
-
     if (error || !isValid) {
-      setInviteError("This invite code is invalid or has already been used.");
+      setInviteError(t("auth.invalidInvite"));
     } else {
       setValidatedCode(inviteCode.trim().toUpperCase());
       setView("register");
-      toast.success("Valid code! Create your account.");
+      toast.success(t("auth.validCode"));
     }
     setLoading(false);
   };
@@ -53,13 +53,11 @@ export default function Auth() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     const { data: signUpData, error } = await supabase.auth.signUp({
       email,
       password,
       options: { emailRedirectTo: window.location.origin },
     });
-
     if (error) {
       toast.error(error.message);
     } else {
@@ -68,13 +66,13 @@ export default function Auth() {
           p_code: validatedCode,
         });
         if (!used) {
-          toast.error("Invite code was already consumed. Please contact the administrator.");
+          toast.error(t("auth.inviteConsumed"));
           setView("login");
           setLoading(false);
           return;
         }
       }
-      toast.success("Account created! Check your email to confirm.");
+      toast.success(t("auth.accountCreated"));
       setView("login");
     }
     setLoading(false);
@@ -88,7 +86,7 @@ export default function Auth() {
           className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <Ticket className="h-4 w-4" />
-          <span>I have an invite</span>
+          <span>{t("auth.iHaveInvite")}</span>
         </button>
       );
     }
@@ -97,8 +95,8 @@ export default function Auth() {
         onClick={() => { setView("login"); setInviteError(""); }}
         className="text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
-        Already have an account?{" "}
-        <span className="text-primary font-medium">Sign in</span>
+        {t("auth.alreadyHaveAccount")}{" "}
+        <span className="text-primary font-medium">{t("auth.signIn")}</span>
       </button>
     );
   };
@@ -106,11 +104,11 @@ export default function Auth() {
   const renderTitle = () => {
     switch (view) {
       case "login":
-        return { title: "Welcome back", subtitle: "Enter your credentials to access the dashboard." };
+        return { title: t("auth.welcomeBack"), subtitle: t("auth.welcomeSubtitle") };
       case "invite":
-        return { title: "Invite Code", subtitle: "Enter your invite code to create an account." };
+        return { title: t("auth.inviteCode"), subtitle: t("auth.inviteSubtitle") };
       case "register":
-        return { title: "Create your account", subtitle: "Start protecting your campaigns in minutes." };
+        return { title: t("auth.createAccount"), subtitle: t("auth.createSubtitle") };
     }
   };
 
@@ -118,7 +116,6 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen flex bg-background">
-      {/* Left panel — branding */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden items-center justify-center">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,hsl(271_81%_56%/0.2),transparent_70%)]" />
         <div className="absolute inset-0 bg-[linear-gradient(135deg,hsl(271_81%_56%/0.05)_0%,transparent_50%,hsl(271_81%_56%/0.08)_100%)]" />
@@ -131,19 +128,18 @@ export default function Auth() {
           </div>
           <div className="space-y-4">
             <h2 className="text-3xl font-bold leading-tight">
-              Invisible protection.{" "}
-              <span className="text-primary">Real results.</span>
+              {t("auth.invisibleProtection")}{" "}
+              <span className="text-primary">{t("auth.realResults")}</span>
             </h2>
             <p className="text-muted-foreground text-lg leading-relaxed">
-              Filter bots and moderators in real time. Your visitors see the offer,
-              everyone else sees the safe page.
+              {t("auth.authDescription")}
             </p>
           </div>
           <div className="flex gap-6 pt-4">
             {[
-              { value: "99.9%", label: "Detection" },
-              { value: "<50ms", label: "Latency" },
-              { value: "24/7", label: "Monitoring" },
+              { value: "99.9%", label: t("auth.detection") },
+              { value: "<50ms", label: t("auth.latency") },
+              { value: "24/7", label: t("common.monitoring") },
             ].map((stat) => (
               <div key={stat.label} className="text-center">
                 <div className="text-2xl font-bold text-primary">{stat.value}</div>
@@ -154,15 +150,11 @@ export default function Auth() {
         </div>
       </div>
 
-      {/* Right panel — form */}
       <div className="flex-1 flex flex-col">
         <div className="flex items-center justify-between p-6">
-          <Link
-            to="/"
-            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
+          <Link to="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="h-4 w-4" />
-            Back
+            {t("common.back")}
           </Link>
           {headerAction()}
         </div>
@@ -179,70 +171,39 @@ export default function Auth() {
               <p className="text-muted-foreground text-sm">{subtitle}</p>
             </div>
 
-            {/* LOGIN */}
             {view === "login" && (
               <form onSubmit={handleLogin} className="space-y-5">
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-foreground">Email</label>
+                  <label className="text-sm font-medium text-foreground">{t("auth.emailLabel")}</label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      type="email"
-                      placeholder="you@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      className="pl-10 h-11 bg-secondary/50 border-border focus:border-primary/50 transition-colors"
-                    />
+                    <Input type="email" placeholder={t("auth.emailPlaceholder")} value={email} onChange={(e) => setEmail(e.target.value)} required className="pl-10 h-11 bg-secondary/50 border-border focus:border-primary/50 transition-colors" />
                   </div>
                 </div>
-
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-foreground">Password</label>
+                  <label className="text-sm font-medium text-foreground">{t("auth.passwordLabel")}</label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      type={showPassword ? "text" : "password"}
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      minLength={6}
-                      className="pl-10 pr-10 h-11 bg-secondary/50 border-border focus:border-primary/50 transition-colors"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                      tabIndex={-1}
-                    >
+                    <Input type={showPassword ? "text" : "password"} placeholder={t("auth.passwordPlaceholder")} value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} className="pl-10 pr-10 h-11 bg-secondary/50 border-border focus:border-primary/50 transition-colors" />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" tabIndex={-1}>
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
                 </div>
-
                 <Button type="submit" className="w-full h-11 text-sm font-semibold" disabled={loading}>
                   {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Sign In
+                  {t("auth.signInButton")}
                 </Button>
               </form>
             )}
 
-            {/* INVITE CODE */}
             {view === "invite" && (
               <form onSubmit={handleValidateInvite} className="space-y-5">
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-foreground">Invite Code</label>
+                  <label className="text-sm font-medium text-foreground">{t("auth.inviteCodeLabel")}</label>
                   <div className="relative">
                     <Ticket className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      type="text"
-                      placeholder="CLOAK-XXXX-XXXX"
-                      value={inviteCode}
-                      onChange={(e) => { setInviteCode(e.target.value); setInviteError(""); }}
-                      required
-                      className="pl-10 h-11 bg-secondary/50 border-border focus:border-primary/50 transition-colors uppercase tracking-wider"
-                    />
+                    <Input type="text" placeholder={t("auth.inviteCodePlaceholder")} value={inviteCode} onChange={(e) => { setInviteCode(e.target.value); setInviteError(""); }} required className="pl-10 h-11 bg-secondary/50 border-border focus:border-primary/50 transition-colors uppercase tracking-wider" />
                   </div>
                   {inviteError && (
                     <div className="flex items-center gap-2 text-destructive text-sm mt-2">
@@ -251,66 +212,42 @@ export default function Auth() {
                     </div>
                   )}
                 </div>
-
                 <Button type="submit" className="w-full h-11 text-sm font-semibold" disabled={loading}>
                   {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Validate Code
+                  {t("auth.validateCode")}
                 </Button>
               </form>
             )}
 
-            {/* REGISTER */}
             {view === "register" && (
               <form onSubmit={handleRegister} className="space-y-5">
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-foreground">Email</label>
+                  <label className="text-sm font-medium text-foreground">{t("auth.emailLabel")}</label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      type="email"
-                      placeholder="you@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      className="pl-10 h-11 bg-secondary/50 border-border focus:border-primary/50 transition-colors"
-                    />
+                    <Input type="email" placeholder={t("auth.emailPlaceholder")} value={email} onChange={(e) => setEmail(e.target.value)} required className="pl-10 h-11 bg-secondary/50 border-border focus:border-primary/50 transition-colors" />
                   </div>
                 </div>
-
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-foreground">Password</label>
+                  <label className="text-sm font-medium text-foreground">{t("auth.passwordLabel")}</label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      type={showPassword ? "text" : "password"}
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      minLength={6}
-                      className="pl-10 pr-10 h-11 bg-secondary/50 border-border focus:border-primary/50 transition-colors"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                      tabIndex={-1}
-                    >
+                    <Input type={showPassword ? "text" : "password"} placeholder={t("auth.passwordPlaceholder")} value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} className="pl-10 pr-10 h-11 bg-secondary/50 border-border focus:border-primary/50 transition-colors" />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" tabIndex={-1}>
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
-                  <p className="text-xs text-muted-foreground">Minimum 6 characters</p>
+                  <p className="text-xs text-muted-foreground">{t("auth.minChars")}</p>
                 </div>
-
                 <Button type="submit" className="w-full h-11 text-sm font-semibold" disabled={loading}>
                   {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Create Account
+                  {t("auth.createAccountButton")}
                 </Button>
               </form>
             )}
 
             <p className="text-xs text-center text-muted-foreground leading-relaxed">
-              Access is restricted. If you don't have an invite code, contact the administrator.
+              {t("auth.accessRestricted")}
             </p>
           </div>
         </div>

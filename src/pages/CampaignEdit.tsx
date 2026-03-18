@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { TRAFFIC_SOURCES, getPlanByName, getAllowedSources } from "@/lib/plan-config";
 
 const COUNTRIES = [
@@ -49,6 +50,7 @@ export default function CampaignEdit() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const qc = useQueryClient();
+  const { t } = useTranslation();
 
   const [name, setName] = useState("");
   const [domain, setDomain] = useState("");
@@ -149,7 +151,6 @@ export default function CampaignEdit() {
       if (isEditing) {
         const { error } = await supabase.from("campaigns").update(payload).eq("id", id!);
         if (error) throw error;
-        // For editing, fetch the existing hash
         const { data: existing } = await supabase.from("campaigns").select("hash, domain").eq("id", id!).single();
         return { hash: existing?.hash || "", domain: existing?.domain || domain };
       } else {
@@ -226,28 +227,27 @@ export default function CampaignEdit() {
         <Button variant="ghost" size="icon" onClick={() => navigate("/campaigns")}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-2xl font-bold">{isEditing ? "Edit Campaign" : "New Campaign"}</h1>
+        <h1 className="text-2xl font-bold">{isEditing ? t("campaignEdit.editCampaign") : t("campaignEdit.newCampaign")}</h1>
       </div>
 
       {/* BLOCK 1: Campaign */}
       <section className="rounded-xl bg-[hsl(var(--card))] p-6 space-y-4">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Campaign</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("campaignEdit.campaignSection")}</h2>
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Campaign Name</Label>
-            <Input placeholder="e.g. TTK 10 - FREE [TRESH-$500]" className="bg-secondary border-border" value={name} onChange={(e) => setName(e.target.value)} />
+            <Label className="text-xs text-muted-foreground">{t("campaignEdit.campaignName")}</Label>
+            <Input placeholder={t("campaignEdit.campaignNamePlaceholder")} className="bg-secondary border-border" value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div className="space-y-1.5">
             <div className="flex items-center gap-1.5">
-              <Label className="text-xs text-muted-foreground">Domain</Label>
+              <Label className="text-xs text-muted-foreground">{t("campaignEdit.domainLabel")}</Label>
               <TooltipProvider delayDuration={200}>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent side="right" className="max-w-[280px] text-xs leading-relaxed">
-                    <p>Example: If you select <span className="font-semibold text-primary">"mysite.com"</span>, your cloaker link will be <span className="font-mono text-primary">mysite.com/c/xyz</span>.</p>
-                    <p className="mt-1">This link will then redirect users to your Offer Page or Safe Page.</p>
+                    <p>{t("campaignEdit.domainTooltip")}</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -256,18 +256,18 @@ export default function CampaignEdit() {
               <div className="flex items-start gap-2 rounded-lg border border-yellow-500/30 bg-yellow-500/5 p-3">
                 <AlertTriangle className="h-4 w-4 mt-0.5 text-yellow-500 shrink-0" />
                 <p className="text-sm text-yellow-200/80">
-                  No verified domains found.{" "}
+                  {t("campaignEdit.noDomains")}{" "}
                   <button type="button" onClick={() => navigate("/domains")} className="underline text-primary hover:text-primary/80 transition-colors">
-                    Go to the Domains tab
+                    {t("campaignEdit.noDomainsAction")}
                   </button>{" "}
-                  to add one first.
+                  {t("campaignEdit.noDomainsHelper")}
                 </p>
               </div>
             ) : (
               <>
                 <Select value={domain} onValueChange={setDomain}>
                   <SelectTrigger className="bg-secondary border-border">
-                    <SelectValue placeholder="Select a domain" />
+                    <SelectValue placeholder={t("campaignEdit.selectDomain")} />
                   </SelectTrigger>
                   <SelectContent className="bg-card border-border">
                     {domains.map((d) => (
@@ -275,15 +275,15 @@ export default function CampaignEdit() {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">Select the verified domain that will host your tracking link. This is NOT your offer page.</p>
+                <p className="text-xs text-muted-foreground">{t("campaignEdit.domainHelper")}</p>
               </>
             )}
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Traffic Source</Label>
+            <Label className="text-xs text-muted-foreground">{t("campaignEdit.trafficSource")}</Label>
             <Select value={trafficSource} onValueChange={setTrafficSource}>
               <SelectTrigger className="bg-secondary border-border">
-                <SelectValue placeholder="Select source" />
+                <SelectValue placeholder={t("campaignEdit.selectSource")} />
               </SelectTrigger>
               <SelectContent className="bg-card border-border">
                 {allowedSources.map((src) => {
@@ -301,7 +301,7 @@ export default function CampaignEdit() {
                   <SelectItem value="__locked" disabled>
                     <span className="flex items-center gap-2 text-muted-foreground">
                       <Lock size={14} />
-                      Upgrade plan to unlock more sources
+                      {t("campaignEdit.unlockMore")}
                     </span>
                   </SelectItem>
                 )}
@@ -313,21 +313,21 @@ export default function CampaignEdit() {
 
       {/* BLOCK 2: Safe Page */}
       <section className="rounded-xl bg-[hsl(var(--card))] p-6 space-y-4">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Safe Page</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("campaignEdit.safePageSection")}</h2>
         <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">Safe Page URL</Label>
-          <Input placeholder="https://blog.example.com/..." className="bg-secondary border-border" value={safeUrl} onChange={(e) => setSafeUrl(e.target.value)} />
+          <Label className="text-xs text-muted-foreground">{t("campaignEdit.safePageUrl")}</Label>
+          <Input placeholder={t("campaignEdit.safePagePlaceholder")} className="bg-secondary border-border" value={safeUrl} onChange={(e) => setSafeUrl(e.target.value)} />
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">Method</Label>
+          <Label className="text-xs text-muted-foreground">{t("campaignEdit.method")}</Label>
           <RadioGroup value={safeMethod} onValueChange={setSafeMethod} className="flex gap-4">
             <label className={`flex items-center gap-2 cursor-pointer rounded-lg border px-4 py-2.5 text-sm transition-colors ${safeMethod === "redirect" ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary text-muted-foreground"}`}>
               <RadioGroupItem value="redirect" className="sr-only" />
-              Redirect
+              {t("campaignEdit.redirect")}
             </label>
             <label className={`flex items-center gap-2 cursor-pointer rounded-lg border px-4 py-2.5 text-sm transition-colors ${safeMethod === "content_fetch" ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary text-muted-foreground"}`}>
               <RadioGroupItem value="content_fetch" className="sr-only" />
-              Content Fetch
+              {t("campaignEdit.contentFetch")}
             </label>
           </RadioGroup>
         </div>
@@ -335,11 +335,11 @@ export default function CampaignEdit() {
 
       {/* BLOCK 3: Offer Page */}
       <section className="rounded-xl bg-[hsl(var(--card))] p-6 space-y-4">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Offer Page</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("campaignEdit.offerPageSection")}</h2>
 
         <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">Primary Offer Page (A)</Label>
-          <Input placeholder="https://offer.example.com/..." className="bg-secondary border-border" value={offerUrl} onChange={(e) => setOfferUrl(e.target.value)} />
+          <Label className="text-xs text-muted-foreground">{t("campaignEdit.primaryOffer")}</Label>
+          <Input placeholder={t("campaignEdit.offerPlaceholder")} className="bg-secondary border-border" value={offerUrl} onChange={(e) => setOfferUrl(e.target.value)} />
         </div>
 
         {/* A/B Storm Toggle */}
@@ -349,8 +349,8 @@ export default function CampaignEdit() {
               <Zap className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <p className="text-sm font-medium">⚡ A/B Storm (Split Traffic)</p>
-              <p className="text-xs text-muted-foreground">Split human traffic 50/50 between two offers</p>
+              <p className="text-sm font-medium">{t("campaignEdit.abStormTitle")}</p>
+              <p className="text-xs text-muted-foreground">{t("campaignEdit.abStormDesc")}</p>
             </div>
           </div>
           <Switch
@@ -366,27 +366,31 @@ export default function CampaignEdit() {
           <CollapsibleContent className="overflow-hidden data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-up-2 data-[state=open]:slide-down-2">
             <div className="space-y-3 rounded-lg border border-primary/20 bg-primary/5 p-4">
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Test Offer Page (B)</Label>
+                <Label className="text-xs text-muted-foreground">{t("campaignEdit.testOfferB")}</Label>
                 <Input
-                  placeholder="https://alternative-offer.example.com/..."
+                  placeholder={t("campaignEdit.testOfferPlaceholder")}
                   className="bg-secondary border-border"
                   value={offerPageB}
                   onChange={(e) => setOfferPageB(e.target.value)}
                 />
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                When enabled, CloakGuard will automatically split your approved human traffic <span className="font-semibold text-primary">50/50</span> between Offer A and Offer B. Bots will still be sent to the Safe Page.
+                {t("campaignEdit.abStormHelp").split("<bold>").map((part, i) => {
+                  if (i === 0) return part;
+                  const [bold, rest] = part.split("</bold>");
+                  return <span key={i}><span className="font-semibold text-primary">{bold}</span>{rest}</span>;
+                })}
               </p>
             </div>
           </CollapsibleContent>
         </Collapsible>
 
         <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">Method</Label>
+          <Label className="text-xs text-muted-foreground">{t("campaignEdit.method")}</Label>
           <RadioGroup value={offerMethod} onValueChange={setOfferMethod} className="flex gap-4">
             <label className={`flex items-center gap-2 cursor-pointer rounded-lg border px-4 py-2.5 text-sm transition-colors ${offerMethod === "redirect" ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary text-muted-foreground"}`}>
               <RadioGroupItem value="redirect" className="sr-only" />
-              Redirect
+              {t("campaignEdit.redirect")}
             </label>
           </RadioGroup>
         </div>
@@ -394,15 +398,15 @@ export default function CampaignEdit() {
 
       {/* BLOCK 3.5: Strict Mode */}
       <section className="rounded-xl bg-[hsl(var(--card))] p-6 space-y-4">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Security</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("campaignEdit.securitySection")}</h2>
         <div className="flex items-center justify-between rounded-lg border border-border bg-secondary/50 px-4 py-3">
           <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-destructive/10">
               <ShieldAlert className="h-4 w-4 text-destructive" />
             </div>
             <div>
-              <p className="text-sm font-medium">🛡️ Strict Mode</p>
-              <p className="text-xs text-muted-foreground">Block suspicious traffic (missing click IDs, unknown referers)</p>
+              <p className="text-sm font-medium">{t("campaignEdit.strictModeTitle")}</p>
+              <p className="text-xs text-muted-foreground">{t("campaignEdit.strictModeDesc")}</p>
             </div>
           </div>
           <Switch checked={strictMode} onCheckedChange={setStrictMode} />
@@ -411,17 +415,17 @@ export default function CampaignEdit() {
 
       {/* BLOCK 4: Target */}
       <section className="rounded-xl bg-[hsl(var(--card))] p-6 space-y-4">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Target</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("campaignEdit.targetSection")}</h2>
         <div className="flex items-start gap-3 rounded-lg border border-yellow-500/30 bg-yellow-500/5 p-3">
           <AlertTriangle className="h-4 w-4 mt-0.5 text-yellow-500 shrink-0" />
-          <p className="text-sm text-yellow-200/80">We recommend selecting all countries for TikTok campaigns.</p>
+          <p className="text-sm text-yellow-200/80">{t("campaignEdit.tiktokWarning")}</p>
         </div>
 
         <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">Countries</Label>
+          <Label className="text-xs text-muted-foreground">{t("campaignEdit.countries")}</Label>
           <div className="relative">
             <Input
-              placeholder="Search countries..."
+              placeholder={t("campaignEdit.searchCountries")}
               className="bg-secondary border-border"
               value={countrySearch}
               onChange={(e) => { setCountrySearch(e.target.value); setCountryDropdownOpen(true); }}
@@ -451,7 +455,7 @@ export default function CampaignEdit() {
         </div>
 
         <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">Devices</Label>
+          <Label className="text-xs text-muted-foreground">{t("campaignEdit.devices")}</Label>
           <div className="flex gap-2">
             {DEVICES.map((d) => (
               <button key={d} type="button" onClick={() => toggleDevice(d)} className={`rounded-lg border px-4 py-2 text-sm font-medium capitalize transition-colors ${targetDevices.includes(d) ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary text-muted-foreground"}`}>
@@ -464,17 +468,17 @@ export default function CampaignEdit() {
 
       {/* BLOCK 5: Tags */}
       <section className="rounded-xl bg-[hsl(var(--card))] p-6 space-y-4">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Tags</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("campaignEdit.tagsSection")}</h2>
         <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">Press Enter to add a tag</Label>
-          <Input placeholder="Type a tag and press Enter..." className="bg-secondary border-border" value={tagInput} onChange={(e) => setTagInput(e.target.value)} onKeyDown={handleTagKeyDown} />
+          <Label className="text-xs text-muted-foreground">{t("campaignEdit.tagHelper")}</Label>
+          <Input placeholder={t("campaignEdit.tagPlaceholder")} className="bg-secondary border-border" value={tagInput} onChange={(e) => setTagInput(e.target.value)} onKeyDown={handleTagKeyDown} />
         </div>
         {tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
-            {tags.map((t) => (
-              <Badge key={t} variant="secondary" className="gap-1 bg-primary/10 text-primary border-primary/20">
-                {t}
-                <button type="button" onClick={() => removeTag(t)} className="hover:text-destructive"><X className="h-3 w-3" /></button>
+            {tags.map((tg) => (
+              <Badge key={tg} variant="secondary" className="gap-1 bg-primary/10 text-primary border-primary/20">
+                {tg}
+                <button type="button" onClick={() => removeTag(tg)} className="hover:text-destructive"><X className="h-3 w-3" /></button>
               </Badge>
             ))}
           </div>
@@ -483,10 +487,9 @@ export default function CampaignEdit() {
 
       {/* Footer */}
       <div className="flex justify-end gap-3 pt-2">
-        <Button variant="outline" onClick={() => navigate("/campaigns")}>Cancel</Button>
+        <Button variant="outline" onClick={() => navigate("/campaigns")}>{t("common.cancel")}</Button>
         <Button
           onClick={() => {
-            // Domain conflict check
             if (domain && offerUrl) {
               try {
                 const offerHost = new URL(ensureAbsoluteUrl(offerUrl)).hostname.replace(/^www\./, "");
@@ -501,7 +504,7 @@ export default function CampaignEdit() {
           }}
           disabled={saveMutation.isPending || !isFormValid}
         >
-          {saveMutation.isPending ? "Saving..." : "Save Campaign"}
+          {saveMutation.isPending ? t("common.saving") : t("campaignEdit.saveCampaign")}
         </Button>
       </div>
 
@@ -511,18 +514,18 @@ export default function CampaignEdit() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-yellow-500" />
-              Conflict Detected
+              {t("campaignEdit.conflictTitle")}
             </DialogTitle>
             <DialogDescription className="text-sm leading-relaxed pt-2">
-              You are using the same domain (<span className="font-semibold text-foreground">{domain}</span>) for both the cloaker tracking link and the Offer Page URL. This might cause 404 errors or redirect loops.
+              {t("campaignEdit.conflictDesc", { domain })}
               <br /><br />
-              We strongly recommend using <span className="font-semibold text-foreground">different domains or subdomains</span> for the tracking link and the offer page.
+              {t("campaignEdit.conflictRecommend")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setConflictDialogOpen(false)}>Go Back & Fix</Button>
+            <Button variant="outline" onClick={() => setConflictDialogOpen(false)}>{t("common.goBack")}</Button>
             <Button variant="destructive" onClick={() => { setConflictDialogOpen(false); saveMutation.mutate(); }}>
-              Save Anyway
+              {t("common.saveAnyway")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -532,16 +535,15 @@ export default function CampaignEdit() {
       <Dialog open={!!successModal} onOpenChange={(open) => { if (!open) { setSuccessModal(null); navigate("/campaigns"); } }}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle className="text-xl">🚀 Campaign is Live!</DialogTitle>
+            <DialogTitle className="text-xl">{t("campaignEdit.successTitle")}</DialogTitle>
             <DialogDescription className="text-sm text-muted-foreground pt-1">
-              Your campaign <span className="font-semibold text-foreground">{name}</span> is ready to receive traffic.
+              {t("campaignEdit.successDesc", { name })}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 pt-2">
-            {/* Campaign Link */}
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Your Tracking Link</Label>
+              <Label className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">{t("campaignEdit.trackingLink")}</Label>
               <div className="relative">
                 <Input
                   readOnly
@@ -555,22 +557,21 @@ export default function CampaignEdit() {
                   onClick={() => {
                     navigator.clipboard.writeText(successModal?.link || "");
                     setLinkCopied(true);
-                    toast.success("Link copied!");
+                    toast.success(t("campaignEdit.linkCopied"));
                     setTimeout(() => setLinkCopied(false), 2000);
                   }}
                 >
                   {linkCopied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
-                  {linkCopied ? "Copied" : "Copy"}
+                  {linkCopied ? t("common.copied") : t("common.copy")}
                 </Button>
               </div>
             </div>
 
-            {/* URL Previews */}
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-lg border border-border bg-secondary/50 p-3 space-y-1.5">
                 <div className="flex items-center gap-1.5">
                   <Globe className="h-3.5 w-3.5 text-primary" />
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Offer Page</span>
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("campaignEdit.offerPageLabel")}</span>
                 </div>
                 <p className="text-xs font-mono text-foreground truncate" title={successModal?.offerUrl}>
                   {successModal?.offerUrl || "—"}
@@ -579,7 +580,7 @@ export default function CampaignEdit() {
               <div className="rounded-lg border border-border bg-secondary/50 p-3 space-y-1.5">
                 <div className="flex items-center gap-1.5">
                   <Shield className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Safe Page</span>
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("campaignEdit.safePageLabel")}</span>
                 </div>
                 <p className="text-xs font-mono text-foreground truncate" title={successModal?.safeUrl}>
                   {successModal?.safeUrl || "—"}
@@ -587,29 +588,28 @@ export default function CampaignEdit() {
               </div>
             </div>
 
-            {/* Tutorial Steps */}
             <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-2.5">
-              <p className="text-xs font-semibold uppercase tracking-wider text-primary">Quick Setup Guide</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-primary">{t("campaignEdit.quickSetup")}</p>
               <div className="space-y-2">
-                <div className="flex items-start gap-2.5">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold text-primary">1</span>
-                  <p className="text-sm text-muted-foreground">Copy this link and use it in your <span className="font-medium text-foreground">Ad Manager</span> (Facebook, TikTok, Google, etc).</p>
-                </div>
-                <div className="flex items-start gap-2.5">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold text-primary">2</span>
-                  <p className="text-sm text-muted-foreground">Make sure your domain is <span className="font-medium text-foreground">verified</span> in the Domains tab for this link to work.</p>
-                </div>
-                <div className="flex items-start gap-2.5">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold text-primary">3</span>
-                  <p className="text-sm text-muted-foreground">Test your link using a <span className="font-medium text-foreground">VPN or Incognito window</span> to verify the redirection works correctly.</p>
-                </div>
+                {["step1", "step2", "step3"].map((stepKey, i) => (
+                  <div key={stepKey} className="flex items-start gap-2.5">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold text-primary">{i + 1}</span>
+                    <p className="text-sm text-muted-foreground">
+                      {t(`campaignEdit.${stepKey}`).split("<bold>").map((part: string, j: number) => {
+                        if (j === 0) return part;
+                        const [bold, rest] = part.split("</bold>");
+                        return <span key={j}><span className="font-medium text-foreground">{bold}</span>{rest}</span>;
+                      })}
+                    </p>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
 
           <DialogFooter>
             <Button onClick={() => { setSuccessModal(null); navigate("/campaigns"); }} className="w-full">
-              Go to Campaigns
+              {t("campaignEdit.goToCampaigns")}
             </Button>
           </DialogFooter>
         </DialogContent>
