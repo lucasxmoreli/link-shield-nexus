@@ -212,14 +212,43 @@ export default function CampaignEdit() {
     setTargetDevices((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
   };
 
+  const normalizeUrlInput = (url: string): string => url.trim().replace(/^\/+/, "");
+
   const ensureAbsoluteUrl = (url: string): string => {
-    const trimmed = url.trim();
-    if (!trimmed) return trimmed;
-    if (/^https?:\/\//i.test(trimmed)) return trimmed;
-    return `https://${trimmed}`;
+    const cleaned = normalizeUrlInput(url);
+    if (!cleaned) return "";
+    if (/^https?:\/\//i.test(cleaned)) return cleaned;
+    return `https://${cleaned}`;
   };
 
-  const isFormValid = name && trafficSource && safeUrl && (offerMode === "single" ? offerUrl : abOffers.every((o) => o.url));
+  const isValidAbsoluteUrl = (url: string): boolean => {
+    const normalized = ensureAbsoluteUrl(url);
+    if (!normalized) return false;
+
+    try {
+      const parsed = new URL(normalized);
+      return /^https?:$/i.test(parsed.protocol) && Boolean(parsed.hostname);
+    } catch {
+      return false;
+    }
+  };
+
+  const normalizeUrlField = (setter: (value: string) => void) => (value: string) => {
+    setter(ensureAbsoluteUrl(value));
+  };
+
+  const areDestinationUrlsValid =
+    isValidAbsoluteUrl(safeUrl) &&
+    (offerMode === "single" ? isValidAbsoluteUrl(offerUrl) : abOffers.every((o) => isValidAbsoluteUrl(o.url))) &&
+    (!abStormEnabled || !offerPageB.trim() || isValidAbsoluteUrl(offerPageB));
+
+  const isFormValid = Boolean(
+    name &&
+      trafficSource &&
+      safeUrl &&
+      (offerMode === "single" ? offerUrl : abOffers.every((o) => o.url)) &&
+      areDestinationUrlsValid,
+  );
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 pb-12">
