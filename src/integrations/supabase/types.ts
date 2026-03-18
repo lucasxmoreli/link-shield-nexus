@@ -160,6 +160,7 @@ export type Database = {
           current_clicks: number | null
           email: string | null
           id: string
+          is_suspended: boolean
           language: string
           max_clicks: number | null
           max_domains: number | null
@@ -175,6 +176,7 @@ export type Database = {
           current_clicks?: number | null
           email?: string | null
           id?: string
+          is_suspended?: boolean
           language?: string
           max_clicks?: number | null
           max_domains?: number | null
@@ -190,6 +192,7 @@ export type Database = {
           current_clicks?: number | null
           email?: string | null
           id?: string
+          is_suspended?: boolean
           language?: string
           max_clicks?: number | null
           max_domains?: number | null
@@ -306,6 +309,33 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_change_plan: {
+        Args: {
+          p_max_clicks: number
+          p_max_domains: number
+          p_plan_name: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
+      admin_get_stats: { Args: never; Returns: Json }
+      admin_list_users: {
+        Args: never
+        Returns: {
+          campaign_count: number
+          created_at: string
+          current_clicks: number
+          email: string
+          is_suspended: boolean
+          max_clicks: number
+          plan_name: string
+          user_id: string
+        }[]
+      }
+      admin_toggle_suspend: {
+        Args: { p_suspend: boolean; p_user_id: string }
+        Returns: undefined
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
