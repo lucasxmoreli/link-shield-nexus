@@ -213,6 +213,7 @@ const pt = {
     domainUrlPlaceholder: "ex: track.meusite.com",
     domainAdded: "Domínio registrado! Configure seu registro CNAME para ativar.",
     domainRemoved: "Domínio removido",
+    domainRemovedCloudflare: "Domínio removido do Cloudflare e do sistema.",
     domainDuplicate: "Este domínio já foi adicionado.",
     domainRequired: "A URL do domínio é obrigatória.",
     setupDomain: "Configurar Domínio",

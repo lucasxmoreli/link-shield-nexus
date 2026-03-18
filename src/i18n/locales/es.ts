@@ -213,6 +213,7 @@ const es = {
     domainUrlPlaceholder: "ej: track.misitio.com",
     domainAdded: "¡Dominio registrado! Configura tu registro CNAME para activar.",
     domainRemoved: "Dominio eliminado",
+    domainRemovedCloudflare: "Dominio eliminado de Cloudflare y del sistema.",
     domainDuplicate: "Este dominio ya ha sido agregado.",
     domainRequired: "La URL del dominio es obligatoria.",
     setupDomain: "Configurar Dominio",
