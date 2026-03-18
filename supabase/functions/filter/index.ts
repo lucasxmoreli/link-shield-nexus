@@ -215,6 +215,27 @@ function redirectResponse(targetUrl: string): Response {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// SSRF PROTECTION — Block internal/private IPs and metadata endpoints
+// ═══════════════════════════════════════════════════════════════
+function isInternalUrl(url: string): boolean {
+  try {
+    const u = new URL(url);
+    const h = u.hostname.toLowerCase();
+    if (h === "localhost" || h === "127.0.0.1" || h === "::1" || /^127\./.test(h)) return true;
+    if (/^10\./.test(h)) return true;
+    if (/^172\.(1[6-9]|2\d|3[01])\./.test(h)) return true;
+    if (/^192\.168\./.test(h)) return true;
+    if (/^169\.254\./.test(h)) return true;
+    if (/^(fc|fd|fe80)/i.test(h)) return true;
+    if (h === "0.0.0.0") return true;
+    return false;
+  } catch {
+    return true;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
 // TRANSPARENT CONTENT FETCH — Proxy HTML with rewritten paths
 // ═══════════════════════════════════════════════════════════════
 
