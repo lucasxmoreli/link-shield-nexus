@@ -64,6 +64,7 @@ export default function CampaignEdit() {
   ]);
   const [targetCountries, setTargetCountries] = useState<string[]>([]);
   const [targetDevices, setTargetDevices] = useState<string[]>([]);
+  const [strictMode, setStrictMode] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [countrySearch, setCountrySearch] = useState("");
