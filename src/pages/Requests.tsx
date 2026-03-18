@@ -249,6 +249,9 @@ export default function Requests() {
                         {actionLabel[r.action_taken] ?? r.action_taken.replace("_", " ")}
                       </Badge>
                     </TableCell>
+                    <TableCell className="text-xs text-muted-foreground font-mono">
+                      {(r as any).block_reason ?? "—"}
+                    </TableCell>
                   </TableRow>
                 ))
               )}

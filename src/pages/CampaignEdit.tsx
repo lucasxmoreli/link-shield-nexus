@@ -335,6 +335,23 @@ export default function CampaignEdit() {
         </div>
       </section>
 
+      {/* BLOCK 3.5: Strict Mode */}
+      <section className="rounded-xl bg-[hsl(var(--card))] p-6 space-y-4">
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Security</h2>
+        <div className="flex items-center justify-between rounded-lg border border-border bg-secondary/50 px-4 py-3">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-destructive/10">
+              <ShieldAlert className="h-4 w-4 text-destructive" />
+            </div>
+            <div>
+              <p className="text-sm font-medium">🛡️ Strict Mode</p>
+              <p className="text-xs text-muted-foreground">Block suspicious traffic (missing click IDs, unknown referers)</p>
+            </div>
+          </div>
+          <Switch checked={strictMode} onCheckedChange={setStrictMode} />
+        </div>
+      </section>
+
       {/* BLOCK 4: Target */}
       <section className="rounded-xl bg-[hsl(var(--card))] p-6 space-y-4">
         <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Target</h2>
