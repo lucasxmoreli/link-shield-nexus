@@ -543,11 +543,21 @@ export default function CampaignEdit() {
               return;
             }
 
-            if (domain && offerUrl) {
+            if (domain) {
               try {
-                const offerHost = new URL(ensureAbsoluteUrl(offerUrl)).hostname.replace(/^www\./, "");
                 const selectedDomain = domain.replace(/^(https?:\/\/)?(www\.)?/, "").replace(/\/+$/, "");
-                if (offerHost === selectedDomain || offerHost.endsWith(`.${selectedDomain}`)) {
+                const urlsToCheck = [ensureAbsoluteUrl(offerUrl), ensureAbsoluteUrl(safeUrl)];
+                if (abStormEnabled && offerPageB.trim()) {
+                  urlsToCheck.push(ensureAbsoluteUrl(offerPageB));
+                }
+                const hasConflict = urlsToCheck.some((u) => {
+                  if (!u) return false;
+                  try {
+                    const host = new URL(u).hostname.replace(/^www\./, "");
+                    return host === selectedDomain || host.endsWith(`.${selectedDomain}`);
+                  } catch { return false; }
+                });
+                if (hasConflict) {
                   setConflictDialogOpen(true);
                   return;
                 }
