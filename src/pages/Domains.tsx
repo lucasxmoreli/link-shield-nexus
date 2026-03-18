@@ -73,6 +73,90 @@ function CnameSetupSteps({ domain, t }: { domain: string; t: any }) {
   );
 }
 
+interface TxtValidationData {
+  ownership_verification?: { name?: string; value?: string } | null;
+  ssl_validation_records?: Array<{ txt_name?: string; txt_value?: string }>;
+}
+
+function TxtFallbackSection({ validationData, t }: { validationData: TxtValidationData | null; t: any }) {
+  if (!validationData) return null;
+
+  const ownership = validationData.ownership_verification;
+  const sslRecord = validationData.ssl_validation_records?.[0];
+
+  if (!ownership?.name && !sslRecord?.txt_name) return null;
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success(t("domains.valueCopied"));
+  };
+
+  return (
+    <div className="space-y-4 mt-4">
+      <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/5 p-3">
+        <p className="text-xs font-semibold text-yellow-400 mb-1">{t("domains.txtFallbackTitle")}</p>
+        <p className="text-xs text-muted-foreground">{t("domains.txtFallbackWarning")}</p>
+      </div>
+
+      {ownership?.name && ownership?.value && (
+        <div className="rounded-lg border border-border/30 bg-secondary/10 p-4 space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("domains.txtOwnership")}</p>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">{t("domains.type")}</Label>
+            <div className="rounded-md bg-background border border-border px-3 py-2.5 text-sm font-mono text-foreground">TXT</div>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">{t("domains.nameHost")}</Label>
+            <div className="relative w-full">
+              <Input readOnly value={ownership.name} className="w-full pr-10 bg-background border-border font-mono text-xs break-all" />
+              <Button variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => copyToClipboard(ownership.name!)}>
+                <Copy className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">{t("domains.value")}</Label>
+            <div className="relative w-full">
+              <Input readOnly value={ownership.value} className="w-full pr-10 bg-background border-border font-mono text-xs break-all" />
+              <Button variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => copyToClipboard(ownership.value!)}>
+                <Copy className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {sslRecord?.txt_name && sslRecord?.txt_value && (
+        <div className="rounded-lg border border-border/30 bg-secondary/10 p-4 space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("domains.txtSslCert")}</p>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">{t("domains.type")}</Label>
+            <div className="rounded-md bg-background border border-border px-3 py-2.5 text-sm font-mono text-foreground">TXT</div>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">{t("domains.nameHost")}</Label>
+            <div className="relative w-full">
+              <Input readOnly value={sslRecord.txt_name} className="w-full pr-10 bg-background border-border font-mono text-xs break-all" />
+              <Button variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => copyToClipboard(sslRecord.txt_name!)}>
+                <Copy className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">{t("domains.value")}</Label>
+            <div className="relative w-full">
+              <Input readOnly value={sslRecord.txt_value} className="w-full pr-10 bg-background border-border font-mono text-xs break-all" />
+              <Button variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => copyToClipboard(sslRecord.txt_value!)}>
+                <Copy className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Domains() {
   const { user } = useAuth();
   const qc = useQueryClient();
@@ -84,6 +168,7 @@ export default function Domains() {
   const [debugMode, setDebugMode] = useState(false);
   const [apiTestResult, setApiTestResult] = useState<{ status: string; message: string } | null>(null);
   const [apiTestLoading, setApiTestLoading] = useState(false);
+  const [txtValidationData, setTxtValidationData] = useState<TxtValidationData | null>(null);
 
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
@@ -161,9 +246,15 @@ export default function Domains() {
     },
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["domains"] });
+      // Store TXT validation data for the UI
+      setTxtValidationData({
+        ownership_verification: data.ownership_verification,
+        ssl_validation_records: data.ssl_validation_records,
+      });
       if (data.active) {
         toast.success("✅ " + t("domains.domainActive"));
         setSetupDomain(null);
+        setTxtValidationData(null);
       } else {
         toast.info(t("domains.domainPending"), { duration: 6000 });
       }
@@ -225,8 +316,8 @@ export default function Domains() {
       </Card>
 
       {/* Setup CNAME Dialog */}
-      <Dialog open={!!setupDomain} onOpenChange={(v) => !v && setSetupDomain(null)}>
-        <DialogContent className="bg-card border-border sm:max-w-lg">
+      <Dialog open={!!setupDomain} onOpenChange={(v) => { if (!v) { setSetupDomain(null); setTxtValidationData(null); } }}>
+        <DialogContent className="bg-card border-border sm:max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ShieldCheck className="h-5 w-5 text-primary" />
@@ -238,6 +329,12 @@ export default function Domains() {
             </DialogDescription>
           </DialogHeader>
           {setupDomain && <CnameSetupSteps domain={setupDomain} t={t} />}
+          
+          {/* TXT Fallback Section - shown when domain is pending and validation data exists */}
+          {setupDomain && !domains.find(d => d.url === setupDomain)?.is_verified && (
+            <TxtFallbackSection validationData={txtValidationData} t={t} />
+          )}
+
           <Button
             onClick={() => {
               const d = domains.find((d) => d.url === setupDomain);

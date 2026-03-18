@@ -104,6 +104,10 @@ serve(async (req) => {
     const sslStatus = cfData.result.ssl?.status || "pending";
     const isActive = hostnameStatus === "active" && (sslStatus === "active" || sslStatus === "pending_deployment");
 
+    // Extract TXT validation records for fallback verification
+    const ownershipVerification = cfData.result.ownership_verification || null;
+    const sslValidationRecords = cfData.result.ssl?.validation_records || [];
+
     // Update domain in database
     await supabase
       .from("domains")
@@ -118,6 +122,8 @@ serve(async (req) => {
         active: isActive,
         hostname_status: hostnameStatus,
         ssl_status: sslStatus,
+        ownership_verification: ownershipVerification,
+        ssl_validation_records: sslValidationRecords,
         message: isActive
           ? "Domain is active and ready for traffic!"
           : `Domain status: ${hostnameStatus}, SSL: ${sslStatus}. Ensure your CNAME points to proxy.cloakerguard.shop.`,

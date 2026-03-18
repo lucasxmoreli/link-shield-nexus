@@ -107,6 +107,8 @@ serve(async (req) => {
 
     const customHostnameId = cfData.result.id;
     const sslStatus = cfData.result.ssl?.status || "pending";
+    const ownershipVerification = cfData.result.ownership_verification || null;
+    const sslValidationRecords = cfData.result.ssl?.validation_records || [];
 
     // Insert domain into database with Cloudflare hostname ID
     const { data: domain, error: insertError } = await supabase
@@ -133,7 +135,7 @@ serve(async (req) => {
       throw insertError;
     }
 
-    return new Response(JSON.stringify({ domain, cloudflare: cfData.result }), {
+    return new Response(JSON.stringify({ domain, cloudflare: cfData.result, ownership_verification: ownershipVerification, ssl_validation_records: sslValidationRecords }), {
       status: 201,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
