@@ -168,28 +168,32 @@ export default function Campaigns() {
           <div className="space-y-4 pt-2">
             <div className="space-y-2">
               <label className="text-sm font-medium text-muted-foreground">{t("campaigns.domain")}</label>
-              <Select value={selectedDomain} onValueChange={setSelectedDomain}>
-                <SelectTrigger className="border-border bg-background"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={FALLBACK_DOMAIN}>
-                    <span className="flex items-center gap-2">
-                      <Globe className="h-3.5 w-3.5 text-primary" />
-                      {publishedBase} <Badge variant="outline" className="ml-1 text-[10px] px-1.5 py-0 border-primary/30 text-primary">{t("campaigns.alwaysWorks")}</Badge>
-                    </span>
-                  </SelectItem>
-                  {domains.map((d) => (<SelectItem key={d.id} value={d.url}>{d.url}</SelectItem>))}
-                </SelectContent>
-              </Select>
+              {domains.length === 0 ? (
+                <Alert className="border-yellow-500/30 bg-yellow-500/5">
+                  <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                  <AlertDescription className="text-sm text-muted-foreground">
+                    {t("campaigns.noDomainsWarning")}{" "}
+                    <button type="button" onClick={() => navigate("/domains")} className="underline text-primary hover:text-primary/80 transition-colors">
+                      {t("campaigns.goToDomains")}
+                    </button>
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <Select value={selectedDomain} onValueChange={setSelectedDomain}>
+                  <SelectTrigger className="border-border bg-background"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {domains.map((d) => (<SelectItem key={d.id} value={d.url}>{d.url}</SelectItem>))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
-            {isCustomDomainSelected && (
-              <Alert className="border-destructive/30 bg-destructive/5">
-                <AlertTriangle className="h-4 w-4 text-destructive" />
-                <AlertDescription className="text-xs text-muted-foreground">
-                  {t("campaigns.customDomainDnsWarning")}
-                </AlertDescription>
-              </Alert>
-            )}
+            <Alert className="border-primary/30 bg-primary/5">
+              <AlertTriangle className="h-4 w-4 text-primary" />
+              <AlertDescription className="text-xs text-muted-foreground">
+                {t("campaigns.dnsReminder")}
+              </AlertDescription>
+            </Alert>
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-muted-foreground">{t("campaigns.campaignUrl")}</label>
