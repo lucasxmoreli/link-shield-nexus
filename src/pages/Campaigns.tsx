@@ -191,9 +191,9 @@ export default function Campaigns() {
             </div>
 
             {isCustomDomainSelected && (
-              <Alert className="border-amber-500/30 bg-amber-500/5">
-                <AlertTriangle className="h-4 w-4 text-amber-500" />
-                <AlertDescription className="text-xs text-amber-200/80">
+              <Alert className="border-destructive/30 bg-destructive/5">
+                <AlertTriangle className="h-4 w-4 text-destructive" />
+                <AlertDescription className="text-xs text-muted-foreground">
                   {t("campaigns.customDomainDnsWarning")}
                 </AlertDescription>
               </Alert>
