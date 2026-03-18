@@ -125,8 +125,9 @@ const en = {
     copyLink: "Copy Link",
     campaignLinkCopied: "Campaign link copied!",
     campaignRemoved: "Campaign removed",
-    alwaysWorks: "Recommended",
-    customDomainDnsWarning: "⚠️ Custom domains only work if the DNS A record points to 185.158.133.1. If not configured, visitors will see a 404 error. Use the default domain for guaranteed reliability.",
+    noDomainsWarning: "⚠️ No domains available. You must connect and verify a custom domain in the Domains tab before generating a campaign link.",
+    goToDomains: "Go to Domains",
+    dnsReminder: "⚠️ DNS Reminder: Ensure your domain has an A Record pointing to 185.158.133.1 and the Cloudflare Proxy (🟠) is ENABLED to protect the network.",
   },
 
   // Campaign Edit / New
@@ -140,8 +141,10 @@ const en = {
     domainHelper: "Select the verified domain that will host your tracking link. This is NOT your offer page.",
     domainTooltip: 'Example: If you select "mysite.com", your cloaker link will be "mysite.com/c/xyz". This link will then redirect users to your Offer Page or Safe Page.',
     noDomains: "No verified domains found.",
+    noDomainsBlock: "⚠️ No domains available. You must connect and verify a custom domain in the Domains tab before creating a campaign.",
     noDomainsAction: "Go to the Domains tab",
     noDomainsHelper: "to add one first.",
+    dnsReminder: "⚠️ DNS Reminder: Ensure your domain has an A Record pointing to 185.158.133.1 and the Cloudflare Proxy (🟠) is ENABLED to protect the network.",
     selectDomain: "Select a domain",
     trafficSource: "Traffic Source",
     selectSource: "Select source",

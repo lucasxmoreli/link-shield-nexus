@@ -118,8 +118,9 @@ const pt = {
     copyLink: "Copiar Link",
     campaignLinkCopied: "Link da campanha copiado!",
     campaignRemoved: "Campanha removida",
-    alwaysWorks: "Recomendado",
-    customDomainDnsWarning: "⚠️ Domínios personalizados só funcionam se o registro DNS A apontar para 185.158.133.1. Caso contrário, os visitantes verão um erro 404. Use o domínio padrão para garantir confiabilidade.",
+    noDomainsWarning: "⚠️ Nenhum domínio disponível. Você deve conectar e verificar um domínio personalizado na aba Domínios antes de gerar um link de campanha.",
+    goToDomains: "Ir para Domínios",
+    dnsReminder: "⚠️ Lembrete DNS: Certifique-se de que seu domínio tem um Registro A apontando para 185.158.133.1 e o Proxy Cloudflare (🟠) está ATIVADO para proteger a rede.",
   },
 
   campaignEdit: {
@@ -132,8 +133,10 @@ const pt = {
     domainHelper: "Selecione o domínio verificado que hospedará seu link de rastreamento. Este NÃO é sua página de oferta.",
     domainTooltip: 'Exemplo: Se você selecionar "meusite.com", seu link de cloaker será "meusite.com/c/xyz". Este link redirecionará os usuários para sua Página de Oferta ou Página Segura.',
     noDomains: "Nenhum domínio verificado encontrado.",
+    noDomainsBlock: "⚠️ Nenhum domínio disponível. Você deve conectar e verificar um domínio personalizado na aba Domínios antes de criar uma campanha.",
     noDomainsAction: "Vá para a aba Domínios",
     noDomainsHelper: "para adicionar um primeiro.",
+    dnsReminder: "⚠️ Lembrete DNS: Certifique-se de que seu domínio tem um Registro A apontando para 185.158.133.1 e o Proxy Cloudflare (🟠) está ATIVADO para proteger a rede.",
     selectDomain: "Selecione um domínio",
     trafficSource: "Fonte de Tráfego",
     selectSource: "Selecione a fonte",

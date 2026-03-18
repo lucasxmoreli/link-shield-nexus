@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Plus, Copy, Pencil, Trash2, Link, Check, Lock, AlertTriangle, Globe } from "lucide-react";
+import { Plus, Copy, Pencil, Trash2, Link, Check, Lock, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -59,24 +59,16 @@ export default function Campaigns() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["campaigns"] }); toast.success(t("campaigns.campaignRemoved")); },
   });
 
-  const publishedBase = "cloakguard.lovable.app";
-  const defaultBase = window.location.origin;
-  const FALLBACK_DOMAIN = "__default__";
-
   const getFullLink = () => {
-    if (!selectedDomain || selectedDomain === FALLBACK_DOMAIN) {
-      return `https://${publishedBase}/c/${linkModal.hash}`;
-    }
+    if (!selectedDomain) return "";
     const base = selectedDomain.trim().replace(/\/+$/, "");
     const dm = base.startsWith("http") ? base : `https://${base}`;
     return `${dm}/c/${linkModal.hash}`;
   };
 
-  const isCustomDomainSelected = selectedDomain && selectedDomain !== FALLBACK_DOMAIN;
-
   const openLinkModal = (hash: string, name: string) => {
     setCopied(false);
-    setSelectedDomain(FALLBACK_DOMAIN);
+    setSelectedDomain(domains.length > 0 ? domains[0].url : "");
     setLinkModal({ open: true, hash, name });
   };
 
@@ -176,34 +168,38 @@ export default function Campaigns() {
           <div className="space-y-4 pt-2">
             <div className="space-y-2">
               <label className="text-sm font-medium text-muted-foreground">{t("campaigns.domain")}</label>
-              <Select value={selectedDomain} onValueChange={setSelectedDomain}>
-                <SelectTrigger className="border-border bg-background"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={FALLBACK_DOMAIN}>
-                    <span className="flex items-center gap-2">
-                      <Globe className="h-3.5 w-3.5 text-primary" />
-                      {publishedBase} <Badge variant="outline" className="ml-1 text-[10px] px-1.5 py-0 border-primary/30 text-primary">{t("campaigns.alwaysWorks")}</Badge>
-                    </span>
-                  </SelectItem>
-                  {domains.map((d) => (<SelectItem key={d.id} value={d.url}>{d.url}</SelectItem>))}
-                </SelectContent>
-              </Select>
+              {domains.length === 0 ? (
+                <Alert className="border-yellow-500/30 bg-yellow-500/5">
+                  <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                  <AlertDescription className="text-sm text-muted-foreground">
+                    {t("campaigns.noDomainsWarning")}{" "}
+                    <button type="button" onClick={() => navigate("/domains")} className="underline text-primary hover:text-primary/80 transition-colors">
+                      {t("campaigns.goToDomains")}
+                    </button>
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <Select value={selectedDomain} onValueChange={setSelectedDomain}>
+                  <SelectTrigger className="border-border bg-background"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {domains.map((d) => (<SelectItem key={d.id} value={d.url}>{d.url}</SelectItem>))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
-            {isCustomDomainSelected && (
-              <Alert className="border-destructive/30 bg-destructive/5">
-                <AlertTriangle className="h-4 w-4 text-destructive" />
-                <AlertDescription className="text-xs text-muted-foreground">
-                  {t("campaigns.customDomainDnsWarning")}
-                </AlertDescription>
-              </Alert>
-            )}
+            <Alert className="border-primary/30 bg-primary/5">
+              <AlertTriangle className="h-4 w-4 text-primary" />
+              <AlertDescription className="text-xs text-muted-foreground">
+                {t("campaigns.dnsReminder")}
+              </AlertDescription>
+            </Alert>
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-muted-foreground">{t("campaigns.campaignUrl")}</label>
               <Input readOnly value={getFullLink()} className="font-mono text-sm border-border bg-muted/30 cursor-default" />
             </div>
-            <Button className="w-full neon-glow" onClick={handleCopyLink} disabled={copied}>
+            <Button className="w-full neon-glow" onClick={handleCopyLink} disabled={copied || !selectedDomain}>
               {copied ? (<><Check className="h-4 w-4 mr-2" /> {t("common.copied")}</>) : (<><Copy className="h-4 w-4 mr-2" /> {t("campaigns.copyLink")}</>)}
             </Button>
           </div>

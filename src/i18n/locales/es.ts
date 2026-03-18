@@ -118,8 +118,9 @@ const es = {
     copyLink: "Copiar Enlace",
     campaignLinkCopied: "¡Enlace de campaña copiado!",
     campaignRemoved: "Campaña eliminada",
-    alwaysWorks: "Recomendado",
-    customDomainDnsWarning: "⚠️ Los dominios personalizados solo funcionan si el registro DNS A apunta a 185.158.133.1. De lo contrario, los visitantes verán un error 404. Usa el dominio predeterminado para mayor confiabilidad.",
+    noDomainsWarning: "⚠️ No hay dominios disponibles. Debes conectar y verificar un dominio personalizado en la pestaña Dominios antes de generar un enlace de campaña.",
+    goToDomains: "Ir a Dominios",
+    dnsReminder: "⚠️ Recordatorio DNS: Asegúrate de que tu dominio tiene un Registro A apuntando a 185.158.133.1 y el Proxy Cloudflare (🟠) está ACTIVADO para proteger la red.",
   },
 
   campaignEdit: {
@@ -132,8 +133,10 @@ const es = {
     domainHelper: "Selecciona el dominio verificado que alojará tu enlace de rastreo. Este NO es tu página de oferta.",
     domainTooltip: 'Ejemplo: Si seleccionas "misitio.com", tu enlace de cloaker será "misitio.com/c/xyz". Este enlace redirigirá a los usuarios a tu Página de Oferta o Página Segura.',
     noDomains: "No se encontraron dominios verificados.",
+    noDomainsBlock: "⚠️ No hay dominios disponibles. Debes conectar y verificar un dominio personalizado en la pestaña Dominios antes de crear una campaña.",
     noDomainsAction: "Ve a la pestaña Dominios",
     noDomainsHelper: "para agregar uno primero.",
+    dnsReminder: "⚠️ Recordatorio DNS: Asegúrate de que tu dominio tiene un Registro A apuntando a 185.158.133.1 y el Proxy Cloudflare (🟠) está ACTIVADO para proteger la red.",
     selectDomain: "Selecciona un dominio",
     trafficSource: "Fuente de Tráfico",
     selectSource: "Selecciona la fuente",
