@@ -127,7 +127,7 @@ const en = {
     campaignRemoved: "Campaign removed",
     noDomainsWarning: "⚠️ No domains available. You must connect and verify a custom domain in the Domains tab before generating a campaign link.",
     goToDomains: "Go to Domains",
-    dnsReminder: "⚠️ DNS Reminder: Ensure your domain has an A Record pointing to 185.158.133.1 and the Cloudflare Proxy (🟠) is ENABLED to protect the network.",
+    dnsReminder: "Make sure your domain is pointed via CNAME to proxy.cloakerguard.shop.",
   },
 
   // Campaign Edit / New
