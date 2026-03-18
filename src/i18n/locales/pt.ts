@@ -154,7 +154,8 @@ const pt = {
     contentFetch: "Busca de Conteúdo (Masking)",
     contentFetchDesc: "Recomendado para Cloaking. O visitante permanece no seu domínio enquanto visualiza a oferta. Mais seguro contra revisões de plataformas de anúncios.",
 
-    offerPageSection: "Página de Oferta",
+    offerPageSection: "💰 Página de Oferta",
+    offerPageSectionDesc: "A página real de conversão. Exibida apenas para visitantes reais e segmentados.",
     primaryOffer: "Página de Oferta Principal (A)",
     offerPlaceholder: "https://oferta.exemplo.com/...",
     abStormTitle: "⚡ A/B Storm (Dividir Tráfego)",

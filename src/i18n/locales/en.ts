@@ -162,7 +162,8 @@ const en = {
     contentFetch: "Content Fetch (Masking)",
     contentFetchDesc: "Recommended for Cloaking. The visitor stays on your domain while viewing the offer. Safer against ad platform reviews.",
 
-    offerPageSection: "Offer Page",
+    offerPageSection: "💰 Offer Page",
+    offerPageSectionDesc: "The real money page. Only shown to real, targeted visitors.",
     primaryOffer: "Primary Offer Page (A)",
     offerPlaceholder: "https://offer.example.com/...",
     abStormTitle: "⚡ A/B Storm (Split Traffic)",
