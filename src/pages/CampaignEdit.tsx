@@ -128,6 +128,8 @@ export default function CampaignEdit() {
     }
   }, [campaign]);
 
+  const [pendingHash, setPendingHash] = useState("");
+
   const saveMutation = useMutation({
     mutationFn: async () => {
       const payload: any = {
@@ -147,17 +149,29 @@ export default function CampaignEdit() {
       if (isEditing) {
         const { error } = await supabase.from("campaigns").update(payload).eq("id", id!);
         if (error) throw error;
+        // For editing, fetch the existing hash
+        const { data: existing } = await supabase.from("campaigns").select("hash, domain").eq("id", id!).single();
+        return { hash: existing?.hash || "", domain: existing?.domain || domain };
       } else {
+        const hash = generateHash();
+        setPendingHash(hash);
         payload.user_id = user!.id;
-        payload.hash = generateHash();
+        payload.hash = hash;
         const { error } = await supabase.from("campaigns").insert(payload);
         if (error) throw error;
+        return { hash, domain: payload.domain };
       }
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       qc.invalidateQueries({ queryKey: ["campaigns"] });
-      toast.success(isEditing ? "Campaign updated!" : "Campaign created!");
-      navigate("/campaigns");
+      const selectedDomain = result.domain || domain || "yourdomain.com";
+      const cleanDomain = selectedDomain.replace(/^(https?:\/\/)/, "").replace(/\/+$/, "");
+      const finalLink = `https://${cleanDomain}/c/${result.hash}`;
+      setSuccessModal({
+        link: finalLink,
+        offerUrl: ensureAbsoluteUrl(offerUrl),
+        safeUrl: ensureAbsoluteUrl(safeUrl),
+      });
     },
     onError: (e: Error) => toast.error(e.message),
   });
