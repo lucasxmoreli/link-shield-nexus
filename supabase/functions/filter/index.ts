@@ -330,7 +330,69 @@ async function contentFetchResponse(
   }
 }
 
+// ═══════════════════════════════════════════════════════════════
+// SSRF PROTECTION — Block internal/private IPs and metadata endpoints
+// ═══════════════════════════════════════════════════════════════
+function isInternalUrl(url: string): boolean {
+  try {
+    const u = new URL(url);
+    const h = u.hostname.toLowerCase();
+    // Block loopback
+    if (h === "localhost" || h === "127.0.0.1" || h === "::1" || /^127\./.test(h)) return true;
+    // Block private networks (10.x, 172.16-31.x, 192.168.x)
+    if (/^10\./.test(h)) return true;
+    if (/^172\.(1[6-9]|2\d|3[01])\./.test(h)) return true;
+    if (/^192\.168\./.test(h)) return true;
+    // Block link-local / cloud metadata
+    if (/^169\.254\./.test(h)) return true;
+    // Block IPv6 private ranges
+    if (/^(fc|fd|fe80)/i.test(h)) return true;
+    // Block 0.0.0.0
+    if (h === "0.0.0.0") return true;
+    return false;
+  } catch {
+    return true; // If we can't parse it, block it
+  }
+}
+
 function sanitizeRedirectUrl(url: string | null | undefined, safeFallback: string): string {
+  const fallback = safeFallback || "https://google.com";
+  const rawValue = (url || "").trim();
+
+  if (!rawValue) {
+    return fallback;
+  }
+
+  const cleanedValue = rawValue.replace(/^\/+/, "");
+  const absoluteUrl = /^https?:\/\//i.test(cleanedValue)
+    ? cleanedValue
+    : `https://${cleanedValue}`;
+
+  try {
+    const parsedUrl = new URL(absoluteUrl);
+
+    if (!/^https?:$/i.test(parsedUrl.protocol)) {
+      console.error(`[INVALID-URL] Unsupported protocol in redirect URL "${absoluteUrl}"`);
+      return fallback;
+    }
+
+    if (/^\/c(\/|$)/i.test(parsedUrl.pathname)) {
+      console.error(`[LOOP-GUARD] Redirect URL "${absoluteUrl}" contains a cloaker path — aborting to safe page`);
+      return fallback;
+    }
+
+    // SSRF protection
+    if (isInternalUrl(absoluteUrl)) {
+      console.error(`[SSRF-BLOCKED] Redirect URL "${absoluteUrl}" resolves to internal IP — aborting`);
+      return fallback;
+    }
+
+    return parsedUrl.toString();
+  } catch {
+    console.error(`[INVALID-URL] "${absoluteUrl}" is not a valid absolute URL — falling back to safe page`);
+    return fallback;
+  }
+}
   const fallback = safeFallback || "https://google.com";
   const rawValue = (url || "").trim();
 
