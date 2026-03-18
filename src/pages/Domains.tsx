@@ -203,20 +203,32 @@ export default function Domains() {
       const isDuplicate = domains.some((d) => d.url.toLowerCase().replace(/\/+$/, "") === normalized);
       if (isDuplicate) throw new Error(t("domains.domainDuplicate"));
 
+      console.log("[DOMAIN] Invoking add-custom-hostname edge function for:", normalized);
       const { data, error } = await supabase.functions.invoke("add-custom-hostname", {
         body: { hostname: normalized },
       });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      console.log("[DOMAIN] Edge function response:", { data, error });
+      if (error) {
+        console.error("[DOMAIN] Edge function error:", error);
+        throw new Error(error.message || "Edge function failed");
+      }
+      if (data?.error) {
+        console.error("[DOMAIN] Edge function returned error:", data.error);
+        throw new Error(data.error);
+      }
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("[DOMAIN] Domain added successfully:", data);
       qc.invalidateQueries({ queryKey: ["domains"] });
       setOpen(false);
       setUrl("");
       toast.success(t("domains.domainAdded"));
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => {
+      console.error("[DOMAIN] Mutation error:", e.message);
+      toast.error(e.message);
+    },
   });
 
   const deleteMutation = useMutation({
