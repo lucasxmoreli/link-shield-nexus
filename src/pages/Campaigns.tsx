@@ -68,7 +68,7 @@ export default function Campaigns() {
 
   const openLinkModal = (hash: string, name: string) => {
     setCopied(false);
-    setSelectedDomain(FALLBACK_DOMAIN);
+    setSelectedDomain(domains.length > 0 ? domains[0].url : "");
     setLinkModal({ open: true, hash, name });
   };
 
