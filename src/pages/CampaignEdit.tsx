@@ -107,6 +107,7 @@ export default function CampaignEdit() {
   useEffect(() => {
     if (campaign) {
       setName(campaign.name);
+      setDomain((campaign as any).domain ?? "");
       setTrafficSource(campaign.traffic_source);
       setSafeUrl(campaign.safe_url);
       setOfferUrl(campaign.offer_url);
