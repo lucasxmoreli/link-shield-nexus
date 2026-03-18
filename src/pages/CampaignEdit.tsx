@@ -568,12 +568,21 @@ export default function CampaignEdit() {
             if (domain) {
               try {
                 const selectedDomain = domain.replace(/^(https?:\/\/)?(www\.)?/, "").replace(/\/+$/, "");
-                const urlsToCheck = [ensureAbsoluteUrl(offerUrl), ensureAbsoluteUrl(safeUrl)];
-                if (abStormEnabled && offerPageB.trim()) {
-                  urlsToCheck.push(ensureAbsoluteUrl(offerPageB));
+                // Only check URLs that use redirect method — content_fetch proxies are safe on the same domain
+                const urlsToCheck: string[] = [];
+                if (safeMethod === "redirect") {
+                  const s = ensureAbsoluteUrl(safeUrl);
+                  if (s) urlsToCheck.push(s);
+                }
+                if (offerMethod === "redirect") {
+                  const o = ensureAbsoluteUrl(offerUrl);
+                  if (o) urlsToCheck.push(o);
+                  if (abStormEnabled && offerPageB.trim()) {
+                    const b = ensureAbsoluteUrl(offerPageB);
+                    if (b) urlsToCheck.push(b);
+                  }
                 }
                 const hasConflict = urlsToCheck.some((u) => {
-                  if (!u) return false;
                   try {
                     const host = new URL(u).hostname.replace(/^www\./, "");
                     return host === selectedDomain || host.endsWith(`.${selectedDomain}`);
