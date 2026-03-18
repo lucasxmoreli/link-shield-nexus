@@ -261,6 +261,13 @@ async function contentFetchResponse(
   clientLang: string | null,
   campaignDomain?: string,
 ): Promise<Response> {
+  // SSRF protection
+  if (isInternalUrl(targetUrl)) {
+    console.error(`[SSRF-BLOCKED] Content fetch blocked for internal URL: ${targetUrl}`);
+    return new Response(MAINTENANCE_HTML, {
+      headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" },
+    });
+  }
   // Same-domain loop prevention
   if (campaignDomain) {
     const cleanCampaignDomain = campaignDomain.replace(/^(https?:\/\/)?(www\.)?/, "").replace(/\/+$/, "");
