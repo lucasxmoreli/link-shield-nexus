@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Plus, CheckCircle, XCircle, Trash2, ShieldCheck, Copy, RefreshCw, Lock, Bug, Zap, Wifi } from "lucide-react";
+import { Plus, CheckCircle, XCircle, Trash2, ShieldCheck, Copy, RefreshCw, Lock, Bug, Zap, Wifi, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
@@ -19,142 +19,7 @@ import { useTranslation } from "react-i18next";
 import { getPlanByName } from "@/lib/plan-config";
 
 const CNAME_TARGET = "proxy.cloakerguard.shop";
-
-function CnameSetupSteps({ domain, t }: { domain: string; t: any }) {
-  const hostname = domain.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
-  const parts = hostname.split(".");
-  const cnameName = parts.length > 2 ? parts[0] : "@";
-
-  const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success(label);
-  };
-
-  return (
-    <div className="flex flex-col space-y-3">
-      <div className="rounded-lg border border-border/30 bg-secondary/10 p-3">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-bold">1</span>
-          <p className="text-sm font-medium text-foreground">{t("domains.cnameStep1")}</p>
-        </div>
-      </div>
-
-      <div className="rounded-lg border border-border/30 bg-secondary/10 p-3 space-y-3">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-bold">2</span>
-          <p className="text-sm font-medium text-foreground">{t("domains.cnameStep2")}</p>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground">{t("domains.nameHost")}</Label>
-            <div className="relative">
-              <Input readOnly value={cnameName} className="pr-9 bg-background border-border font-mono text-sm h-9" />
-              <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => copyToClipboard(cnameName, t("domains.hostCopied"))}>
-                <Copy className="h-3 w-3" />
-              </Button>
-            </div>
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground">{t("domains.target")}</Label>
-            <div className="relative">
-              <Input readOnly value={CNAME_TARGET} className="pr-9 bg-background border-border font-mono text-sm h-9" />
-              <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => copyToClipboard(CNAME_TARGET, t("domains.valueCopied"))}>
-                <Copy className="h-3 w-3" />
-              </Button>
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center gap-1.5 mt-1">
-          <span className="text-xs text-muted-foreground">{t("domains.type")}:</span>
-          <Badge variant="secondary" className="text-xs font-mono">CNAME</Badge>
-        </div>
-      </div>
-
-      <div className="rounded-lg border border-border/30 bg-secondary/10 p-3">
-        <div className="flex items-center gap-2">
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-bold">3</span>
-          <p className="text-sm font-medium text-foreground">{t("domains.cnameStep3")}</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-interface TxtValidationData {
-  ownership_verification?: { name?: string; value?: string } | null;
-  ssl_validation_records?: Array<{ txt_name?: string; txt_value?: string }>;
-}
-
-function TxtFallbackSection({ validationData, t }: { validationData: TxtValidationData | null; t: any }) {
-  if (!validationData) return null;
-
-  const ownership = validationData.ownership_verification;
-  const sslRecord = validationData.ssl_validation_records?.[0];
-
-  if (!ownership?.name && !sslRecord?.txt_name) return null;
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success(t("domains.valueCopied"));
-  };
-
-  return (
-    <div className="space-y-3 mt-2">
-      <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/5 p-3">
-        <p className="text-xs font-semibold text-yellow-400 mb-1">{t("domains.txtFallbackTitle")}</p>
-        <p className="text-xs text-muted-foreground">{t("domains.txtFallbackWarning")}</p>
-      </div>
-
-      {ownership?.name && ownership?.value && (
-        <div className="rounded-lg border border-border/30 bg-secondary/10 p-3 space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("domains.txtOwnership")}</p>
-          <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground">{t("domains.nameHost")}</Label>
-            <div className="relative">
-              <Input readOnly value={ownership.name} className="pr-9 bg-background border-border font-mono text-xs h-9" />
-              <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => copyToClipboard(ownership.name!)}>
-                <Copy className="h-3 w-3" />
-              </Button>
-            </div>
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground">{t("domains.value")}</Label>
-            <div className="relative">
-              <Input readOnly value={ownership.value} className="pr-9 bg-background border-border font-mono text-xs h-9" />
-              <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => copyToClipboard(ownership.value!)}>
-                <Copy className="h-3 w-3" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {sslRecord?.txt_name && sslRecord?.txt_value && (
-        <div className="rounded-lg border border-border/30 bg-secondary/10 p-3 space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("domains.txtSslCert")}</p>
-          <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground">{t("domains.nameHost")}</Label>
-            <div className="relative">
-              <Input readOnly value={sslRecord.txt_name} className="pr-9 bg-background border-border font-mono text-xs h-9" />
-              <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => copyToClipboard(sslRecord.txt_name!)}>
-                <Copy className="h-3 w-3" />
-              </Button>
-            </div>
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground">{t("domains.value")}</Label>
-            <div className="relative">
-              <Input readOnly value={sslRecord.txt_value} className="pr-9 bg-background border-border font-mono text-xs h-9" />
-              <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => copyToClipboard(sslRecord.txt_value!)}>
-                <Copy className="h-3 w-3" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+const POLL_INTERVAL = 30000;
 
 export default function Domains() {
   const { user } = useAuth();
@@ -167,8 +32,11 @@ export default function Domains() {
   const [debugMode, setDebugMode] = useState(false);
   const [apiTestResult, setApiTestResult] = useState<{ status: string; message: string } | null>(null);
   const [apiTestLoading, setApiTestLoading] = useState(false);
-  const [txtValidationData, setTxtValidationData] = useState<TxtValidationData | null>(null);
-  const [showTxtFallback, setShowTxtFallback] = useState(false);
+
+  // Auto-polling state
+  const [pollingDomainId, setPollingDomainId] = useState<string | null>(null);
+  const [pollingStep, setPollingStep] = useState<"adding" | "polling" | "success" | null>(null);
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
@@ -196,6 +64,50 @@ export default function Domains() {
   const isLimitReached = maxDomains <= 0 || currentDomains >= maxDomains;
   const usagePercent = maxDomains > 0 ? Math.round((currentDomains / maxDomains) * 100) : 0;
 
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+    };
+  }, []);
+
+  // Auto-poll: check if polled domain became active
+  useEffect(() => {
+    if (pollingDomainId && pollingStep === "polling") {
+      const polledDomain = domains.find((d) => d.id === pollingDomainId);
+      if (polledDomain?.ssl_status === "active") {
+        // Domain is active!
+        if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+        setPollingStep("success");
+        toast.success("✅ " + t("domains.domainActive"));
+        setTimeout(() => {
+          setOpen(false);
+          setPollingDomainId(null);
+          setPollingStep(null);
+          setUrl("");
+        }, 2000);
+      }
+    }
+  }, [domains, pollingDomainId, pollingStep, t]);
+
+  const startPolling = (domainId: string) => {
+    setPollingDomainId(domainId);
+    setPollingStep("polling");
+
+    if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+    pollIntervalRef.current = setInterval(async () => {
+      try {
+        await supabase.functions.invoke("check-hostname-status", {
+          body: { domain_id: domainId },
+        });
+        qc.invalidateQueries({ queryKey: ["domains"] });
+      } catch (e) {
+        console.error("[POLL] Error checking status:", e);
+      }
+    }, POLL_INTERVAL);
+  };
+
   const createMutation = useMutation({
     mutationFn: async () => {
       const normalized = url.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/+$/, "");
@@ -203,30 +115,31 @@ export default function Domains() {
       const isDuplicate = domains.some((d) => d.url.toLowerCase().replace(/\/+$/, "") === normalized);
       if (isDuplicate) throw new Error(t("domains.domainDuplicate"));
 
-      console.log("[DOMAIN] Invoking add-custom-hostname edge function for:", normalized);
+      setPollingStep("adding");
+
       const { data, error } = await supabase.functions.invoke("add-custom-hostname", {
         body: { hostname: normalized },
       });
-      console.log("[DOMAIN] Edge function response:", { data, error });
-      if (error) {
-        console.error("[DOMAIN] Edge function error:", error);
-        throw new Error(error.message || "Edge function failed");
-      }
-      if (data?.error) {
-        console.error("[DOMAIN] Edge function returned error:", data.error);
-        throw new Error(data.error);
-      }
+      if (error) throw new Error(error.message || "Edge function failed");
+      if (data?.error) throw new Error(data.error);
       return data;
     },
     onSuccess: (data) => {
-      console.log("[DOMAIN] Domain added successfully:", data);
       qc.invalidateQueries({ queryKey: ["domains"] });
-      setOpen(false);
-      setUrl("");
-      toast.success(t("domains.domainAdded"));
+      const domainId = data?.domain?.id;
+      if (domainId) {
+        startPolling(domainId);
+      } else {
+        // Fallback: close modal normally
+        setOpen(false);
+        setUrl("");
+        setPollingStep(null);
+        toast.success(t("domains.domainAdded"));
+      }
     },
     onError: (e: Error) => {
-      console.error("[DOMAIN] Mutation error:", e.message);
+      setPollingStep(null);
+      setPollingDomainId(null);
       toast.error(e.message);
     },
   });
@@ -258,15 +171,9 @@ export default function Domains() {
     },
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["domains"] });
-      setTxtValidationData({
-        ownership_verification: data.ownership_verification,
-        ssl_validation_records: data.ssl_validation_records,
-      });
       if (data.active) {
         toast.success("✅ " + t("domains.domainActive"));
         setSetupDomain(null);
-        setTxtValidationData(null);
-        setShowTxtFallback(false);
       } else {
         toast.info(t("domains.domainPending"), { duration: 6000 });
       }
@@ -279,8 +186,28 @@ export default function Domains() {
       navigate("/billing");
       return;
     }
+    setPollingStep(null);
+    setPollingDomainId(null);
+    setUrl("");
     setOpen(true);
   };
+
+  const handleModalClose = (v: boolean) => {
+    if (!v) {
+      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+      setPollingStep(null);
+      setPollingDomainId(null);
+    }
+    setOpen(v);
+  };
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success(label);
+  };
+
+  const isPolling = pollingStep === "adding" || pollingStep === "polling";
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -291,7 +218,7 @@ export default function Domains() {
             <Lock className="h-4 w-4 mr-1" /> {t("domains.limitReached")}
           </Button>
         ) : (
-          <Dialog open={open} onOpenChange={setOpen}>
+          <Dialog open={open} onOpenChange={handleModalClose}>
             <DialogTrigger asChild>
               <Button><Plus className="h-4 w-4 mr-1" /> {t("domains.addDomain")}</Button>
             </DialogTrigger>
@@ -300,65 +227,77 @@ export default function Domains() {
                 <DialogTitle>{t("domains.addDomainTitle")}</DialogTitle>
                 <DialogDescription>{t("domains.addDomainDesc")}</DialogDescription>
               </DialogHeader>
-              <div className="space-y-4 pt-2">
-                <div>
-                  <Label className="text-sm">{t("domains.domainUrl")}</Label>
-                  <Input
-                    placeholder={t("domains.domainUrlPlaceholder")}
-                    className="bg-secondary/50 border-border mt-1.5"
-                    value={url}
-                    onChange={(e) => setUrl(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter" && url) createMutation.mutate(); }}
-                  />
+
+              {/* Success state */}
+              {pollingStep === "success" ? (
+                <div className="flex flex-col items-center justify-center py-8 gap-3">
+                  <div className="rounded-full bg-[hsl(var(--success))]/10 p-4">
+                    <CheckCircle className="h-10 w-10 text-[hsl(var(--success))]" />
+                  </div>
+                  <p className="text-lg font-semibold text-foreground">{t("domains.domainActive")}</p>
+                  <p className="text-sm text-muted-foreground">{t("domains.sslReady")}</p>
                 </div>
-
-                {/* Inline DNS Instructions */}
-                <div className="flex flex-col space-y-2.5">
-                  <div className="rounded-lg border border-border/30 bg-secondary/10 p-3">
-                    <div className="flex items-center gap-2">
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-bold">1</span>
-                      <p className="text-sm font-medium text-foreground">{t("domains.cnameStep1")}</p>
-                    </div>
+              ) : isPolling ? (
+                /* Polling / Setting up state */
+                <div className="flex flex-col items-center justify-center py-8 gap-4">
+                  <Loader2 className="h-10 w-10 text-primary animate-spin" />
+                  <div className="text-center space-y-1">
+                    <p className="text-sm font-semibold text-foreground">{t("domains.settingUpSecure")}</p>
+                    <p className="text-xs text-muted-foreground">{t("domains.settingUpSecureDesc")}</p>
                   </div>
-
-                  <div className="rounded-lg border border-border/30 bg-secondary/10 p-3 space-y-2.5">
-                    <div className="flex items-center gap-2">
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-bold">2</span>
-                      <p className="text-sm font-medium text-foreground">{t("domains.cnameStep2")}</p>
-                    </div>
-                    <div className="relative">
-                      <Input readOnly value={CNAME_TARGET} className="pr-9 bg-background border-border font-mono text-sm h-9" />
-                      <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => { navigator.clipboard.writeText(CNAME_TARGET); toast.success(t("domains.valueCopied")); }}>
-                        <Copy className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="rounded-lg border border-border/30 bg-secondary/10 p-3">
-                    <div className="flex items-center gap-2">
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-bold">3</span>
-                      <p className="text-sm font-medium text-foreground">{t("domains.cnameStep3Add")}</p>
-                    </div>
+                  <div className="w-full max-w-xs">
+                    <Progress value={pollingStep === "adding" ? 30 : 60} className="h-1.5" />
                   </div>
                 </div>
-
-                {/* TXT fallback link */}
-                <button
-                  className="text-xs text-primary/70 hover:text-primary underline underline-offset-2 transition-colors text-left"
-                  onClick={() => setShowTxtFallback((v) => !v)}
-                >
-                  {t("domains.txtFallbackLink")}
-                </button>
-                {showTxtFallback && (
-                  <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/5 p-3">
-                    <p className="text-xs text-muted-foreground">{t("domains.txtFallbackWarning")}</p>
+              ) : (
+                /* Form state */
+                <div className="space-y-4 pt-2">
+                  <div>
+                    <Label className="text-sm">{t("domains.domainUrl")}</Label>
+                    <Input
+                      placeholder={t("domains.domainUrlPlaceholder")}
+                      className="bg-secondary/50 border-border mt-1.5"
+                      value={url}
+                      onChange={(e) => setUrl(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter" && url) createMutation.mutate(); }}
+                    />
                   </div>
-                )}
 
-                <Button className="w-full" onClick={() => createMutation.mutate()} disabled={createMutation.isPending || !url}>
-                  {createMutation.isPending ? t("domains.checking") : t("common.add")}
-                </Button>
-              </div>
+                  {/* Simplified 3-step CNAME-only instructions */}
+                  <div className="flex flex-col space-y-2.5">
+                    <div className="rounded-lg border border-border/30 bg-secondary/10 p-3">
+                      <div className="flex items-center gap-2">
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-bold">1</span>
+                        <p className="text-sm font-medium text-foreground">{t("domains.cnameStep1")}</p>
+                      </div>
+                    </div>
+
+                    <div className="rounded-lg border border-border/30 bg-secondary/10 p-3 space-y-2.5">
+                      <div className="flex items-center gap-2">
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-bold">2</span>
+                        <p className="text-sm font-medium text-foreground">{t("domains.cnameStep2")}</p>
+                      </div>
+                      <div className="relative">
+                        <Input readOnly value={CNAME_TARGET} className="pr-9 bg-background border-border font-mono text-sm h-9" />
+                        <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => copyToClipboard(CNAME_TARGET, t("domains.valueCopied"))}>
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="rounded-lg border border-[hsl(var(--success))]/20 bg-[hsl(var(--success))]/5 p-3">
+                      <div className="flex items-center gap-2">
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[hsl(var(--success))]/20 text-[hsl(var(--success))] text-xs font-bold">3</span>
+                        <p className="text-sm font-medium text-foreground">{t("domains.cnameStep3Auto")}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Button className="w-full" onClick={() => createMutation.mutate()} disabled={createMutation.isPending || !url}>
+                    {createMutation.isPending ? t("domains.checking") : t("common.add")}
+                  </Button>
+                </div>
+              )}
             </DialogContent>
           </Dialog>
         )}
@@ -377,9 +316,9 @@ export default function Domains() {
         </CardContent>
       </Card>
 
-      {/* Setup Domain Dialog */}
-      <Dialog open={!!setupDomain} onOpenChange={(v) => { if (!v) { setSetupDomain(null); setTxtValidationData(null); setShowTxtFallback(false); } }}>
-        <DialogContent className="bg-card border-border sm:max-w-lg max-h-[85vh] overflow-y-auto">
+      {/* Setup Domain Dialog (for existing pending domains) */}
+      <Dialog open={!!setupDomain} onOpenChange={(v) => { if (!v) setSetupDomain(null); }}>
+        <DialogContent className="bg-card border-border sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ShieldCheck className="h-5 w-5 text-primary" />
@@ -391,31 +330,35 @@ export default function Domains() {
             </DialogDescription>
           </DialogHeader>
 
-          {setupDomain && <CnameSetupSteps domain={setupDomain} t={t} />}
+          {/* Simple CNAME instructions */}
+          <div className="flex flex-col space-y-3">
+            <div className="rounded-lg border border-border/30 bg-secondary/10 p-3">
+              <div className="flex items-center gap-2">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-bold">1</span>
+                <p className="text-sm font-medium text-foreground">{t("domains.cnameStep1")}</p>
+              </div>
+            </div>
 
-          <p className="text-xs text-muted-foreground">{t("domains.cnameNote")}</p>
+            <div className="rounded-lg border border-border/30 bg-secondary/10 p-3 space-y-2.5">
+              <div className="flex items-center gap-2">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-bold">2</span>
+                <p className="text-sm font-medium text-foreground">{t("domains.cnameStep2")}</p>
+              </div>
+              <div className="relative">
+                <Input readOnly value={CNAME_TARGET} className="pr-9 bg-background border-border font-mono text-sm h-9" />
+                <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => copyToClipboard(CNAME_TARGET, t("domains.valueCopied"))}>
+                  <Copy className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
 
-          {/* Progressive disclosure: TXT fallback link */}
-          {setupDomain && !domains.find(d => d.url === setupDomain)?.is_verified && !showTxtFallback && (
-            <button
-              className="text-xs text-primary/70 hover:text-primary underline underline-offset-2 transition-colors text-left"
-              onClick={() => {
-                setShowTxtFallback(true);
-                // Auto-fetch validation data if not already loaded
-                if (!txtValidationData) {
-                  const d = domains.find((d) => d.url === setupDomain);
-                  if (d) checkStatusMutation.mutate(d.id);
-                }
-              }}
-            >
-              {t("domains.txtFallbackLink")}
-            </button>
-          )}
-
-          {/* TXT Fallback Section - only shown when user clicks the link */}
-          {showTxtFallback && (
-            <TxtFallbackSection validationData={txtValidationData} t={t} />
-          )}
+            <div className="rounded-lg border border-[hsl(var(--success))]/20 bg-[hsl(var(--success))]/5 p-3">
+              <div className="flex items-center gap-2">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[hsl(var(--success))]/20 text-[hsl(var(--success))] text-xs font-bold">3</span>
+                <p className="text-sm font-medium text-foreground">{t("domains.cnameStep3Auto")}</p>
+              </div>
+            </div>
+          </div>
 
           <Button
             onClick={() => {
@@ -428,7 +371,7 @@ export default function Domains() {
             {checkStatusMutation.isPending ? (
               <><RefreshCw className="h-4 w-4 mr-2 animate-spin" /> {t("domains.checking")}</>
             ) : (
-              <><ShieldCheck className="h-4 w-4 mr-2" /> {t("domains.checkStatus")}</>
+              <><RefreshCw className="h-4 w-4 mr-2" /> {t("domains.refreshStatus")}</>
             )}
           </Button>
         </DialogContent>
@@ -556,16 +499,12 @@ export default function Domains() {
 
               <div className="space-y-2">
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">2. Mock Status Transition</p>
-                <p className="text-xs text-muted-foreground">Simulate a domain status change to test if the UI updates correctly.</p>
                 <div className="flex flex-wrap gap-2">
                   {domains.map((d) => (
                     <div key={d.id} className="flex items-center gap-2 rounded-lg border border-border bg-secondary/30 px-3 py-2">
                       <span className="text-xs font-mono">{d.url}</span>
                       <div className="flex gap-1">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7 text-xs border-green-500/30 text-green-400 hover:bg-green-500/10"
+                        <Button variant="outline" size="sm" className="h-7 text-xs border-green-500/30 text-green-400 hover:bg-green-500/10"
                           onClick={async () => {
                             const { error } = await supabase.from("domains").update({ is_verified: true, ssl_status: "active" }).eq("id", d.id);
                             if (error) { toast.error(error.message); return; }
@@ -575,10 +514,7 @@ export default function Domains() {
                         >
                           <Zap className="h-3 w-3 mr-1" /> Set Active
                         </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7 text-xs border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10"
+                        <Button variant="outline" size="sm" className="h-7 text-xs border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10"
                           onClick={async () => {
                             const { error } = await supabase.from("domains").update({ is_verified: false, ssl_status: "pending" }).eq("id", d.id);
                             if (error) { toast.error(error.message); return; }
