@@ -480,6 +480,21 @@ serve(async (req) => {
         : jsonResponse({ action: "safe_page", reason: "campaign_invalid" });
     }
 
+    // ═══════════════════════════════════════════════════════════════
+    // STRICT DOMAIN VALIDATION — Block access via raw edge URL
+    // Only allow requests from registered custom domains
+    // ═══════════════════════════════════════════════════════════════
+    if (responseMode === "redirect") {
+      const requestHost = requestUrl.hostname.toLowerCase();
+      const supabaseHost = (Deno.env.get("SUPABASE_URL") || "").replace(/^https?:\/\//, "").toLowerCase();
+      const isRawEdgeAccess = requestHost === supabaseHost || requestHost.endsWith(".supabase.co") || requestHost.endsWith(".supabase.in") || requestHost.endsWith(".lovable.app");
+      
+      if (isRawEdgeAccess) {
+        console.warn(`[DOMAIN-BLOCK] Direct edge access blocked from ${requestHost} for campaign ${campaign_hash}`);
+        return new Response("Not Found", { status: 404, headers: corsHeaders });
+      }
+    }
+
     const safeUrl = sanitizeRedirectUrl(campaign.safe_url, "https://google.com");
 
     const logAndRespond = async (

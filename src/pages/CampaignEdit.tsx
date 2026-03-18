@@ -285,14 +285,13 @@ export default function CampaignEdit() {
               </TooltipProvider>
             </div>
             {domains.length === 0 ? (
-              <div className="flex items-start gap-2 rounded-lg border border-yellow-500/30 bg-yellow-500/5 p-3">
-                <AlertTriangle className="h-4 w-4 mt-0.5 text-yellow-500 shrink-0" />
-                <p className="text-sm text-yellow-200/80">
-                  {t("campaignEdit.noDomains")}{" "}
+              <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+                <AlertTriangle className="h-4 w-4 mt-0.5 text-destructive shrink-0" />
+                <p className="text-sm text-muted-foreground">
+                  {t("campaignEdit.noDomainsBlock")}{" "}
                   <button type="button" onClick={() => navigate("/domains")} className="underline text-primary hover:text-primary/80 transition-colors">
                     {t("campaignEdit.noDomainsAction")}
-                  </button>{" "}
-                  {t("campaignEdit.noDomainsHelper")}
+                  </button>
                 </p>
               </div>
             ) : (
@@ -308,6 +307,10 @@ export default function CampaignEdit() {
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">{t("campaignEdit.domainHelper")}</p>
+                <div className="flex items-start gap-2 rounded-lg border border-primary/30 bg-primary/5 p-3">
+                  <AlertTriangle className="h-4 w-4 mt-0.5 text-primary shrink-0" />
+                  <p className="text-xs text-muted-foreground">{t("campaignEdit.dnsReminder")}</p>
+                </div>
               </>
             )}
           </div>
