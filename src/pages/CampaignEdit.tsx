@@ -129,9 +129,9 @@ export default function CampaignEdit() {
         name,
         domain: domain || null,
         traffic_source: trafficSource,
-        safe_url: safeUrl,
-        offer_url: offerMode === "single" ? offerUrl : abOffers.map((o) => o.url).join(","),
-        offer_page_b: abStormEnabled && offerPageB.trim() ? offerPageB.trim() : null,
+        safe_url: ensureAbsoluteUrl(safeUrl),
+        offer_url: offerMode === "single" ? ensureAbsoluteUrl(offerUrl) : abOffers.map((o) => ensureAbsoluteUrl(o.url)).join(","),
+        offer_page_b: abStormEnabled && offerPageB.trim() ? ensureAbsoluteUrl(offerPageB.trim()) : null,
         safe_page_method: safeMethod,
         offer_page_method: offerMethod,
         target_countries: targetCountries,
@@ -190,6 +190,13 @@ export default function CampaignEdit() {
 
   const toggleDevice = (d: string) => {
     setTargetDevices((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
+  };
+
+  const ensureAbsoluteUrl = (url: string): string => {
+    const trimmed = url.trim();
+    if (!trimmed) return trimmed;
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    return `https://${trimmed}`;
   };
 
   const isFormValid = name && trafficSource && safeUrl && (offerMode === "single" ? offerUrl : abOffers.every((o) => o.url));

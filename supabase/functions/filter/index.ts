@@ -348,35 +348,56 @@ serve(async (req) => {
         }
       }
 
+      // Ensure a URL is absolute and not a self-referencing /c/ path
+      const sanitizeRedirectUrl = (url: string, safeFallback: string): string => {
+        let u = (url || "").trim();
+        // Prepend https:// if missing protocol
+        if (u && !/^https?:\/\//i.test(u)) u = `https://${u}`;
+        // Abort if URL contains /c/ (self-referencing cloaker loop)
+        if (/\/c\//.test(u)) {
+          console.error(`[LOOP-GUARD] Redirect URL "${u}" contains /c/ path — aborting to safe page`);
+          return safeFallback;
+        }
+        // Validate it's a proper URL
+        try { new URL(u); } catch {
+          console.error(`[INVALID-URL] "${u}" is not a valid URL — falling back to safe page`);
+          return safeFallback;
+        }
+        return u;
+      };
+
+      const safeUrl = sanitizeRedirectUrl(campaign.safe_url, "https://google.com");
+
       let redirectUrl: string;
       if (action === "offer_page") {
         const hasB = campaign.offer_page_b && campaign.offer_page_b.trim();
         const coinFlip = crypto.getRandomValues(new Uint8Array(1))[0] < 128;
         const candidateUrl = hasB && coinFlip ? campaign.offer_page_b : campaign.offer_url;
+        const sanitizedCandidate = sanitizeRedirectUrl(candidateUrl, safeUrl);
 
         // Health check: verify offer page is reachable before redirecting
-        const isHealthy = await checkUrlHealth(candidateUrl);
+        const isHealthy = await checkUrlHealth(sanitizedCandidate);
         if (isHealthy) {
-          redirectUrl = candidateUrl;
+          redirectUrl = sanitizedCandidate;
         } else {
-          // If A/B was active, try the other offer before falling back to safe page
           if (hasB) {
             const fallbackOffer = candidateUrl === campaign.offer_page_b ? campaign.offer_url : campaign.offer_page_b;
-            const fallbackHealthy = await checkUrlHealth(fallbackOffer);
+            const sanitizedFallback = sanitizeRedirectUrl(fallbackOffer, safeUrl);
+            const fallbackHealthy = await checkUrlHealth(sanitizedFallback);
             if (fallbackHealthy) {
-              console.warn(`[FALLBACK] Primary offer ${candidateUrl} is down, using alternate: ${fallbackOffer}`);
-              redirectUrl = fallbackOffer;
+              console.warn(`[FALLBACK] Primary offer ${sanitizedCandidate} is down, using alternate: ${sanitizedFallback}`);
+              redirectUrl = sanitizedFallback;
             } else {
-              console.error(`[FALLBACK] Both offer pages are down (${campaign.offer_url}, ${campaign.offer_page_b}). Redirecting to safe page.`);
-              redirectUrl = campaign.safe_url;
+              console.error(`[FALLBACK] Both offer pages are down. Redirecting to safe page.`);
+              redirectUrl = safeUrl;
             }
           } else {
-            console.error(`[FALLBACK] Offer page ${candidateUrl} is down. Redirecting to safe page: ${campaign.safe_url}`);
-            redirectUrl = campaign.safe_url;
+            console.error(`[FALLBACK] Offer page ${sanitizedCandidate} is down. Redirecting to safe page.`);
+            redirectUrl = safeUrl;
           }
         }
       } else {
-        redirectUrl = campaign.safe_url;
+        redirectUrl = safeUrl;
       }
 
       return new Response(
