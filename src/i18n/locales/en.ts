@@ -248,6 +248,10 @@ const en = {
     hostCopied: "Host copied!",
     valueCopied: "Value copied!",
     cnameNote: "This CNAME automatically routes your domain through our secure proxy with SSL provisioning. No manual Cloudflare setup required.",
+    txtFallbackTitle: "⚡ Alternative Verification (For Root Domains)",
+    txtFallbackWarning: "If your DNS provider doesn't support CNAME on the root (@), add these two TXT records instead.",
+    txtOwnership: "Hostname Ownership Verification",
+    txtSslCert: "SSL Certificate Verification",
   },
 
   // Requests Log

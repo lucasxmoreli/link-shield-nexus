@@ -316,8 +316,8 @@ export default function Domains() {
       </Card>
 
       {/* Setup CNAME Dialog */}
-      <Dialog open={!!setupDomain} onOpenChange={(v) => !v && setSetupDomain(null)}>
-        <DialogContent className="bg-card border-border sm:max-w-lg">
+      <Dialog open={!!setupDomain} onOpenChange={(v) => { if (!v) { setSetupDomain(null); setTxtValidationData(null); } }}>
+        <DialogContent className="bg-card border-border sm:max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ShieldCheck className="h-5 w-5 text-primary" />
@@ -329,6 +329,12 @@ export default function Domains() {
             </DialogDescription>
           </DialogHeader>
           {setupDomain && <CnameSetupSteps domain={setupDomain} t={t} />}
+          
+          {/* TXT Fallback Section - shown when domain is pending and validation data exists */}
+          {setupDomain && !domains.find(d => d.url === setupDomain)?.is_verified && (
+            <TxtFallbackSection validationData={txtValidationData} t={t} />
+          )}
+
           <Button
             onClick={() => {
               const d = domains.find((d) => d.url === setupDomain);
