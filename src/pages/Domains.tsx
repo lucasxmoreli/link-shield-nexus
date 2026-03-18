@@ -473,7 +473,7 @@ export default function Domains() {
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">{new Date(d.created_at).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right space-x-1">
-                      {!d.is_verified && (
+                      {d.ssl_status !== "active" && (
                         <Button variant="ghost" size="sm" className="text-primary hover:text-primary" onClick={() => setSetupDomain(d.url)}>
                           <ShieldCheck className="h-4 w-4 mr-1" /> {t("domains.checkStatus")}
                         </Button>
