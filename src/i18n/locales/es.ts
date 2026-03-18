@@ -141,8 +141,10 @@ const es = {
     safePageUrl: "URL de Página Segura",
     safePagePlaceholder: "https://blog.ejemplo.com/...",
     method: "Método",
-    redirect: "Redirección",
+    redirect: "Redirección (302)",
+    redirectDesc: "Redirección estándar. El navegador del visitante navega a la URL de destino.",
     contentFetch: "Obtención de Contenido",
+    contentFetchDesc: "Enmascara la URL de destino. El visitante permanece en tu dominio mientras ve el contenido de la página Segura/Oferta.",
 
     offerPageSection: "Página de Oferta",
     primaryOffer: "Página de Oferta Principal (A)",

@@ -149,8 +149,10 @@ const en = {
     safePageUrl: "Safe Page URL",
     safePagePlaceholder: "https://blog.example.com/...",
     method: "Method",
-    redirect: "Redirect",
+    redirect: "Redirect (302)",
+    redirectDesc: "Standard redirect. The visitor's browser navigates to the destination URL.",
     contentFetch: "Content Fetch",
+    contentFetchDesc: "Masks the destination URL. The visitor stays on your domain while seeing the Safe/Offer page content.",
 
     offerPageSection: "Offer Page",
     primaryOffer: "Primary Offer Page (A)",
