@@ -401,8 +401,11 @@ export default function CampaignEdit() {
       </section>
 
       {/* BLOCK 3: Offer Page */}
-      <section className="rounded-xl bg-[hsl(var(--card))] p-6 space-y-4">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("campaignEdit.offerPageSection")}</h2>
+      <section className="rounded-xl border border-yellow-500/20 bg-[hsl(var(--card))] p-6 space-y-4">
+        <div>
+          <h2 className="text-sm font-semibold text-foreground">{t("campaignEdit.offerPageSection")}</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">{t("campaignEdit.offerPageSectionDesc")}</p>
+        </div>
 
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">{t("campaignEdit.primaryOffer")}</Label>
