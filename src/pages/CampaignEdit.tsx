@@ -72,6 +72,8 @@ export default function CampaignEdit() {
   const [countrySearch, setCountrySearch] = useState("");
   const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
   const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
+  const [successModal, setSuccessModal] = useState<{ link: string; offerUrl: string; safeUrl: string } | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   const { data: domains = [] } = useQuery({
     queryKey: ["domains", user?.id],
