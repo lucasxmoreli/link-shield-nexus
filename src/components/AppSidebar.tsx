@@ -1,4 +1,4 @@
-import { LayoutDashboard, Globe, Megaphone, FileText, Settings, Shield, LogOut, FlaskConical, Ticket, CreditCard } from "lucide-react";
+import { LayoutDashboard, Globe, Megaphone, FileText, Settings, Shield, LogOut, FlaskConical, Ticket, CreditCard, ShieldAlert } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -35,6 +35,7 @@ export function AppSidebar() {
 
   const adminItems = [
     { title: t("nav.adminUsers"), url: "/invite-codes", icon: Ticket },
+    { title: "Admin Panel", url: "/admin", icon: ShieldAlert },
   ];
 
   const items = [...baseItems, ...(isAdmin ? adminItems : [])];
