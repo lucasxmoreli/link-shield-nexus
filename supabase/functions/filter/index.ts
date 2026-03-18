@@ -481,17 +481,47 @@ serve(async (req) => {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // STRICT DOMAIN VALIDATION — Block access via raw edge URL
-    // Only allow requests from registered custom domains
+    // STRICT PROXY ENFORCER — Block raw IP, edge URLs & grey-cloud
     // ═══════════════════════════════════════════════════════════════
     if (responseMode === "redirect") {
       const requestHost = requestUrl.hostname.toLowerCase();
       const supabaseHost = (Deno.env.get("SUPABASE_URL") || "").replace(/^https?:\/\//, "").toLowerCase();
-      const isRawEdgeAccess = requestHost === supabaseHost || requestHost.endsWith(".supabase.co") || requestHost.endsWith(".supabase.in") || requestHost.endsWith(".lovable.app");
-      
-      if (isRawEdgeAccess) {
-        console.warn(`[DOMAIN-BLOCK] Direct edge access blocked from ${requestHost} for campaign ${campaign_hash}`);
-        return new Response("Not Found", { status: 404, headers: corsHeaders });
+
+      // 1) Block direct IP access (origin IP exposed)
+      const IP_REGEX = /^(\d{1,3}\.){3}\d{1,3}$/;
+      const isDirectIp = IP_REGEX.test(requestHost);
+
+      // 2) Block raw edge / preview URLs
+      const isRawEdgeAccess = requestHost === supabaseHost
+        || requestHost.endsWith(".supabase.co")
+        || requestHost.endsWith(".supabase.in")
+        || requestHost.endsWith(".lovable.app");
+
+      if (isDirectIp || isRawEdgeAccess) {
+        console.warn(`[PROXY-ENFORCER] Blocked direct access from host=${requestHost} campaign=${campaign_hash}`);
+        return new Response("Forbidden", { status: 403, headers: corsHeaders });
+      }
+
+      // 3) Force Cloudflare presence — reject grey-cloud (DNS-only) domains
+      const hasCfRay = req.headers.has("cf-ray");
+      const hasCfIp = req.headers.has("cf-connecting-ip");
+      if (!hasCfRay && !hasCfIp) {
+        console.warn(`[PROXY-ENFORCER] Missing Cloudflare headers for host=${requestHost} campaign=${campaign_hash}`);
+        const proxyErrorHtml = `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Security Error</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0a0a0a;color:#e5e5e5;font-family:system-ui,sans-serif}
+.card{max-width:520px;padding:2.5rem;border:1px solid #dc2626;border-radius:12px;background:#1a1a1a;text-align:center}
+h1{font-size:1.25rem;color:#f87171;margin-bottom:1rem}p{font-size:.95rem;line-height:1.6;color:#a3a3a3}
+.icon{font-size:2.5rem;margin-bottom:1rem}</style></head>
+<body><div class="card"><div class="icon">🛡️</div>
+<h1>CloakGuard Security</h1>
+<p>This domain is not routed through a secure proxy. Please enable the <strong>Orange Cloud 🟠</strong> in your Cloudflare DNS settings to activate this campaign.</p>
+</div></body></html>`;
+        return new Response(proxyErrorHtml, {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" },
+        });
       }
     }
 
