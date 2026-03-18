@@ -242,8 +242,11 @@ export default function CampaignEdit() {
     (offerMode === "single" ? isValidAbsoluteUrl(offerUrl) : abOffers.every((o) => isValidAbsoluteUrl(o.url))) &&
     (!abStormEnabled || !offerPageB.trim() || isValidAbsoluteUrl(offerPageB));
 
+  const hasDomains = domains.length > 0;
+
   const isFormValid = Boolean(
     name &&
+      domain &&
       trafficSource &&
       safeUrl &&
       (offerMode === "single" ? offerUrl : abOffers.every((o) => o.url)) &&
