@@ -226,6 +226,9 @@ const es = {
     value: "Valor",
     hostCopied: "¡Host copiado!",
     valueCopied: "¡Valor copiado!",
+    dnsStepATitle: "Registro A (Requerido para enlaces de campaña)",
+    dnsStepADesc: "Apunta tu dominio al servidor de CloakGuard para que los enlaces de campaña (/c/hash) funcionen en tu dominio. Sin esto, los visitantes verán un error 404.",
+    verification: "Verificación",
   },
 
   requests: {

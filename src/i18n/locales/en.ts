@@ -237,6 +237,9 @@ const en = {
     value: "Value",
     hostCopied: "Host copied!",
     valueCopied: "Value copied!",
+    dnsStepATitle: "A Record (Required for campaign links)",
+    dnsStepADesc: "Point your domain to CloakGuard's server so campaign links (/c/hash) work on your domain. Without this, visitors will see a 404 error.",
+    verification: "Verification",
   },
 
   // Requests Log

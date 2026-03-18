@@ -226,6 +226,9 @@ const pt = {
     value: "Valor",
     hostCopied: "Host copiado!",
     valueCopied: "Valor copiado!",
+    dnsStepATitle: "Registro A (Obrigatório para links de campanha)",
+    dnsStepADesc: "Aponte seu domínio para o servidor do CloakGuard para que os links de campanha (/c/hash) funcionem no seu domínio. Sem isso, os visitantes verão um erro 404.",
+    verification: "Verificação",
   },
 
   requests: {
