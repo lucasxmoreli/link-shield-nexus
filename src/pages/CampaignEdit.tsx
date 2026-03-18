@@ -413,6 +413,7 @@ export default function CampaignEdit() {
                   className="bg-secondary border-border"
                   value={offerPageB}
                   onChange={(e) => setOfferPageB(e.target.value)}
+                  onBlur={(e) => normalizeUrlField(setOfferPageB)(e.target.value)}
                 />
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
