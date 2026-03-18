@@ -80,7 +80,7 @@ export default function CampaignEdit() {
   const { data: domains = [] } = useQuery({
     queryKey: ["domains", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("domains").select("*").eq("is_verified", true);
+      const { data, error } = await supabase.from("domains").select("*");
       if (error) throw error;
       return data;
     },
