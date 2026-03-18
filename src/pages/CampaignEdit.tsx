@@ -345,7 +345,13 @@ export default function CampaignEdit() {
         <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("campaignEdit.safePageSection")}</h2>
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">{t("campaignEdit.safePageUrl")}</Label>
-          <Input placeholder={t("campaignEdit.safePagePlaceholder")} className="bg-secondary border-border" value={safeUrl} onChange={(e) => setSafeUrl(e.target.value)} />
+          <Input
+            placeholder={t("campaignEdit.safePagePlaceholder")}
+            className="bg-secondary border-border"
+            value={safeUrl}
+            onChange={(e) => setSafeUrl(e.target.value)}
+            onBlur={(e) => normalizeUrlField(setSafeUrl)(e.target.value)}
+          />
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">{t("campaignEdit.method")}</Label>
