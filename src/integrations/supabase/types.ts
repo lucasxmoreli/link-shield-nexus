@@ -342,6 +342,7 @@ export type Database = {
         Args: { p_suspend: boolean; p_user_id: string }
         Returns: undefined
       }
+      get_campaign_redirect: { Args: { p_hash: string }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
