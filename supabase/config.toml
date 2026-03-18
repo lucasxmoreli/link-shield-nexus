@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.check-hostname-status]
 verify_jwt = false
+
+[functions.cf-api-test]
+verify_jwt = false

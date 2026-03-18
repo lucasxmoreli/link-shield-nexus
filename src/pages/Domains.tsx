@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Plus, CheckCircle, XCircle, Trash2, ShieldCheck, Copy, RefreshCw, Lock } from "lucide-react";
+import { Plus, CheckCircle, XCircle, Trash2, ShieldCheck, Copy, RefreshCw, Lock, Bug, Zap, Wifi } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -80,6 +81,9 @@ export default function Domains() {
   const [open, setOpen] = useState(false);
   const [setupDomain, setSetupDomain] = useState<string | null>(null);
   const [url, setUrl] = useState("");
+  const [debugMode, setDebugMode] = useState(false);
+  const [apiTestResult, setApiTestResult] = useState<{ status: string; message: string } | null>(null);
+  const [apiTestLoading, setApiTestLoading] = useState(false);
 
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
@@ -305,6 +309,148 @@ export default function Domains() {
               )}
             </TableBody>
           </Table>
+        </CardContent>
+      </Card>
+
+      {/* Debug Mode Panel */}
+      <Card className="border-border bg-card">
+        <CardContent className="p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Bug className="h-4 w-4 text-yellow-500" />
+              <p className="text-sm font-semibold">System Diagnostic — Debug Mode</p>
+            </div>
+            <Switch checked={debugMode} onCheckedChange={setDebugMode} />
+          </div>
+
+          {debugMode && (
+            <div className="space-y-4 pt-2 border-t border-border">
+              {/* 1. Cloudflare API Connection Test */}
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">1. Cloudflare API Connection</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={apiTestLoading}
+                  onClick={async () => {
+                    setApiTestLoading(true);
+                    setApiTestResult(null);
+                    try {
+                      const { data, error } = await supabase.functions.invoke("cf-api-test");
+                      if (error) {
+                        setApiTestResult({ status: "error", message: `Edge function error: ${error.message}` });
+                      } else {
+                        setApiTestResult(data);
+                      }
+                    } catch (e: any) {
+                      setApiTestResult({ status: "error", message: e.message });
+                    } finally {
+                      setApiTestLoading(false);
+                    }
+                  }}
+                >
+                  <Wifi className="h-3.5 w-3.5 mr-1.5" />
+                  {apiTestLoading ? "Testing..." : "Ping Cloudflare API"}
+                </Button>
+                {apiTestResult && (
+                  <div className={`rounded-lg border p-3 text-sm font-mono ${
+                    apiTestResult.status === "success"
+                      ? "border-green-500/30 bg-green-500/5 text-green-400"
+                      : apiTestResult.status === "unauthorized"
+                      ? "border-yellow-500/30 bg-yellow-500/5 text-yellow-400"
+                      : "border-destructive/30 bg-destructive/5 text-destructive"
+                  }`}>
+                    {apiTestResult.message}
+                  </div>
+                )}
+              </div>
+
+              {/* 2. Mock Status Simulator */}
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">2. Mock Status Transition</p>
+                <p className="text-xs text-muted-foreground">Simulate a domain status change to test if the UI updates correctly.</p>
+                <div className="flex flex-wrap gap-2">
+                  {domains.map((d) => (
+                    <div key={d.id} className="flex items-center gap-2 rounded-lg border border-border bg-secondary/30 px-3 py-2">
+                      <span className="text-xs font-mono">{d.url}</span>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs border-green-500/30 text-green-400 hover:bg-green-500/10"
+                          onClick={async () => {
+                            const { error } = await supabase.from("domains").update({ is_verified: true, ssl_status: "active" }).eq("id", d.id);
+                            if (error) { toast.error(error.message); return; }
+                            qc.invalidateQueries({ queryKey: ["domains"] });
+                            toast.success(`✅ ${d.url} → Active (mock)`);
+                          }}
+                        >
+                          <Zap className="h-3 w-3 mr-1" /> Set Active
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10"
+                          onClick={async () => {
+                            const { error } = await supabase.from("domains").update({ is_verified: false, ssl_status: "pending" }).eq("id", d.id);
+                            if (error) { toast.error(error.message); return; }
+                            qc.invalidateQueries({ queryKey: ["domains"] });
+                            toast.success(`⏳ ${d.url} → Pending (mock)`);
+                          }}
+                        >
+                          Set Pending
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 3. Database Column Check */}
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">3. Database Column Sync</p>
+                <div className="rounded-lg border border-border bg-secondary/10 p-3 overflow-x-auto">
+                  <table className="text-xs font-mono w-full">
+                    <thead>
+                      <tr className="text-muted-foreground">
+                        <th className="text-left pr-4 pb-1">URL</th>
+                        <th className="text-left pr-4 pb-1">CF Hostname ID</th>
+                        <th className="text-left pr-4 pb-1">SSL Status</th>
+                        <th className="text-left pb-1">Verified</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {domains.map((d) => (
+                        <tr key={d.id}>
+                          <td className="pr-4 py-0.5">{d.url}</td>
+                          <td className="pr-4 py-0.5">
+                            {d.cloudflare_hostname_id ? (
+                              <span className="text-green-400">{d.cloudflare_hostname_id.substring(0, 12)}...</span>
+                            ) : (
+                              <span className="text-yellow-400">NULL ⚠️</span>
+                            )}
+                          </td>
+                          <td className="pr-4 py-0.5">
+                            <span className={d.ssl_status === "active" ? "text-green-400" : "text-yellow-400"}>
+                              {d.ssl_status || "null"}
+                            </span>
+                          </td>
+                          <td className="py-0.5">
+                            {d.is_verified ? <span className="text-green-400">✓</span> : <span className="text-yellow-400">✗</span>}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {domains.some((d) => !d.cloudflare_hostname_id) && (
+                  <p className="text-xs text-yellow-400">
+                    ⚠️ Some domains have no Cloudflare Hostname ID. These were created before the Cloudflare SaaS integration was deployed. They need to be re-added via the new flow.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
