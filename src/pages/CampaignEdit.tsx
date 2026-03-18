@@ -353,16 +353,22 @@ export default function CampaignEdit() {
             onBlur={(e) => normalizeUrlField(setSafeUrl)(e.target.value)}
           />
         </div>
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <Label className="text-xs text-muted-foreground">{t("campaignEdit.method")}</Label>
-          <RadioGroup value={safeMethod} onValueChange={setSafeMethod} className="flex gap-4">
-            <label className={`flex items-center gap-2 cursor-pointer rounded-lg border px-4 py-2.5 text-sm transition-colors ${safeMethod === "redirect" ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary text-muted-foreground"}`}>
-              <RadioGroupItem value="redirect" className="sr-only" />
-              {t("campaignEdit.redirect")}
+          <RadioGroup value={safeMethod} onValueChange={setSafeMethod} className="flex flex-col sm:flex-row gap-3">
+            <label className={`flex-1 flex items-start gap-3 cursor-pointer rounded-lg border px-4 py-3 text-sm transition-colors ${safeMethod === "redirect" ? "border-primary bg-primary/10" : "border-border bg-secondary"}`}>
+              <RadioGroupItem value="redirect" className="mt-0.5" />
+              <div>
+                <p className={`font-medium ${safeMethod === "redirect" ? "text-primary" : "text-foreground"}`}>{t("campaignEdit.redirect")}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{t("campaignEdit.redirectDesc")}</p>
+              </div>
             </label>
-            <label className={`flex items-center gap-2 cursor-pointer rounded-lg border px-4 py-2.5 text-sm transition-colors ${safeMethod === "content_fetch" ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary text-muted-foreground"}`}>
-              <RadioGroupItem value="content_fetch" className="sr-only" />
-              {t("campaignEdit.contentFetch")}
+            <label className={`flex-1 flex items-start gap-3 cursor-pointer rounded-lg border px-4 py-3 text-sm transition-colors ${safeMethod === "content_fetch" ? "border-primary bg-primary/10" : "border-border bg-secondary"}`}>
+              <RadioGroupItem value="content_fetch" className="mt-0.5" />
+              <div>
+                <p className={`font-medium ${safeMethod === "content_fetch" ? "text-primary" : "text-foreground"}`}>{t("campaignEdit.contentFetch")}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{t("campaignEdit.contentFetchDesc")}</p>
+              </div>
             </label>
           </RadioGroup>
         </div>
