@@ -11,21 +11,10 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { FlaskConical, Play, Shield, ShieldAlert, ShieldCheck, Loader2, Copy, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
-type FilterResult = {
-  action: string;
-  url?: string;
-  reason?: string;
-};
-
-type TestLog = {
-  id: number;
-  timestamp: Date;
-  ip: string;
-  userAgent: string;
-  result: FilterResult;
-  duration: number;
-};
+type FilterResult = { action: string; url?: string; reason?: string };
+type TestLog = { id: number; timestamp: Date; ip: string; userAgent: string; result: FilterResult; duration: number };
 
 const PRESET_USER_AGENTS: { label: string; value: string; type: "bot" | "real" | "suspicious" }[] = [
   { label: "Chrome Desktop (Real)", value: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36", type: "real" },
@@ -52,6 +41,7 @@ const PRESET_IPS: { label: string; value: string; type: "real" | "datacenter" | 
 
 export default function CloakTest() {
   const { session } = useAuth();
+  const { t } = useTranslation();
   const [selectedCampaign, setSelectedCampaign] = useState("");
   const [selectedUAPreset, setSelectedUAPreset] = useState("");
   const [customUA, setCustomUA] = useState("");
@@ -65,11 +55,7 @@ export default function CloakTest() {
   const { data: campaigns, isLoading: loadingCampaigns } = useQuery({
     queryKey: ["campaigns-for-test"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("campaigns")
-        .select("id, name, hash, is_active, offer_url, safe_url")
-        .eq("user_id", session?.user?.id ?? "")
-        .order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("campaigns").select("id, name, hash, is_active, offer_url, safe_url").eq("user_id", session?.user?.id ?? "").order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
@@ -77,42 +63,25 @@ export default function CloakTest() {
   });
 
   const getIP = () => selectedIPPreset === "custom" ? customIP : selectedIPPreset;
-  const getUA = () => {
-    if (customUA) return customUA;
-    const preset = PRESET_USER_AGENTS.find(p => p.value === selectedUAPreset);
-    return preset?.value ?? "";
-  };
+  const getUA = () => { if (customUA) return customUA; return PRESET_USER_AGENTS.find(p => p.value === selectedUAPreset)?.value ?? ""; };
   const getCampaignHash = () => campaigns?.find(c => c.id === selectedCampaign)?.hash ?? "";
 
   const runTest = async () => {
     const ip = getIP();
     const userAgent = getUA();
     const campaignHash = getCampaignHash();
-
-    if (!campaignHash || !ip || !userAgent) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
-
+    if (!campaignHash || !ip || !userAgent) { toast.error(t("cloakTest.fillRequired")); return; }
     setTesting(true);
     const start = performance.now();
-
     try {
-      const { data, error } = await supabase.functions.invoke("filter", {
-        body: { campaign_hash: campaignHash, ip, user_agent: userAgent, referer: referer || null },
-      });
+      const { data, error } = await supabase.functions.invoke("filter", { body: { campaign_hash: campaignHash, ip, user_agent: userAgent, referer: referer || null } });
       const duration = Math.round(performance.now() - start);
       if (error) throw error;
-
-      const newLog: TestLog = {
-        id: logCounter + 1, timestamp: new Date(), ip,
-        userAgent: userAgent.substring(0, 60) + (userAgent.length > 60 ? "..." : ""),
-        result: data as FilterResult, duration,
-      };
+      const newLog: TestLog = { id: logCounter + 1, timestamp: new Date(), ip, userAgent: userAgent.substring(0, 60) + (userAgent.length > 60 ? "..." : ""), result: data as FilterResult, duration };
       setLogs(prev => [newLog, ...prev]);
       setLogCounter(prev => prev + 1);
     } catch (err: any) {
-      toast.error("Test error: " + (err.message || "Unknown error"));
+      toast.error(t("cloakTest.testError", { message: err.message || "Unknown error" }));
     } finally {
       setTesting(false);
     }
@@ -120,24 +89,20 @@ export default function CloakTest() {
 
   const getActionBadge = (action: string) => {
     switch (action) {
-      case "redirect": return <Badge className="bg-green-500/20 text-green-400 border-green-500/30 gap-1"><ShieldCheck className="h-3 w-3" /> Offer Page</Badge>;
-      case "safe_page": return <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 gap-1"><Shield className="h-3 w-3" /> Safe Page</Badge>;
-      case "bot_blocked": return <Badge className="bg-red-500/20 text-red-400 border-red-500/30 gap-1"><ShieldAlert className="h-3 w-3" /> Bot Blocked</Badge>;
+      case "redirect": return <Badge className="bg-green-500/20 text-green-400 border-green-500/30 gap-1"><ShieldCheck className="h-3 w-3" /> {t("dashboard.offerPage")}</Badge>;
+      case "safe_page": return <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 gap-1"><Shield className="h-3 w-3" /> {t("requests.safePage")}</Badge>;
+      case "bot_blocked": return <Badge className="bg-red-500/20 text-red-400 border-red-500/30 gap-1"><ShieldAlert className="h-3 w-3" /> {t("dashboard.botsBlocked")}</Badge>;
       default: return <Badge variant="outline">{action}</Badge>;
     }
   };
 
-  const getUATypeColor = (type: string) => {
-    switch (type) { case "bot": return "text-red-400"; case "real": return "text-green-400"; case "suspicious": return "text-yellow-400"; default: return "text-muted-foreground"; }
-  };
-  const getIPTypeColor = (type: string) => {
-    switch (type) { case "datacenter": return "text-red-400"; case "vpn": return "text-yellow-400"; case "real": return "text-green-400"; default: return "text-muted-foreground"; }
-  };
+  const getUATypeColor = (type: string) => { switch (type) { case "bot": return "text-red-400"; case "real": return "text-green-400"; default: return "text-muted-foreground"; } };
+  const getIPTypeColor = (type: string) => { switch (type) { case "datacenter": return "text-red-400"; case "vpn": return "text-yellow-400"; case "real": return "text-green-400"; default: return "text-muted-foreground"; } };
 
   const copyLog = (log: TestLog) => {
     const text = `IP: ${log.ip}\nUA: ${log.userAgent}\nAction: ${log.result.action}\nURL: ${log.result.url || "N/A"}\nReason: ${log.result.reason || "N/A"}\nDuration: ${log.duration}ms`;
     navigator.clipboard.writeText(text);
-    toast.success("Log copied!");
+    toast.success(t("cloakTest.logCopied"));
   };
 
   return (
@@ -145,84 +110,68 @@ export default function CloakTest() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
           <FlaskConical className="h-6 w-6 text-primary" />
-          Cloak Test
+          {t("cloakTest.title")}
         </h1>
-        <p className="text-muted-foreground mt-1">Simulate requests to test the cloaking filter in real time</p>
+        <p className="text-muted-foreground mt-1">{t("cloakTest.subtitle")}</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="border-border bg-card">
           <CardHeader>
-            <CardTitle className="text-lg">Test Configuration</CardTitle>
-            <CardDescription>Define the parameters for the simulated request</CardDescription>
+            <CardTitle className="text-lg">{t("cloakTest.testConfig")}</CardTitle>
+            <CardDescription>{t("cloakTest.testConfigDesc")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="space-y-2">
-              <Label>Campaign *</Label>
+              <Label>{t("cloakTest.campaignRequired")}</Label>
               <Select value={selectedCampaign} onValueChange={setSelectedCampaign}>
-                <SelectTrigger><SelectValue placeholder={loadingCampaigns ? "Loading..." : "Select a campaign"} /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={loadingCampaigns ? t("common.loading") : t("cloakTest.selectCampaign")} /></SelectTrigger>
                 <SelectContent>
                   {campaigns?.map(c => (
                     <SelectItem key={c.id} value={c.id}>
-                      <span className="flex items-center gap-2">
-                        {c.name}
-                        {!c.is_active && <Badge variant="outline" className="text-xs">Inactive</Badge>}
-                      </span>
+                      <span className="flex items-center gap-2">{c.name}{!c.is_active && <Badge variant="outline" className="text-xs">{t("common.inactive")}</Badge>}</span>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-
             <Separator />
-
             <div className="space-y-2">
-              <Label>User Agent *</Label>
+              <Label>{t("cloakTest.userAgentRequired")}</Label>
               <Select value={selectedUAPreset} onValueChange={(v) => { setSelectedUAPreset(v); setCustomUA(""); }}>
-                <SelectTrigger><SelectValue placeholder="Choose a preset" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t("cloakTest.choosePreset")} /></SelectTrigger>
                 <SelectContent>
                   {PRESET_USER_AGENTS.map(ua => (
                     <SelectItem key={ua.value} value={ua.value}>
-                      <span className={`flex items-center gap-2 ${getUATypeColor(ua.type)}`}>
-                        {ua.type === "bot" ? "🤖" : "👤"} {ua.label}
-                      </span>
+                      <span className={`flex items-center gap-2 ${getUATypeColor(ua.type)}`}>{ua.type === "bot" ? "🤖" : "👤"} {ua.label}</span>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <Input placeholder="Or type a custom user agent..." value={customUA} onChange={(e) => { setCustomUA(e.target.value); setSelectedUAPreset(""); }} className="font-mono text-xs" />
+              <Input placeholder={t("cloakTest.customUA")} value={customUA} onChange={(e) => { setCustomUA(e.target.value); setSelectedUAPreset(""); }} className="font-mono text-xs" />
             </div>
-
             <Separator />
-
             <div className="space-y-2">
-              <Label>IP Address *</Label>
+              <Label>{t("cloakTest.ipRequired")}</Label>
               <Select value={selectedIPPreset} onValueChange={setSelectedIPPreset}>
-                <SelectTrigger><SelectValue placeholder="Choose a preset" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t("cloakTest.choosePreset")} /></SelectTrigger>
                 <SelectContent>
                   {PRESET_IPS.map(ip => (
                     <SelectItem key={ip.value} value={ip.value}>
-                      <span className={`flex items-center gap-2 ${getIPTypeColor(ip.type)}`}>
-                        {ip.type === "datacenter" ? "🏢" : ip.type === "vpn" ? "🔒" : "🏠"} {ip.label}
-                      </span>
+                      <span className={`flex items-center gap-2 ${getIPTypeColor(ip.type)}`}>{ip.type === "datacenter" ? "🏢" : ip.type === "vpn" ? "🔒" : "🏠"} {ip.label}</span>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              {selectedIPPreset === "custom" && (
-                <Input placeholder="Enter IP (e.g. 192.168.1.1)" value={customIP} onChange={(e) => setCustomIP(e.target.value)} className="font-mono" />
-              )}
+              {selectedIPPreset === "custom" && <Input placeholder={t("cloakTest.enterIp")} value={customIP} onChange={(e) => setCustomIP(e.target.value)} className="font-mono" />}
             </div>
-
             <Separator />
-
             <div className="space-y-2">
-              <Label>Referer (optional)</Label>
+              <Label>{t("cloakTest.refererOptional")}</Label>
               <Input placeholder="https://www.tiktok.com/@user/video/123" value={referer} onChange={(e) => setReferer(e.target.value)} />
             </div>
-
             <Button className="w-full gap-2 mt-2" size="lg" onClick={runTest} disabled={testing || !selectedCampaign || (!selectedUAPreset && !customUA) || !selectedIPPreset || (selectedIPPreset === "custom" && !customIP)}>
-              {testing ? (<><Loader2 className="h-4 w-4 animate-spin" /> Testing...</>) : (<><Play className="h-4 w-4" /> Run Test</>)}
+              {testing ? (<><Loader2 className="h-4 w-4 animate-spin" /> {t("common.testing")}</>) : (<><Play className="h-4 w-4" /> {t("cloakTest.runTest")}</>)}
             </Button>
           </CardContent>
         </Card>
@@ -230,12 +179,12 @@ export default function CloakTest() {
         <Card className="border-border bg-card">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
-              <CardTitle className="text-lg">Results</CardTitle>
-              <CardDescription>{logs.length} test(s) executed</CardDescription>
+              <CardTitle className="text-lg">{t("cloakTest.results")}</CardTitle>
+              <CardDescription>{t("cloakTest.testsExecuted", { count: logs.length })}</CardDescription>
             </div>
             {logs.length > 0 && (
               <Button variant="ghost" size="sm" onClick={() => setLogs([])} className="gap-1 text-muted-foreground">
-                <RotateCcw className="h-3 w-3" /> Clear
+                <RotateCcw className="h-3 w-3" /> {t("common.clear")}
               </Button>
             )}
           </CardHeader>
@@ -243,8 +192,8 @@ export default function CloakTest() {
             {logs.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                 <FlaskConical className="h-12 w-12 mb-3 opacity-30" />
-                <p className="text-sm">No tests executed yet</p>
-                <p className="text-xs mt-1">Configure the parameters and click "Run Test"</p>
+                <p className="text-sm">{t("cloakTest.noTests")}</p>
+                <p className="text-xs mt-1">{t("cloakTest.noTestsHelper")}</p>
               </div>
             ) : (
               <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
@@ -263,7 +212,7 @@ export default function CloakTest() {
                       <div><span className="text-muted-foreground">Time: </span><span className="text-foreground">{log.timestamp.toLocaleTimeString()}</span></div>
                       <div className="col-span-2"><span className="text-muted-foreground">UA: </span><span className="font-mono text-foreground">{log.userAgent}</span></div>
                       {log.result.url && <div className="col-span-2"><span className="text-muted-foreground">URL: </span><span className="font-mono text-primary break-all">{log.result.url}</span></div>}
-                      {log.result.reason && <div className="col-span-2"><span className="text-muted-foreground">Reason: </span><span className="text-yellow-400">{log.result.reason}</span></div>}
+                      {log.result.reason && <div className="col-span-2"><span className="text-muted-foreground">{t("requests.reason")}: </span><span className="text-yellow-400">{log.result.reason}</span></div>}
                     </div>
                   </div>
                 ))}
