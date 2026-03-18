@@ -160,6 +160,7 @@ export type Database = {
           current_clicks: number | null
           email: string | null
           id: string
+          language: string
           max_clicks: number | null
           max_domains: number | null
           plan_name: string | null
@@ -174,6 +175,7 @@ export type Database = {
           current_clicks?: number | null
           email?: string | null
           id?: string
+          language?: string
           max_clicks?: number | null
           max_domains?: number | null
           plan_name?: string | null
@@ -188,6 +190,7 @@ export type Database = {
           current_clicks?: number | null
           email?: string | null
           id?: string
+          language?: string
           max_clicks?: number | null
           max_domains?: number | null
           plan_name?: string | null

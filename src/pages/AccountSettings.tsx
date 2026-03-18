@@ -9,10 +9,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { ArrowRight } from "lucide-react";
 import { getPlanByName } from "@/lib/plan-config";
+import { useTranslation } from "react-i18next";
+import { LanguageSelector } from "@/components/LanguageSelector";
 
 export default function AccountSettings() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ["profile", user?.id],
@@ -65,7 +68,7 @@ export default function AccountSettings() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold">Account Settings</h1>
+        <h1 className="text-2xl font-bold">{t("settings.title")}</h1>
         <Skeleton className="h-48 rounded-lg" />
         <Skeleton className="h-32 rounded-lg" />
       </div>
@@ -74,75 +77,81 @@ export default function AccountSettings() {
 
   return (
     <div className="space-y-4 sm:space-y-6 max-w-2xl">
-      <h1 className="text-xl sm:text-2xl font-bold">Account Settings</h1>
+      <h1 className="text-xl sm:text-2xl font-bold">{t("settings.title")}</h1>
 
       <Card className="border-border bg-card">
-        <CardHeader><CardTitle className="text-lg">Profile</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-lg">{t("settings.profile")}</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Email</span>
+            <span className="text-muted-foreground">{t("settings.email")}</span>
             <span className="font-mono text-sm">{profile?.email ?? user?.email ?? "—"}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Plan</span>
+            <span className="text-muted-foreground">{t("settings.plan")}</span>
             <Badge className="bg-primary/20 text-primary border-0">{planName}</Badge>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Status</span>
+            <span className="text-muted-foreground">{t("common.status")}</span>
             {isFreePlan ? (
-              <Badge className="bg-destructive/20 text-destructive border-0">Inactive</Badge>
+              <Badge className="bg-destructive/20 text-destructive border-0">{t("common.inactive")}</Badge>
             ) : (
-              <Badge className="bg-success/20 text-success border-0">Active</Badge>
+              <Badge className="bg-success/20 text-success border-0">{t("common.active")}</Badge>
             )}
           </div>
         </CardContent>
       </Card>
 
+      {/* Language Selector */}
       <Card className="border-border bg-card">
-        <CardHeader><CardTitle className="text-lg">Plan Usage</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-lg">{t("settings.language")}</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">{t("settings.languageDesc")}</p>
+          <LanguageSelector variant="full" />
+        </CardContent>
+      </Card>
+
+      <Card className="border-border bg-card">
+        <CardHeader><CardTitle className="text-lg">{t("settings.planUsage")}</CardTitle></CardHeader>
         <CardContent className="space-y-6">
-          {/* Clicks */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Clicks used</span>
+              <span className="text-muted-foreground">{t("settings.clicksUsed")}</span>
               <span className="font-mono">{currentClicks.toLocaleString()} / {maxClicks > 0 ? maxClicks.toLocaleString() : "0"}</span>
             </div>
             <Progress value={progressValue} className="h-3 bg-secondary" />
-            <p className="text-xs text-muted-foreground">{usageDisplay}% of limit used</p>
+            <p className="text-xs text-muted-foreground">{t("settings.ofLimitUsed", { percent: usageDisplay })}</p>
           </div>
 
-          {/* Domains */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Domains used</span>
+              <span className="text-muted-foreground">{t("settings.domainsUsed")}</span>
               <span className="font-mono">{domainsCount} / {maxDomains}</span>
             </div>
             <Progress value={domainsPercent} className="h-3 bg-secondary" />
             <p className="text-xs text-muted-foreground">
-              {maxDomains > 0 ? `${domainsPercent}% of limit used` : "Upgrade to unlock custom domains"}
+              {maxDomains > 0 ? t("settings.ofLimitUsed", { percent: domainsPercent }) : t("settings.upgradeForDomains")}
             </p>
           </div>
 
-          {/* Campaigns */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Campaigns created</span>
+              <span className="text-muted-foreground">{t("settings.campaignsCreated")}</span>
               <span className="font-mono">
                 {campaignsCount.toLocaleString()}
                 {!campaignsUnlimited && maxCampaigns > 0 && ` / ${maxCampaigns}`}
               </span>
             </div>
             {campaignsUnlimited ? (
-              <Badge variant="secondary" className="text-[10px] tracking-wider">Unlimited Access</Badge>
+              <Badge variant="secondary" className="text-[10px] tracking-wider">{t("settings.unlimitedAccess")}</Badge>
             ) : maxCampaigns > 0 ? (
               <>
                 <Progress value={campaignsPercent} className="h-3 bg-secondary" />
-                <p className="text-xs text-muted-foreground">{campaignsPercent}% of limit used</p>
+                <p className="text-xs text-muted-foreground">{t("settings.ofLimitUsed", { percent: campaignsPercent })}</p>
               </>
             ) : (
               <>
                 <Progress value={0} className="h-3 bg-secondary" />
-                <p className="text-xs text-muted-foreground">Upgrade to create campaigns</p>
+                <p className="text-xs text-muted-foreground">{t("settings.upgradeForCampaigns")}</p>
               </>
             )}
           </div>
@@ -153,7 +162,7 @@ export default function AccountSettings() {
         onClick={() => navigate("/billing")}
         className="w-full h-14 text-base font-semibold bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-500 text-primary-foreground shadow-[0_0_20px_hsl(271_81%_56%/0.3)] hover:shadow-[0_0_30px_hsl(271_81%_56%/0.5)] transition-all duration-300"
       >
-        SEE PLANS & UPGRADE
+        {t("settings.seePlans")}
         <ArrowRight className="ml-2 h-5 w-5" />
       </Button>
     </div>

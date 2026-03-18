@@ -1,23 +1,24 @@
 import { Card } from "@/components/ui/card";
-
-const networks = [
-  { name: "Meta Ads", status: "Stable", helper: "Normal approval rates", volatile: false },
-  { name: "TikTok Ads", status: "High Volatility", helper: "Ban wave detected. Scale cautiously.", volatile: true },
-  { name: "Google Ads", status: "Stable", helper: "No anomalies", volatile: false },
-];
+import { useTranslation } from "react-i18next";
 
 export function VolatilityRadar() {
+  const { t } = useTranslation();
+
+  const networks = [
+    { name: "Meta Ads", status: t("volatility.stable"), helper: t("volatility.metaHelper"), volatile: false },
+    { name: "TikTok Ads", status: t("volatility.highVolatility"), helper: t("volatility.tiktokHelper"), volatile: true },
+    { name: "Google Ads", status: t("volatility.stable"), helper: t("volatility.googleHelper"), volatile: false },
+  ];
+
   return (
     <Card className="border-border bg-muted/30 px-4 py-3">
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
-        <span className="text-sm font-semibold tracking-tight whitespace-nowrap">📡 Network Status:</span>
+        <span className="text-sm font-semibold tracking-tight whitespace-nowrap">{t("volatility.networkStatus")}</span>
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-6 flex-1">
           {networks.map((n) => (
             <div key={n.name} className="flex items-center gap-2.5 min-w-0">
               <span className="relative flex h-2 w-2 shrink-0">
-                {n.volatile && (
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75" />
-                )}
+                {n.volatile && (<span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75" />)}
                 <span className={`relative inline-flex rounded-full h-2 w-2 ${n.volatile ? "bg-destructive" : "bg-[hsl(var(--success))]"}`} />
               </span>
               <span className="text-xs font-medium whitespace-nowrap">{n.name}</span>
