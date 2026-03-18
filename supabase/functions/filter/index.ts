@@ -194,6 +194,22 @@ function isRateLimited(ip: string): boolean {
 // ═══════════════════════════════════════════════════════════════
 // MAIN HANDLER
 // ═══════════════════════════════════════════════════════════════
+// URL HEALTH CHECK — Verify offer page is reachable (2s timeout)
+// ═══════════════════════════════════════════════════════════════
+async function checkUrlHealth(url: string, timeoutMs = 2000): Promise<boolean> {
+  try {
+    const res = await fetch(url, {
+      method: "HEAD",
+      signal: AbortSignal.timeout(timeoutMs),
+      redirect: "follow",
+    });
+    // 2xx and 3xx are healthy
+    return res.status < 400;
+  } catch {
+    return false;
+  }
+}
+
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
