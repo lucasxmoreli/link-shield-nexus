@@ -186,6 +186,7 @@ const es = {
     step3: "Prueba tu enlace usando una <bold>VPN o ventana de Incógnito</bold> para verificar que la redirección funciona correctamente.",
     goToCampaigns: "Ir a Campañas",
     linkCopied: "¡Enlace copiado!",
+    invalidUrl: "Ingresa una URL de destino válida.",
   },
 
   domains: {

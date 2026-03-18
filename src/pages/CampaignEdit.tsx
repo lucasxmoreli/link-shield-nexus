@@ -532,6 +532,17 @@ export default function CampaignEdit() {
         <Button variant="outline" onClick={() => navigate("/campaigns")}>{t("common.cancel")}</Button>
         <Button
           onClick={() => {
+            normalizeUrlField(setSafeUrl)(safeUrl);
+            normalizeUrlField(setOfferUrl)(offerUrl);
+            if (abStormEnabled && offerPageB.trim()) {
+              normalizeUrlField(setOfferPageB)(offerPageB);
+            }
+
+            if (!areDestinationUrlsValid) {
+              toast.error(t("campaignEdit.invalidUrl"));
+              return;
+            }
+
             if (domain && offerUrl) {
               try {
                 const offerHost = new URL(ensureAbsoluteUrl(offerUrl)).hostname.replace(/^www\./, "");
@@ -540,7 +551,10 @@ export default function CampaignEdit() {
                   setConflictDialogOpen(true);
                   return;
                 }
-              } catch { /* invalid URL, let save handle it */ }
+              } catch {
+                toast.error(t("campaignEdit.invalidUrl"));
+                return;
+              }
             }
             saveMutation.mutate();
           }}

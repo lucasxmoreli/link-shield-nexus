@@ -196,6 +196,57 @@ function isRateLimited(ip: string): boolean {
 // ═══════════════════════════════════════════════════════════════
 // URL HEALTH CHECK — Verify offer page is reachable (2s timeout)
 // ═══════════════════════════════════════════════════════════════
+function jsonResponse(payload: Record<string, unknown>, status = 200): Response {
+  return new Response(JSON.stringify(payload), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    status,
+  });
+}
+
+function redirectResponse(targetUrl: string): Response {
+  return new Response(null, {
+    status: 302,
+    headers: {
+      ...corsHeaders,
+      Location: targetUrl,
+      "Cache-Control": "no-store",
+    },
+  });
+}
+
+function sanitizeRedirectUrl(url: string | null | undefined, safeFallback: string): string {
+  const fallback = safeFallback || "https://google.com";
+  const rawValue = (url || "").trim();
+
+  if (!rawValue) {
+    return fallback;
+  }
+
+  const cleanedValue = rawValue.replace(/^\/+/, "");
+  const absoluteUrl = /^https?:\/\//i.test(cleanedValue)
+    ? cleanedValue
+    : `https://${cleanedValue}`;
+
+  try {
+    const parsedUrl = new URL(absoluteUrl);
+
+    if (!/^https?:$/i.test(parsedUrl.protocol)) {
+      console.error(`[INVALID-URL] Unsupported protocol in redirect URL "${absoluteUrl}"`);
+      return fallback;
+    }
+
+    if (/^\/c(\/|$)/i.test(parsedUrl.pathname)) {
+      console.error(`[LOOP-GUARD] Redirect URL "${absoluteUrl}" contains a cloaker path — aborting to safe page`);
+      return fallback;
+    }
+
+    return parsedUrl.toString();
+  } catch {
+    console.error(`[INVALID-URL] "${absoluteUrl}" is not a valid absolute URL — falling back to safe page`);
+    return fallback;
+  }
+}
+
 async function checkUrlHealth(url: string, timeoutMs = 2000): Promise<boolean> {
   try {
     const res = await fetch(url, {
@@ -203,45 +254,63 @@ async function checkUrlHealth(url: string, timeoutMs = 2000): Promise<boolean> {
       signal: AbortSignal.timeout(timeoutMs),
       redirect: "follow",
     });
-    // 2xx and 3xx are healthy
     return res.status < 400;
   } catch {
     return false;
   }
 }
 
-
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  const requestUrl = new URL(req.url);
+  const responseMode = req.method === "GET" ? "redirect" : "json";
+
+  if (!["GET", "POST"].includes(req.method)) {
+    return jsonResponse({ action: "safe_page", reason: "method_not_allowed" }, 405);
+  }
+
   const forwarded = req.headers.get("x-forwarded-for");
   const ip = forwarded ? forwarded.split(",")[0].trim() : (req.headers.get("x-real-ip") || "0.0.0.0");
 
-  // Rate limit check BEFORE any DB logic
   if (isRateLimited(ip)) {
-    return new Response(JSON.stringify({ action: "safe_page", reason: "rate_limited" }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 429,
-    });
+    return responseMode === "redirect"
+      ? redirectResponse("https://google.com")
+      : jsonResponse({ action: "safe_page", reason: "rate_limited" }, 429);
   }
 
   try {
-    const { campaign_hash, user_agent, referer, query_params } = await req.json();
+    let campaign_hash = "";
+    let user_agent = "";
+    let referer: string | null = null;
+    let query_params: Record<string, string> = {};
+
+    if (req.method === "GET") {
+      campaign_hash = requestUrl.searchParams.get("campaign_hash") || "";
+      user_agent = req.headers.get("user-agent") || "";
+      referer = req.headers.get("referer");
+      query_params = Object.fromEntries(requestUrl.searchParams.entries());
+      delete query_params.campaign_hash;
+    } else {
+      const body = await req.json();
+      campaign_hash = body.campaign_hash || "";
+      user_agent = body.user_agent || "";
+      referer = body.referer || null;
+      query_params = body.query_params || {};
+    }
 
     if (!campaign_hash || !user_agent) {
-      return new Response(JSON.stringify({ action: "safe_page", reason: "missing_params" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 400,
-      });
+      return responseMode === "redirect"
+        ? redirectResponse("https://google.com")
+        : jsonResponse({ action: "safe_page", reason: "missing_params" }, 400);
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // ─── STEP 1: Validate campaign ───
     const { data: campaign, error: campaignError } = await supabase
       .from("campaigns")
       .select("id, user_id, offer_url, safe_url, is_active, traffic_source, offer_page_b, target_countries, target_devices, strict_mode")
@@ -249,61 +318,13 @@ serve(async (req) => {
       .single();
 
     if (campaignError || !campaign || !campaign.is_active) {
-      return new Response(JSON.stringify({ action: "safe_page", reason: "campaign_invalid" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return responseMode === "redirect"
+        ? redirectResponse("https://google.com")
+        : jsonResponse({ action: "safe_page", reason: "campaign_invalid" });
     }
 
-    // ─── STEP 1.5: Check persistent IP blocklist ───
-    const { data: blockedIp } = await supabase
-      .from("blocked_ips")
-      .select("id")
-      .eq("ip_address", ip)
-      .eq("user_id", campaign.user_id)
-      .gt("expires_at", new Date().toISOString())
-      .limit(1)
-      .maybeSingle();
+    const safeUrl = sanitizeRedirectUrl(campaign.safe_url, "https://google.com");
 
-    if (blockedIp) {
-      console.log(`[BLOCKED] Persistent blocklist — IP ${ip}`);
-      // Log and return early
-      await supabase.from("requests_log").insert({
-        user_id: campaign.user_id,
-        campaign_id: campaign.id,
-        ip_address: ip,
-        country_code: "XX",
-        device_type: "desktop",
-        user_agent,
-        action_taken: "bot_blocked",
-        block_reason: "ip_blocklist",
-      });
-      return new Response(
-        JSON.stringify({ action: "safe_page", url: campaign.safe_url }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
-    // ─── STEP 2: Check user click limit ───
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("max_clicks, current_clicks")
-      .eq("user_id", campaign.user_id)
-      .single();
-
-    if (profile && profile.max_clicks > 0 && profile.current_clicks >= profile.max_clicks) {
-      return new Response(
-        JSON.stringify({ action: "safe_page", url: campaign.safe_url, reason: "click_limit_reached" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
-    // Device detection
-    const isMobile = /mobile|android|iphone|ipad/i.test(user_agent);
-    const deviceType = isMobile ? "mobile" : "desktop";
-    const uaLower = user_agent.toLowerCase();
-    const params: Record<string, string> = query_params || {};
-
-    // Helper: log & respond (now with block_reason)
     const logAndRespond = async (
       action: "safe_page" | "offer_page" | "bot_blocked",
       countryCode: string,
@@ -315,12 +336,11 @@ serve(async (req) => {
         ip_address: ip,
         country_code: countryCode,
         device_type: deviceType,
-        user_agent: user_agent,
+        user_agent,
         action_taken: action,
         block_reason: blockReason || null,
       });
 
-      // Auto-blocklist: after 3 blocks from same IP in 24h, add to blocklist
       if (action === "bot_blocked") {
         try {
           const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
@@ -348,66 +368,69 @@ serve(async (req) => {
         }
       }
 
-      // Ensure a URL is absolute and not a self-referencing /c/ path
-      const sanitizeRedirectUrl = (url: string, safeFallback: string): string => {
-        let u = (url || "").trim();
-        // Prepend https:// if missing protocol
-        if (u && !/^https?:\/\//i.test(u)) u = `https://${u}`;
-        // Abort if URL contains /c/ (self-referencing cloaker loop)
-        if (/\/c\//.test(u)) {
-          console.error(`[LOOP-GUARD] Redirect URL "${u}" contains /c/ path — aborting to safe page`);
-          return safeFallback;
-        }
-        // Validate it's a proper URL
-        try { new URL(u); } catch {
-          console.error(`[INVALID-URL] "${u}" is not a valid URL — falling back to safe page`);
-          return safeFallback;
-        }
-        return u;
-      };
+      let redirectUrl = safeUrl;
 
-      const safeUrl = sanitizeRedirectUrl(campaign.safe_url, "https://google.com");
-
-      let redirectUrl: string;
       if (action === "offer_page") {
         const hasB = campaign.offer_page_b && campaign.offer_page_b.trim();
         const coinFlip = crypto.getRandomValues(new Uint8Array(1))[0] < 128;
         const candidateUrl = hasB && coinFlip ? campaign.offer_page_b : campaign.offer_url;
         const sanitizedCandidate = sanitizeRedirectUrl(candidateUrl, safeUrl);
 
-        // Health check: verify offer page is reachable before redirecting
         const isHealthy = await checkUrlHealth(sanitizedCandidate);
         if (isHealthy) {
           redirectUrl = sanitizedCandidate;
-        } else {
-          if (hasB) {
-            const fallbackOffer = candidateUrl === campaign.offer_page_b ? campaign.offer_url : campaign.offer_page_b;
-            const sanitizedFallback = sanitizeRedirectUrl(fallbackOffer, safeUrl);
-            const fallbackHealthy = await checkUrlHealth(sanitizedFallback);
-            if (fallbackHealthy) {
-              console.warn(`[FALLBACK] Primary offer ${sanitizedCandidate} is down, using alternate: ${sanitizedFallback}`);
-              redirectUrl = sanitizedFallback;
-            } else {
-              console.error(`[FALLBACK] Both offer pages are down. Redirecting to safe page.`);
-              redirectUrl = safeUrl;
-            }
+        } else if (hasB) {
+          const fallbackOffer = candidateUrl === campaign.offer_page_b ? campaign.offer_url : campaign.offer_page_b;
+          const sanitizedFallback = sanitizeRedirectUrl(fallbackOffer, safeUrl);
+          const fallbackHealthy = await checkUrlHealth(sanitizedFallback);
+
+          if (fallbackHealthy) {
+            console.warn(`[FALLBACK] Primary offer ${sanitizedCandidate} is down, using alternate: ${sanitizedFallback}`);
+            redirectUrl = sanitizedFallback;
           } else {
-            console.error(`[FALLBACK] Offer page ${sanitizedCandidate} is down. Redirecting to safe page.`);
-            redirectUrl = safeUrl;
+            console.error("[FALLBACK] Both offer pages are down. Redirecting to safe page.");
           }
+        } else {
+          console.error(`[FALLBACK] Offer page ${sanitizedCandidate} is down. Redirecting to safe page.`);
         }
-      } else {
-        redirectUrl = safeUrl;
       }
 
-      return new Response(
-        JSON.stringify({ action: action === "offer_page" ? "redirect" : "safe_page", url: redirectUrl }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      return responseMode === "redirect"
+        ? redirectResponse(redirectUrl)
+        : jsonResponse({ action: action === "offer_page" ? "redirect" : "safe_page", url: redirectUrl });
     };
 
-    // ─── STEP 2.5: GEOFENCING — Country & Device filtering ───
-    // We need countryCode for geo check; fetch it early from IPinfo
+    const { data: blockedIp } = await supabase
+      .from("blocked_ips")
+      .select("id")
+      .eq("ip_address", ip)
+      .eq("user_id", campaign.user_id)
+      .gt("expires_at", new Date().toISOString())
+      .limit(1)
+      .maybeSingle();
+
+    const isMobile = /mobile|android|iphone|ipad/i.test(user_agent);
+    const deviceType = isMobile ? "mobile" : "desktop";
+    const uaLower = user_agent.toLowerCase();
+    const params: Record<string, string> = query_params || {};
+
+    if (blockedIp) {
+      console.log(`[BLOCKED] Persistent blocklist — IP ${ip}`);
+      return await logAndRespond("bot_blocked", "XX", "ip_blocklist");
+    }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("max_clicks, current_clicks")
+      .eq("user_id", campaign.user_id)
+      .single();
+
+    if (profile && profile.max_clicks > 0 && profile.current_clicks >= profile.max_clicks) {
+      return responseMode === "redirect"
+        ? redirectResponse(safeUrl)
+        : jsonResponse({ action: "safe_page", url: safeUrl, reason: "click_limit_reached" });
+    }
+
     const ipinfoToken = Deno.env.get("IPINFO_API_KEY");
     let countryCode = "XX";
     let ipOrg = "";
@@ -425,27 +448,23 @@ serve(async (req) => {
       }
     }
 
-    // Geofencing: if campaign has target_countries and visitor is outside them → safe page
     const targetCountries: string[] = campaign.target_countries || [];
     if (targetCountries.length > 0 && countryCode !== "XX" && !targetCountries.includes(countryCode)) {
       console.log(`[BLOCKED] Geofence: ${countryCode} not in ${targetCountries.join(",")} — IP ${ip}`);
       return await logAndRespond("safe_page", countryCode, "geo_blocked");
     }
 
-    // Device filtering: if campaign has target_devices and visitor device not in them → safe page
     const targetDevices: string[] = campaign.target_devices || [];
     if (targetDevices.length > 0 && !targetDevices.includes(deviceType)) {
       console.log(`[BLOCKED] Device filter: ${deviceType} not in ${targetDevices.join(",")} — IP ${ip}`);
       return await logAndRespond("safe_page", countryCode, "device_blocked");
     }
 
-    // ─── STEP 3: LAYER 1 — Global Bot Detection ───
     if (GLOBAL_BOT_REGEX.test(user_agent)) {
       console.log(`[BLOCKED] Global bot regex matched for IP ${ip}`);
       return await logAndRespond("bot_blocked", countryCode, "global_bot_regex");
     }
 
-    // ─── STEP 4: LAYER 2 — Source-Specific Heuristics ───
     const source = (campaign.traffic_source || "").toLowerCase();
     let result: HeuristicResult = PASS;
 
@@ -489,7 +508,6 @@ serve(async (req) => {
       return await logAndRespond("bot_blocked", countryCode, result.reason);
     }
 
-    // STRICT MODE: if campaign.strict_mode is on, block suspicious traffic
     if (result.suspicious) {
       if (campaign.strict_mode) {
         console.log(`[BLOCKED-STRICT] ${source} — ${result.reason} — IP ${ip}`);
@@ -498,7 +516,6 @@ serve(async (req) => {
       console.log(`[SUSPICIOUS] ${source} — ${result.reason} — IP ${ip} — allowing through`);
     }
 
-    // ─── STEP 5: LAYER 3 — Proxy/VPN detection via Proxycheck.io ───
     const proxyCheckKey = Deno.env.get("PROXYCHECK_API_KEY");
     if (proxyCheckKey) {
       try {
@@ -514,7 +531,6 @@ serve(async (req) => {
       }
     }
 
-    // ─── STEP 6: LAYER 4 — ASN/Datacenter detection (already fetched ipOrg above) ───
     if (ipOrg) {
       const orgLower = ipOrg.toLowerCase();
       if (BLOCKED_ORGS.some((kw) => orgLower.includes(kw))) {
@@ -523,7 +539,6 @@ serve(async (req) => {
       }
     }
 
-    // ─── STEP 7: PASSED — Increment clicks & redirect to offer ───
     if (profile) {
       await supabase
         .from("profiles")
@@ -534,9 +549,6 @@ serve(async (req) => {
     return await logAndRespond("offer_page", countryCode);
   } catch (error) {
     console.error("Filter error:", error);
-    return new Response(JSON.stringify({ action: "safe_page", reason: "internal_error" }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    return jsonResponse({ action: "safe_page", reason: "internal_error" }, 500);
   }
 });
