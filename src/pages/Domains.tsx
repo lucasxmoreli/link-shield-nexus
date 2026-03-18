@@ -86,6 +86,18 @@ function DnsSteps({ domain, t }: { domain: { id: string; url: string }; t: any }
         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Step 4</p>
         <p className="text-sm text-foreground">{t("domains.dnsStep3")}</p>
       </div>
+      <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
+        <p className="text-xs font-semibold uppercase tracking-widest text-primary/70 mb-2 flex items-center gap-1.5">
+          <CloudCog className="h-3.5 w-3.5" />
+          Step 5 — {t("domains.cloudflareTitle")}
+        </p>
+        <p className="text-sm text-foreground">{t("domains.cloudflareDesc")}</p>
+        <ul className="text-xs text-muted-foreground space-y-1.5 list-none pl-0">
+          <li>🟠 {t("domains.cloudflareStep1")}</li>
+          <li>🔒 {t("domains.cloudflareStep2")}</li>
+          <li>🛡️ {t("domains.cloudflareStep3")}</li>
+        </ul>
+      </div>
     </div>
   );
 }
