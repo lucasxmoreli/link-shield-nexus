@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Plus, CheckCircle, XCircle, Trash2, ShieldCheck, Copy, RefreshCw, Lock, CloudCog } from "lucide-react";
+import { Plus, CheckCircle, XCircle, Trash2, ShieldCheck, Copy, RefreshCw, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
@@ -17,10 +17,12 @@ import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { getPlanByName } from "@/lib/plan-config";
 
-function DnsSteps({ domain, t }: { domain: { id: string; url: string }; t: any }) {
-  const hostname = domain.url.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
-  const txtName = `_cloakguard.${hostname}`;
-  const txtValue = `cloakguard-verify=${domain.id}`;
+const CNAME_TARGET = "proxy.cloakerguard.shop";
+
+function CnameSetupSteps({ domain, t }: { domain: string; t: any }) {
+  const hostname = domain.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+  const parts = hostname.split(".");
+  const cnameName = parts.length > 2 ? parts[0] : "@";
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -31,72 +33,40 @@ function DnsSteps({ domain, t }: { domain: { id: string; url: string }; t: any }
     <div className="flex flex-col space-y-4">
       <div className="rounded-lg border border-border/30 bg-secondary/10 p-4">
         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Step 1</p>
-        <p className="text-sm text-foreground">{t("domains.dnsStep1")}</p>
+        <p className="text-sm text-foreground">{t("domains.cnameStep1")}</p>
       </div>
       <div className="rounded-lg border border-border/30 bg-secondary/10 p-4 space-y-4">
-        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Step 2 — {t("domains.dnsStepATitle")}</p>
-        <p className="text-sm text-foreground">{t("domains.dnsStepADesc")}</p>
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Step 2 — CNAME Record</p>
+        <p className="text-sm text-foreground">{t("domains.cnameStep2")}</p>
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">{t("domains.type")}</Label>
-          <div className="rounded-md bg-background border border-border px-3 py-2.5 text-sm font-mono text-foreground">A</div>
+          <div className="rounded-md bg-background border border-border px-3 py-2.5 text-sm font-mono text-foreground">CNAME</div>
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">{t("domains.nameHost")}</Label>
           <div className="relative w-full">
-            <Input readOnly value="@" className="w-full pr-10 bg-background border-border font-mono text-sm" />
-          </div>
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">{t("domains.value")}</Label>
-          <div className="relative w-full">
-            <Input readOnly value="185.158.133.1" className="w-full pr-10 bg-background border-border font-mono text-sm" />
-            <Button variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => copyToClipboard("185.158.133.1", t("domains.valueCopied"))}>
-              <Copy className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-        </div>
-      </div>
-      <div className="rounded-lg border border-border/30 bg-secondary/10 p-4 space-y-4">
-        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Step 3 — TXT {t("domains.verification")}</p>
-        <p className="text-sm text-foreground">{t("domains.dnsStep2")}</p>
-        <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">{t("domains.type")}</Label>
-          <div className="rounded-md bg-background border border-border px-3 py-2.5 text-sm font-mono text-foreground">TXT</div>
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">{t("domains.nameHost")}</Label>
-          <div className="relative w-full">
-            <Input readOnly value={txtName} className="w-full pr-10 bg-background border-border font-mono text-sm" />
-            <Button variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => copyToClipboard(txtName, t("domains.hostCopied"))}>
+            <Input readOnly value={cnameName} className="w-full pr-10 bg-background border-border font-mono text-sm" />
+            <Button variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => copyToClipboard(cnameName, t("domains.hostCopied"))}>
               <Copy className="h-3.5 w-3.5" />
             </Button>
           </div>
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">{t("domains.value")}</Label>
+          <Label className="text-xs text-muted-foreground">{t("domains.target")}</Label>
           <div className="relative w-full">
-            <Input readOnly value={txtValue} className="w-full pr-10 bg-background border-border font-mono text-sm" />
-            <Button variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => copyToClipboard(txtValue, t("domains.valueCopied"))}>
+            <Input readOnly value={CNAME_TARGET} className="w-full pr-10 bg-background border-border font-mono text-sm" />
+            <Button variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => copyToClipboard(CNAME_TARGET, t("domains.valueCopied"))}>
               <Copy className="h-3.5 w-3.5" />
             </Button>
           </div>
         </div>
       </div>
       <div className="rounded-lg border border-border/30 bg-secondary/10 p-4">
-        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Step 4</p>
-        <p className="text-sm text-foreground">{t("domains.dnsStep3")}</p>
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Step 3</p>
+        <p className="text-sm text-foreground">{t("domains.cnameStep3")}</p>
       </div>
-      <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
-        <p className="text-xs font-semibold uppercase tracking-widest text-primary/70 mb-2 flex items-center gap-1.5">
-          <CloudCog className="h-3.5 w-3.5" />
-          Step 5 — {t("domains.cloudflareTitle")}
-        </p>
-        <p className="text-sm text-foreground">{t("domains.cloudflareDesc")}</p>
-        <ul className="text-xs text-muted-foreground space-y-1.5 list-none pl-0">
-          <li>🟠 {t("domains.cloudflareStep1")}</li>
-          <li>🔒 {t("domains.cloudflareStep2")}</li>
-          <li>🛡️ {t("domains.cloudflareStep3")}</li>
-        </ul>
+      <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
+        <p className="text-xs text-muted-foreground">{t("domains.cnameNote")}</p>
       </div>
     </div>
   );
@@ -108,7 +78,7 @@ export default function Domains() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
-  const [dnsDialogDomain, setDnsDialogDomain] = useState<{ id: string; url: string } | null>(null);
+  const [setupDomain, setSetupDomain] = useState<string | null>(null);
   const [url, setUrl] = useState("");
 
   const { data: profile } = useQuery({
@@ -139,15 +109,17 @@ export default function Domains() {
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      const normalized = url.trim().toLowerCase().replace(/\/+$/, "");
+      const normalized = url.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/+$/, "");
       if (!normalized) throw new Error(t("domains.domainRequired"));
       const isDuplicate = domains.some((d) => d.url.toLowerCase().replace(/\/+$/, "") === normalized);
       if (isDuplicate) throw new Error(t("domains.domainDuplicate"));
-      const { error } = await supabase.from("domains").insert({ user_id: user!.id, url: normalized });
-      if (error) {
-        if (error.message?.includes("duplicate") || error.code === "23505") throw new Error(t("domains.domainDuplicate"));
-        throw error;
-      }
+
+      const { data, error } = await supabase.functions.invoke("add-custom-hostname", {
+        body: { hostname: normalized },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["domains"] });
@@ -169,24 +141,22 @@ export default function Domains() {
     },
   });
 
-  const verifyMutation = useMutation({
+  const checkStatusMutation = useMutation({
     mutationFn: async (domainId: string) => {
-      const { data, error } = await supabase.functions.invoke("verify-domain", { body: { domain_id: domainId } });
+      const { data, error } = await supabase.functions.invoke("check-hostname-status", {
+        body: { domain_id: domainId },
+      });
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
       return data;
     },
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["domains"] });
-      if (data.verified) {
-        if (data.cloudflare) {
-          toast.success("✅ " + t("domains.domainVerified") + " 🛡️ Cloudflare detected!");
-        } else {
-          toast.success(t("domains.domainVerified"));
-          toast.info("💡 " + t("domains.cloudflareDesc"), { duration: 8000 });
-        }
-        setDnsDialogDomain(null);
+      if (data.active) {
+        toast.success("✅ " + t("domains.domainActive"));
+        setSetupDomain(null);
       } else {
-        toast.error(data.message || t("domains.txtNotFound"));
+        toast.info(t("domains.domainPending"), { duration: 6000 });
       }
     },
     onError: (e: Error) => toast.error(e.message),
@@ -224,7 +194,7 @@ export default function Domains() {
                   <Input placeholder={t("domains.domainUrlPlaceholder")} className="bg-secondary/50 border-border" value={url} onChange={(e) => setUrl(e.target.value)} />
                 </div>
                 <Button className="w-full" onClick={() => createMutation.mutate()} disabled={createMutation.isPending || !url}>
-                  {createMutation.isPending ? t("common.adding") : t("common.add")}
+                  {createMutation.isPending ? t("domains.checking") : t("common.add")}
                 </Button>
               </div>
             </DialogContent>
@@ -245,24 +215,32 @@ export default function Domains() {
         </CardContent>
       </Card>
 
-      <Dialog open={!!dnsDialogDomain} onOpenChange={(v) => !v && setDnsDialogDomain(null)}>
+      {/* Setup CNAME Dialog */}
+      <Dialog open={!!setupDomain} onOpenChange={(v) => !v && setSetupDomain(null)}>
         <DialogContent className="bg-card border-border sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ShieldCheck className="h-5 w-5 text-primary" />
-              {t("domains.verifyDomain")}
+              {t("domains.setupDomain")}
             </DialogTitle>
             <DialogDescription>
-              {t("domains.verifyDomainDesc")}{" "}
-              <span className="font-mono text-foreground">{dnsDialogDomain?.url}</span>
+              {t("domains.setupDomainDesc")}{" "}
+              <span className="font-mono text-foreground">{setupDomain}</span>
             </DialogDescription>
           </DialogHeader>
-          {dnsDialogDomain && <DnsSteps domain={dnsDialogDomain} t={t} />}
-          <Button onClick={() => dnsDialogDomain && verifyMutation.mutate(dnsDialogDomain.id)} disabled={verifyMutation.isPending} className="w-full mt-4">
-            {verifyMutation.isPending ? (
-              <><RefreshCw className="h-4 w-4 mr-2 animate-spin" /> {t("domains.verifying")}</>
+          {setupDomain && <CnameSetupSteps domain={setupDomain} t={t} />}
+          <Button
+            onClick={() => {
+              const d = domains.find((d) => d.url === setupDomain);
+              if (d) checkStatusMutation.mutate(d.id);
+            }}
+            disabled={checkStatusMutation.isPending}
+            className="w-full mt-4"
+          >
+            {checkStatusMutation.isPending ? (
+              <><RefreshCw className="h-4 w-4 mr-2 animate-spin" /> {t("domains.checking")}</>
             ) : (
-              <><ShieldCheck className="h-4 w-4 mr-2" /> {t("domains.verifyAndSave")}</>
+              <><ShieldCheck className="h-4 w-4 mr-2" /> {t("domains.checkStatus")}</>
             )}
           </Button>
         </DialogContent>
@@ -275,6 +253,7 @@ export default function Domains() {
               <TableRow className="border-border hover:bg-transparent">
                 <TableHead className="text-muted-foreground">{t("domains.url")}</TableHead>
                 <TableHead className="text-muted-foreground">{t("common.status")}</TableHead>
+                <TableHead className="text-muted-foreground">{t("domains.sslStatus")}</TableHead>
                 <TableHead className="text-muted-foreground">{t("domains.created")}</TableHead>
                 <TableHead className="text-muted-foreground text-right">{t("common.actions")}</TableHead>
               </TableRow>
@@ -283,12 +262,12 @@ export default function Domains() {
               {isLoading ? (
                 Array.from({ length: 3 }).map((_, i) => (
                   <TableRow key={i} className="border-border">
-                    {Array.from({ length: 4 }).map((_, j) => (<TableCell key={j}><Skeleton className="h-5 w-20" /></TableCell>))}
+                    {Array.from({ length: 5 }).map((_, j) => (<TableCell key={j}><Skeleton className="h-5 w-20" /></TableCell>))}
                   </TableRow>
                 ))
               ) : domains.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground py-8">{t("campaigns.noCampaigns")}</TableCell>
+                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">{t("campaigns.noCampaigns")}</TableCell>
                 </TableRow>
               ) : (
                 domains.map((d) => (
@@ -300,16 +279,21 @@ export default function Domains() {
                           <CheckCircle className="h-3 w-3 mr-1" /> {t("domains.verified")}
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="border-destructive/30 bg-destructive/10 text-destructive cursor-pointer hover:bg-destructive/20 transition-colors" onClick={() => setDnsDialogDomain({ id: d.id, url: d.url })}>
+                        <Badge variant="outline" className="border-destructive/30 bg-destructive/10 text-destructive cursor-pointer hover:bg-destructive/20 transition-colors" onClick={() => setSetupDomain(d.url)}>
                           <XCircle className="h-3 w-3 mr-1" /> {t("domains.pending")}
                         </Badge>
                       )}
                     </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary" className="text-xs capitalize">
+                        {(d as any).ssl_status || "pending"}
+                      </Badge>
+                    </TableCell>
                     <TableCell className="text-muted-foreground text-sm">{new Date(d.created_at).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right space-x-1">
                       {!d.is_verified && (
-                        <Button variant="ghost" size="sm" className="text-primary hover:text-primary" onClick={() => setDnsDialogDomain({ id: d.id, url: d.url })}>
-                          <ShieldCheck className="h-4 w-4 mr-1" /> {t("common.verify")}
+                        <Button variant="ghost" size="sm" className="text-primary hover:text-primary" onClick={() => setSetupDomain(d.url)}>
+                          <ShieldCheck className="h-4 w-4 mr-1" /> {t("domains.checkStatus")}
                         </Button>
                       )}
                       <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(d.id)}>

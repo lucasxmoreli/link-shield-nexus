@@ -8,3 +8,9 @@ verify_jwt = false
 
 [functions.verify-domains-cron]
 verify_jwt = false
+
+[functions.add-custom-hostname]
+verify_jwt = false
+
+[functions.check-hostname-status]
+verify_jwt = false
