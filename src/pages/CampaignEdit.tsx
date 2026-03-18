@@ -118,6 +118,7 @@ export default function CampaignEdit() {
       setTargetCountries((campaign as any).target_countries ?? []);
       setTargetDevices((campaign as any).target_devices ?? []);
       setTags((campaign as any).tags ?? []);
+      setStrictMode((campaign as any).strict_mode ?? false);
     }
   }, [campaign]);
 
