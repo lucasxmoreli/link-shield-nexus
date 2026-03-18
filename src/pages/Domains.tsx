@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Plus, CheckCircle, XCircle, Trash2, ShieldCheck, Copy, RefreshCw, Lock } from "lucide-react";
+import { Plus, CheckCircle, XCircle, Trash2, ShieldCheck, Copy, RefreshCw, Lock, CloudCog } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
@@ -86,6 +86,18 @@ function DnsSteps({ domain, t }: { domain: { id: string; url: string }; t: any }
         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Step 4</p>
         <p className="text-sm text-foreground">{t("domains.dnsStep3")}</p>
       </div>
+      <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
+        <p className="text-xs font-semibold uppercase tracking-widest text-primary/70 mb-2 flex items-center gap-1.5">
+          <CloudCog className="h-3.5 w-3.5" />
+          Step 5 — {t("domains.cloudflareTitle")}
+        </p>
+        <p className="text-sm text-foreground">{t("domains.cloudflareDesc")}</p>
+        <ul className="text-xs text-muted-foreground space-y-1.5 list-none pl-0">
+          <li>🟠 {t("domains.cloudflareStep1")}</li>
+          <li>🔒 {t("domains.cloudflareStep2")}</li>
+          <li>🛡️ {t("domains.cloudflareStep3")}</li>
+        </ul>
+      </div>
     </div>
   );
 }
@@ -166,7 +178,12 @@ export default function Domains() {
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["domains"] });
       if (data.verified) {
-        toast.success(t("domains.domainVerified"));
+        if (data.cloudflare) {
+          toast.success("✅ " + t("domains.domainVerified") + " 🛡️ Cloudflare detected!");
+        } else {
+          toast.success(t("domains.domainVerified"));
+          toast.info("💡 " + t("domains.cloudflareDesc"), { duration: 8000 });
+        }
         setDnsDialogDomain(null);
       } else {
         toast.error(data.message || t("domains.txtNotFound"));

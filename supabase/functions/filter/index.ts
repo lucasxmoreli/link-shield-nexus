@@ -388,8 +388,10 @@ serve(async (req) => {
     return jsonResponse({ action: "safe_page", reason: "method_not_allowed" }, 405);
   }
 
+  // Cloudflare-aware IP detection: cf-connecting-ip > x-forwarded-for > x-real-ip
+  const cfIp = req.headers.get("cf-connecting-ip");
   const forwarded = req.headers.get("x-forwarded-for");
-  const ip = forwarded ? forwarded.split(",")[0].trim() : (req.headers.get("x-real-ip") || "0.0.0.0");
+  const ip = cfIp?.trim() || (forwarded ? forwarded.split(",")[0].trim() : (req.headers.get("x-real-ip") || "0.0.0.0"));
 
   if (isRateLimited(ip)) {
     return responseMode === "redirect"

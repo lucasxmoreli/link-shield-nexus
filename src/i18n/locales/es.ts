@@ -229,6 +229,11 @@ const es = {
     dnsStepATitle: "Registro A (Requerido para enlaces de campaña)",
     dnsStepADesc: "Apunta tu dominio al servidor de CloakGuard para que los enlaces de campaña (/c/hash) funcionen en tu dominio. Sin esto, los visitantes verán un error 404.",
     verification: "Verificación",
+    cloudflareTitle: "Protección Cloudflare (Recomendado)",
+    cloudflareDesc: "Protege tu dominio con Cloudflare para ocultar la IP del servidor de los bots de plataformas publicitarias.",
+    cloudflareStep1: "Activa la Nube Naranja (Proxy) en tu registro A en el DNS de Cloudflare.",
+    cloudflareStep2: "Configura el modo SSL/TLS como 'Full' en los ajustes de Cloudflare.",
+    cloudflareStep3: "Esto evita que los bots de Facebook, TikTok y Google descubran la IP real de tu servidor.",
   },
 
   requests: {
