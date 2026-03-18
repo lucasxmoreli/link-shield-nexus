@@ -95,6 +95,13 @@ serve(async (req) => {
       );
     }
 
+    // Check if domain is behind Cloudflare proxy
+    let cloudflareProtected = false;
+    try {
+      const healthCheck = await fetch(`https://${hostname}`, { method: "HEAD", redirect: "follow" });
+      cloudflareProtected = (healthCheck.headers.get("server") || "").toLowerCase().includes("cloudflare");
+    } catch { /* ignore - domain may not be reachable yet */ }
+
     if (verified) {
       // Update domain as verified
       await supabase
@@ -103,7 +110,7 @@ serve(async (req) => {
         .eq("id", domain_id);
 
       return new Response(
-        JSON.stringify({ verified: true, message: "Domain verified!" }),
+        JSON.stringify({ verified: true, cloudflare: cloudflareProtected, message: "Domain verified!" }),
         {
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -114,6 +121,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         verified: false,
+        cloudflare: cloudflareProtected,
         message: "TXT record not found. Check your DNS settings and wait for propagation.",
       }),
       {
