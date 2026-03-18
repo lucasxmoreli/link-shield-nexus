@@ -178,7 +178,12 @@ export default function Domains() {
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["domains"] });
       if (data.verified) {
-        toast.success(t("domains.domainVerified"));
+        if (data.cloudflare) {
+          toast.success("✅ " + t("domains.domainVerified") + " 🛡️ Cloudflare detected!");
+        } else {
+          toast.success(t("domains.domainVerified"));
+          toast.info("💡 " + t("domains.cloudflareDesc"), { duration: 8000 });
+        }
         setDnsDialogDomain(null);
       } else {
         toast.error(data.message || t("domains.txtNotFound"));
