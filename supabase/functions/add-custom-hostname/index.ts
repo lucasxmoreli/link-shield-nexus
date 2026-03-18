@@ -107,6 +107,8 @@ serve(async (req) => {
 
     const customHostnameId = cfData.result.id;
     const sslStatus = cfData.result.ssl?.status || "pending";
+    const ownershipVerification = cfData.result.ownership_verification || null;
+    const sslValidationRecords = cfData.result.ssl?.validation_records || [];
 
     // Insert domain into database with Cloudflare hostname ID
     const { data: domain, error: insertError } = await supabase
