@@ -54,9 +54,10 @@ export function useDopamineToast() {
     if (blockedCount < threshold) return;
     firedRef.current = true;
     const timer = setTimeout(() => {
+      const desc = t("dopamine.description", { count: blockedCount.toLocaleString() } as any);
       toast({
         title: String(t("dopamine.title")),
-        description: String(t("dopamine.description", { count: blockedCount.toLocaleString() })),
+        description: String(desc),
       });
     }, 2800);
     return () => clearTimeout(timer);
