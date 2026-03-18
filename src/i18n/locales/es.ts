@@ -120,7 +120,7 @@ const es = {
     campaignRemoved: "Campaña eliminada",
     noDomainsWarning: "⚠️ No hay dominios disponibles. Debes conectar y verificar un dominio personalizado en la pestaña Dominios antes de generar un enlace de campaña.",
     goToDomains: "Ir a Dominios",
-    dnsReminder: "⚠️ Recordatorio DNS: Asegúrate de que tu dominio tiene un Registro A apuntando a 185.158.133.1 y el Proxy Cloudflare (🟠) está ACTIVADO para proteger la red.",
+    dnsReminder: "Asegúrate de que tu dominio apunte vía CNAME a proxy.cloakerguard.shop.",
   },
 
   campaignEdit: {
