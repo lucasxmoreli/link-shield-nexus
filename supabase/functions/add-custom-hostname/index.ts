@@ -129,7 +129,11 @@ serve(async (req) => {
         `https://api.cloudflare.com/client/v4/zones/${cfZoneId}/custom_hostnames/${customHostnameId}`,
         {
           method: "DELETE",
-          headers: { Authorization: `Bearer ${cfToken}` },
+          headers: {
+            "X-Auth-Key": cfToken,
+            "X-Auth-Email": cfEmail,
+            "Content-Type": "application/json",
+          },
         }
       );
       throw insertError;

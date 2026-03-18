@@ -31,43 +31,50 @@ function CnameSetupSteps({ domain, t }: { domain: string; t: any }) {
   };
 
   return (
-    <div className="flex flex-col space-y-4">
-      <div className="rounded-lg border border-border/30 bg-secondary/10 p-4">
-        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Step 1</p>
-        <p className="text-sm text-foreground">{t("domains.cnameStep1")}</p>
-      </div>
-      <div className="rounded-lg border border-border/30 bg-secondary/10 p-4 space-y-4">
-        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Step 2 — CNAME Record</p>
-        <p className="text-sm text-foreground">{t("domains.cnameStep2")}</p>
-        <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">{t("domains.type")}</Label>
-          <div className="rounded-md bg-background border border-border px-3 py-2.5 text-sm font-mono text-foreground">CNAME</div>
+    <div className="flex flex-col space-y-3">
+      <div className="rounded-lg border border-border/30 bg-secondary/10 p-3">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-bold">1</span>
+          <p className="text-sm font-medium text-foreground">{t("domains.cnameStep1")}</p>
         </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">{t("domains.nameHost")}</Label>
-          <div className="relative w-full">
-            <Input readOnly value={cnameName} className="w-full pr-10 bg-background border-border font-mono text-sm" />
-            <Button variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => copyToClipboard(cnameName, t("domains.hostCopied"))}>
-              <Copy className="h-3.5 w-3.5" />
-            </Button>
+      </div>
+
+      <div className="rounded-lg border border-border/30 bg-secondary/10 p-3 space-y-3">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-bold">2</span>
+          <p className="text-sm font-medium text-foreground">{t("domains.cnameStep2")}</p>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">{t("domains.nameHost")}</Label>
+            <div className="relative">
+              <Input readOnly value={cnameName} className="pr-9 bg-background border-border font-mono text-sm h-9" />
+              <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => copyToClipboard(cnameName, t("domains.hostCopied"))}>
+                <Copy className="h-3 w-3" />
+              </Button>
+            </div>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">{t("domains.target")}</Label>
+            <div className="relative">
+              <Input readOnly value={CNAME_TARGET} className="pr-9 bg-background border-border font-mono text-sm h-9" />
+              <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => copyToClipboard(CNAME_TARGET, t("domains.valueCopied"))}>
+                <Copy className="h-3 w-3" />
+              </Button>
+            </div>
           </div>
         </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">{t("domains.target")}</Label>
-          <div className="relative w-full">
-            <Input readOnly value={CNAME_TARGET} className="w-full pr-10 bg-background border-border font-mono text-sm" />
-            <Button variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => copyToClipboard(CNAME_TARGET, t("domains.valueCopied"))}>
-              <Copy className="h-3.5 w-3.5" />
-            </Button>
-          </div>
+        <div className="flex items-center gap-1.5 mt-1">
+          <span className="text-xs text-muted-foreground">{t("domains.type")}:</span>
+          <Badge variant="secondary" className="text-xs font-mono">CNAME</Badge>
         </div>
       </div>
-      <div className="rounded-lg border border-border/30 bg-secondary/10 p-4">
-        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Step 3</p>
-        <p className="text-sm text-foreground">{t("domains.cnameStep3")}</p>
-      </div>
-      <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
-        <p className="text-xs text-muted-foreground">{t("domains.cnameNote")}</p>
+
+      <div className="rounded-lg border border-border/30 bg-secondary/10 p-3">
+        <div className="flex items-center gap-2">
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-bold">3</span>
+          <p className="text-sm font-medium text-foreground">{t("domains.cnameStep3")}</p>
+        </div>
       </div>
     </div>
   );
@@ -92,34 +99,30 @@ function TxtFallbackSection({ validationData, t }: { validationData: TxtValidati
   };
 
   return (
-    <div className="space-y-4 mt-4">
+    <div className="space-y-3 mt-2">
       <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/5 p-3">
         <p className="text-xs font-semibold text-yellow-400 mb-1">{t("domains.txtFallbackTitle")}</p>
         <p className="text-xs text-muted-foreground">{t("domains.txtFallbackWarning")}</p>
       </div>
 
       {ownership?.name && ownership?.value && (
-        <div className="rounded-lg border border-border/30 bg-secondary/10 p-4 space-y-3">
+        <div className="rounded-lg border border-border/30 bg-secondary/10 p-3 space-y-2">
           <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("domains.txtOwnership")}</p>
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">{t("domains.type")}</Label>
-            <div className="rounded-md bg-background border border-border px-3 py-2.5 text-sm font-mono text-foreground">TXT</div>
-          </div>
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <Label className="text-xs text-muted-foreground">{t("domains.nameHost")}</Label>
-            <div className="relative w-full">
-              <Input readOnly value={ownership.name} className="w-full pr-10 bg-background border-border font-mono text-xs break-all" />
-              <Button variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => copyToClipboard(ownership.name!)}>
-                <Copy className="h-3.5 w-3.5" />
+            <div className="relative">
+              <Input readOnly value={ownership.name} className="pr-9 bg-background border-border font-mono text-xs h-9" />
+              <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => copyToClipboard(ownership.name!)}>
+                <Copy className="h-3 w-3" />
               </Button>
             </div>
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <Label className="text-xs text-muted-foreground">{t("domains.value")}</Label>
-            <div className="relative w-full">
-              <Input readOnly value={ownership.value} className="w-full pr-10 bg-background border-border font-mono text-xs break-all" />
-              <Button variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => copyToClipboard(ownership.value!)}>
-                <Copy className="h-3.5 w-3.5" />
+            <div className="relative">
+              <Input readOnly value={ownership.value} className="pr-9 bg-background border-border font-mono text-xs h-9" />
+              <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => copyToClipboard(ownership.value!)}>
+                <Copy className="h-3 w-3" />
               </Button>
             </div>
           </div>
@@ -127,27 +130,23 @@ function TxtFallbackSection({ validationData, t }: { validationData: TxtValidati
       )}
 
       {sslRecord?.txt_name && sslRecord?.txt_value && (
-        <div className="rounded-lg border border-border/30 bg-secondary/10 p-4 space-y-3">
+        <div className="rounded-lg border border-border/30 bg-secondary/10 p-3 space-y-2">
           <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("domains.txtSslCert")}</p>
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">{t("domains.type")}</Label>
-            <div className="rounded-md bg-background border border-border px-3 py-2.5 text-sm font-mono text-foreground">TXT</div>
-          </div>
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <Label className="text-xs text-muted-foreground">{t("domains.nameHost")}</Label>
-            <div className="relative w-full">
-              <Input readOnly value={sslRecord.txt_name} className="w-full pr-10 bg-background border-border font-mono text-xs break-all" />
-              <Button variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => copyToClipboard(sslRecord.txt_name!)}>
-                <Copy className="h-3.5 w-3.5" />
+            <div className="relative">
+              <Input readOnly value={sslRecord.txt_name} className="pr-9 bg-background border-border font-mono text-xs h-9" />
+              <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => copyToClipboard(sslRecord.txt_name!)}>
+                <Copy className="h-3 w-3" />
               </Button>
             </div>
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <Label className="text-xs text-muted-foreground">{t("domains.value")}</Label>
-            <div className="relative w-full">
-              <Input readOnly value={sslRecord.txt_value} className="w-full pr-10 bg-background border-border font-mono text-xs break-all" />
-              <Button variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => copyToClipboard(sslRecord.txt_value!)}>
-                <Copy className="h-3.5 w-3.5" />
+            <div className="relative">
+              <Input readOnly value={sslRecord.txt_value} className="pr-9 bg-background border-border font-mono text-xs h-9" />
+              <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => copyToClipboard(sslRecord.txt_value!)}>
+                <Copy className="h-3 w-3" />
               </Button>
             </div>
           </div>
@@ -169,6 +168,7 @@ export default function Domains() {
   const [apiTestResult, setApiTestResult] = useState<{ status: string; message: string } | null>(null);
   const [apiTestLoading, setApiTestLoading] = useState(false);
   const [txtValidationData, setTxtValidationData] = useState<TxtValidationData | null>(null);
+  const [showTxtFallback, setShowTxtFallback] = useState(false);
 
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
@@ -246,7 +246,6 @@ export default function Domains() {
     },
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["domains"] });
-      // Store TXT validation data for the UI
       setTxtValidationData({
         ownership_verification: data.ownership_verification,
         ssl_validation_records: data.ssl_validation_records,
@@ -255,6 +254,7 @@ export default function Domains() {
         toast.success("✅ " + t("domains.domainActive"));
         setSetupDomain(null);
         setTxtValidationData(null);
+        setShowTxtFallback(false);
       } else {
         toast.info(t("domains.domainPending"), { duration: 6000 });
       }
@@ -283,15 +283,21 @@ export default function Domains() {
             <DialogTrigger asChild>
               <Button><Plus className="h-4 w-4 mr-1" /> {t("domains.addDomain")}</Button>
             </DialogTrigger>
-            <DialogContent className="bg-card border-border">
+            <DialogContent className="bg-card border-border sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>{t("domains.addDomainTitle")}</DialogTitle>
                 <DialogDescription>{t("domains.addDomainDesc")}</DialogDescription>
               </DialogHeader>
               <div className="space-y-4 pt-2">
                 <div>
-                  <Label>{t("domains.domainUrl")}</Label>
-                  <Input placeholder={t("domains.domainUrlPlaceholder")} className="bg-secondary/50 border-border" value={url} onChange={(e) => setUrl(e.target.value)} />
+                  <Label className="text-sm">{t("domains.domainUrl")}</Label>
+                  <Input
+                    placeholder={t("domains.domainUrlPlaceholder")}
+                    className="bg-secondary/50 border-border mt-1.5"
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter" && url) createMutation.mutate(); }}
+                  />
                 </div>
                 <Button className="w-full" onClick={() => createMutation.mutate()} disabled={createMutation.isPending || !url}>
                   {createMutation.isPending ? t("domains.checking") : t("common.add")}
@@ -315,8 +321,8 @@ export default function Domains() {
         </CardContent>
       </Card>
 
-      {/* Setup CNAME Dialog */}
-      <Dialog open={!!setupDomain} onOpenChange={(v) => { if (!v) { setSetupDomain(null); setTxtValidationData(null); } }}>
+      {/* Setup Domain Dialog */}
+      <Dialog open={!!setupDomain} onOpenChange={(v) => { if (!v) { setSetupDomain(null); setTxtValidationData(null); setShowTxtFallback(false); } }}>
         <DialogContent className="bg-card border-border sm:max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -328,10 +334,30 @@ export default function Domains() {
               <span className="font-mono text-foreground">{setupDomain}</span>
             </DialogDescription>
           </DialogHeader>
+
           {setupDomain && <CnameSetupSteps domain={setupDomain} t={t} />}
-          
-          {/* TXT Fallback Section - shown when domain is pending and validation data exists */}
-          {setupDomain && !domains.find(d => d.url === setupDomain)?.is_verified && (
+
+          <p className="text-xs text-muted-foreground">{t("domains.cnameNote")}</p>
+
+          {/* Progressive disclosure: TXT fallback link */}
+          {setupDomain && !domains.find(d => d.url === setupDomain)?.is_verified && !showTxtFallback && (
+            <button
+              className="text-xs text-primary/70 hover:text-primary underline underline-offset-2 transition-colors text-left"
+              onClick={() => {
+                setShowTxtFallback(true);
+                // Auto-fetch validation data if not already loaded
+                if (!txtValidationData) {
+                  const d = domains.find((d) => d.url === setupDomain);
+                  if (d) checkStatusMutation.mutate(d.id);
+                }
+              }}
+            >
+              {t("domains.txtFallbackLink")}
+            </button>
+          )}
+
+          {/* TXT Fallback Section - only shown when user clicks the link */}
+          {showTxtFallback && (
             <TxtFallbackSection validationData={txtValidationData} t={t} />
           )}
 
@@ -341,7 +367,7 @@ export default function Domains() {
               if (d) checkStatusMutation.mutate(d.id);
             }}
             disabled={checkStatusMutation.isPending}
-            className="w-full mt-4"
+            className="w-full mt-2"
           >
             {checkStatusMutation.isPending ? (
               <><RefreshCw className="h-4 w-4 mr-2 animate-spin" /> {t("domains.checking")}</>
@@ -402,7 +428,7 @@ export default function Domains() {
                           <ShieldCheck className="h-4 w-4 mr-1" /> {t("domains.checkStatus")}
                         </Button>
                       )}
-                      <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(d.id)}>
+                      <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(d.id)} disabled={deleteMutation.isPending}>
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </TableCell>
@@ -427,7 +453,6 @@ export default function Domains() {
 
           {debugMode && (
             <div className="space-y-4 pt-2 border-t border-border">
-              {/* 1. Cloudflare API Connection Test */}
               <div className="space-y-2">
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">1. Cloudflare API Connection</p>
                 <Button
@@ -467,7 +492,6 @@ export default function Domains() {
                 )}
               </div>
 
-              {/* 2. Mock Status Simulator */}
               <div className="space-y-2">
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">2. Mock Status Transition</p>
                 <p className="text-xs text-muted-foreground">Simulate a domain status change to test if the UI updates correctly.</p>
@@ -508,7 +532,6 @@ export default function Domains() {
                 </div>
               </div>
 
-              {/* 3. Database Column Check */}
               <div className="space-y-2">
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">3. Database Column Sync</p>
                 <div className="rounded-lg border border-border bg-secondary/10 p-3 overflow-x-auto">
@@ -547,7 +570,7 @@ export default function Domains() {
                 </div>
                 {domains.some((d) => !d.cloudflare_hostname_id) && (
                   <p className="text-xs text-yellow-400">
-                    ⚠️ Some domains have no Cloudflare Hostname ID. These were created before the Cloudflare SaaS integration was deployed. They need to be re-added via the new flow.
+                    ⚠️ Some domains have no Cloudflare Hostname ID. These were created before the Cloudflare SaaS integration was deployed.
                   </p>
                 )}
               </div>
