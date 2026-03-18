@@ -107,6 +107,7 @@ export default function CampaignEdit() {
   useEffect(() => {
     if (campaign) {
       setName(campaign.name);
+      setDomain((campaign as any).domain ?? "");
       setTrafficSource(campaign.traffic_source);
       setSafeUrl(campaign.safe_url);
       setOfferUrl(campaign.offer_url);
@@ -126,6 +127,7 @@ export default function CampaignEdit() {
     mutationFn: async () => {
       const payload: any = {
         name,
+        domain: domain || null,
         traffic_source: trafficSource,
         safe_url: safeUrl,
         offer_url: offerMode === "single" ? offerUrl : abOffers.map((o) => o.url).join(","),

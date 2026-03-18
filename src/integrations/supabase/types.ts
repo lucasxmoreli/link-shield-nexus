@@ -44,6 +44,7 @@ export type Database = {
       campaigns: {
         Row: {
           created_at: string
+          domain: string | null
           hash: string
           id: string
           is_active: boolean | null
@@ -62,6 +63,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          domain?: string | null
           hash: string
           id?: string
           is_active?: boolean | null
@@ -80,6 +82,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          domain?: string | null
           hash?: string
           id?: string
           is_active?: boolean | null
