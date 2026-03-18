@@ -14,9 +14,11 @@ export default function CampaignRedirect() {
 
     const resolve = async () => {
       try {
-        const { data, error } = await supabase.rpc("get_campaign_redirect", {
+        const { data: rawData, error } = await supabase.rpc("get_campaign_redirect", {
           p_hash: hash,
         });
+
+        const data = rawData as { offer_url: string; safe_url: string; is_active: boolean } | null;
 
         if (error || !data || !data.is_active) {
           setStatus("not_found");
