@@ -215,6 +215,27 @@ function redirectResponse(targetUrl: string): Response {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// SSRF PROTECTION — Block internal/private IPs and metadata endpoints
+// ═══════════════════════════════════════════════════════════════
+function isInternalUrl(url: string): boolean {
+  try {
+    const u = new URL(url);
+    const h = u.hostname.toLowerCase();
+    if (h === "localhost" || h === "127.0.0.1" || h === "::1" || /^127\./.test(h)) return true;
+    if (/^10\./.test(h)) return true;
+    if (/^172\.(1[6-9]|2\d|3[01])\./.test(h)) return true;
+    if (/^192\.168\./.test(h)) return true;
+    if (/^169\.254\./.test(h)) return true;
+    if (/^(fc|fd|fe80)/i.test(h)) return true;
+    if (h === "0.0.0.0") return true;
+    return false;
+  } catch {
+    return true;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
 // TRANSPARENT CONTENT FETCH — Proxy HTML with rewritten paths
 // ═══════════════════════════════════════════════════════════════
 
@@ -261,6 +282,13 @@ async function contentFetchResponse(
   clientLang: string | null,
   campaignDomain?: string,
 ): Promise<Response> {
+  // SSRF protection
+  if (isInternalUrl(targetUrl)) {
+    console.error(`[SSRF-BLOCKED] Content fetch blocked for internal URL: ${targetUrl}`);
+    return new Response(MAINTENANCE_HTML, {
+      headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" },
+    });
+  }
   // Same-domain loop prevention
   if (campaignDomain) {
     const cleanCampaignDomain = campaignDomain.replace(/^(https?:\/\/)?(www\.)?/, "").replace(/\/+$/, "");
@@ -330,6 +358,7 @@ async function contentFetchResponse(
   }
 }
 
+
 function sanitizeRedirectUrl(url: string | null | undefined, safeFallback: string): string {
   const fallback = safeFallback || "https://google.com";
   const rawValue = (url || "").trim();
@@ -356,14 +385,24 @@ function sanitizeRedirectUrl(url: string | null | undefined, safeFallback: strin
       return fallback;
     }
 
+    // SSRF protection
+    if (isInternalUrl(absoluteUrl)) {
+      console.error(`[SSRF-BLOCKED] Redirect URL "${absoluteUrl}" resolves to internal IP — aborting`);
+      return fallback;
+    }
+
     return parsedUrl.toString();
   } catch {
     console.error(`[INVALID-URL] "${absoluteUrl}" is not a valid absolute URL — falling back to safe page`);
     return fallback;
   }
 }
-
 async function checkUrlHealth(url: string, timeoutMs = 2000): Promise<boolean> {
+  // SSRF protection
+  if (isInternalUrl(url)) {
+    console.error(`[SSRF-BLOCKED] Health check blocked for internal URL: ${url}`);
+    return false;
+  }
   try {
     const res = await fetch(url, {
       method: "HEAD",
@@ -667,10 +706,24 @@ serve(async (req) => {
     }
 
     if (profile) {
-      await supabase
-        .from("profiles")
-        .update({ current_clicks: (profile.current_clicks ?? 0) + 1 })
-        .eq("user_id", campaign.user_id);
+      // Click deduplication: check if this IP already triggered a click for this campaign in the last 60s
+      const dedupeWindow = new Date(Date.now() - 60_000).toISOString();
+      const { count: recentClicks } = await supabase
+        .from("requests_log")
+        .select("id", { count: "exact", head: true })
+        .eq("campaign_id", campaign.id)
+        .eq("ip_address", ip)
+        .eq("action_taken", "offer_page")
+        .gte("created_at", dedupeWindow);
+
+      if (!recentClicks || recentClicks === 0) {
+        await supabase
+          .from("profiles")
+          .update({ current_clicks: (profile.current_clicks ?? 0) + 1 })
+          .eq("user_id", campaign.user_id);
+      } else {
+        console.log(`[DEDUP] Skipping click increment — IP ${ip} already clicked campaign ${campaign.id} within 60s`);
+      }
     }
 
     return await logAndRespond("offer_page", countryCode);
