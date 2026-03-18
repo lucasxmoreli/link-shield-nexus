@@ -118,8 +118,9 @@ const es = {
     copyLink: "Copiar Enlace",
     campaignLinkCopied: "¡Enlace de campaña copiado!",
     campaignRemoved: "Campaña eliminada",
-    alwaysWorks: "Recomendado",
-    customDomainDnsWarning: "⚠️ Los dominios personalizados solo funcionan si el registro DNS A apunta a 185.158.133.1. De lo contrario, los visitantes verán un error 404. Usa el dominio predeterminado para mayor confiabilidad.",
+    noDomainsWarning: "⚠️ No hay dominios disponibles. Debes conectar y verificar un dominio personalizado en la pestaña Dominios antes de generar un enlace de campaña.",
+    goToDomains: "Ir a Dominios",
+    dnsReminder: "⚠️ Recordatorio DNS: Asegúrate de que tu dominio tiene un Registro A apuntando a 185.158.133.1 y el Proxy Cloudflare (🟠) está ACTIVADO para proteger la red.",
   },
 
   campaignEdit: {
