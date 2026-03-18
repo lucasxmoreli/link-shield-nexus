@@ -67,8 +67,9 @@ serve(async (req) => {
 
     const cfZoneId = Deno.env.get("CLOUDFLARE_ZONE_ID");
     const cfToken = Deno.env.get("CLOUDFLARE_API_TOKEN");
+    const cfEmail = Deno.env.get("CLOUDFLARE_EMAIL");
 
-    if (!cfZoneId || !cfToken) {
+    if (!cfZoneId || !cfToken || !cfEmail) {
       return new Response(JSON.stringify({ error: "Cloudflare configuration missing" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -81,7 +82,8 @@ serve(async (req) => {
       {
         method: "GET",
         headers: {
-          Authorization: `Bearer ${cfToken}`,
+          "X-Auth-Key": cfToken,
+          "X-Auth-Email": cfEmail,
           "Content-Type": "application/json",
         },
       }
@@ -91,10 +93,8 @@ serve(async (req) => {
 
     if (!cfData.success) {
       const errMsg = cfData.errors?.[0]?.message || "Cloudflare API error";
-      console.error("Cloudflare FULL response:", JSON.stringify(cfData, null, 2));
-      console.error("CF Zone ID used:", cfZoneId);
-      console.error("CF HTTP status:", cfResponse.status);
-      return new Response(JSON.stringify({ error: errMsg, cf_response: cfData }), {
+      console.error(`Cloudflare API Error: ${cfResponse.status} - ${errMsg}`);
+      return new Response(JSON.stringify({ error: errMsg }), {
         status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
