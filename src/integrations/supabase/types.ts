@@ -158,6 +158,30 @@ export type Database = {
         }
         Relationships: []
       }
+      ip_cache: {
+        Row: {
+          checked_at: string
+          id: string
+          ip: string
+          is_threat: boolean
+          reason: string | null
+        }
+        Insert: {
+          checked_at?: string
+          id?: string
+          ip: string
+          is_threat: boolean
+          reason?: string | null
+        }
+        Update: {
+          checked_at?: string
+          id?: string
+          ip?: string
+          is_threat?: boolean
+          reason?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           billing_cycle_end: string | null
