@@ -1,77 +1,64 @@
 
 
-## Campaign Link Creation Modal - File Locations
+## Plan: Export Schema and Reconfigure for External Supabase
 
-I've analyzed the codebase to locate both frontend and backend configurations for the campaign link creation modal shown in your screenshot.
+### What You Need to Do (Manual Steps)
 
-### Frontend Configuration
+1. Create/open your Supabase project at supabase.com
+2. Run the exported SQL script (generated in Step 1 below) in the SQL Editor
+3. Create the auth trigger separately (it touches the `auth` schema)
+4. Copy your project's URL, anon key, and project ID from Settings > API
+5. Add Edge Function secrets in Settings > Edge Functions
+6. Provide the new credentials so I can update the codebase
 
-**Main File: `src/pages/Campaigns.tsx`**
+### What I Will Do
 
-This file contains the complete implementation of the campaign link modal:
+**Step 1: Generate complete SQL export file**
 
-**Key Sections:**
-- **Lines 29-31**: State management for modal (open/close, hash, selected domain, copy status)
-- **Lines 43-51**: Domain fetching query (gets verified domains from database)
-- **Lines 74-78**: `getFullLink()` function - builds the final URL combining domain + `/c/` + hash
-- **Lines 80-84**: `openLinkModal()` - opens modal and sets default domain
-- **Lines 86-96**: `handleCopyLink()` - copies link to clipboard and shows success toast
-- **Lines 153-210**: Modal UI with Dialog component containing:
-  - Domain selector (dropdown with verified domains)
-  - Campaign URL field (read-only, shows generated link)
-  - Copy Link button
+Export to `/mnt/documents/cloakguard_schema.sql` containing:
+- 3 enum types: `app_role`, `device_type`, `action_taken`
+- 9 tables: `profiles`, `campaigns`, `domains`, `requests_log`, `blocked_ips`, `ip_cache`, `invite_codes`, `promo_codes`, `user_roles`
+- RLS enabled on all tables except `ip_cache` (intentionally open for service_role VPS access)
+- 28 RLS policies
+- 13 database functions (including `has_role`, `handle_new_user`, `protect_privileged_profile_columns`, admin functions, promo/invite functions)
+- 3 triggers: `protect_profile_privileged_cols`, `update_profiles_updated_at`, `on_auth_user_created`
+- No realtime publications currently active
 
-**URL Format Logic (Line 74-78):**
-```typescript
-const getFullLink = () => {
-  const base = (selectedDomain || defaultBase).trim().replace(/\/+$/, "");
-  const domain = base.startsWith("http") ? base : `https://${base}`;
-  return `${domain}/c/${linkModal.hash}`;
-};
-```
+**Step 2: Generate separate auth trigger script**
 
-### Backend Configuration
+The `on_auth_user_created` trigger attaches to `auth.users` and cannot be created via migrations. I'll include it as a clearly labeled separate block in the SQL file.
 
-**1. Database Tables:**
-- `campaigns` table - stores hash, name, URLs, targeting rules
-- `domains` table - stores custom domains with verification status
+**Step 3: Update frontend environment variables**
 
-**2. Route Handler: `src/pages/CampaignRedirect.tsx`**
-- Handles the `/c/:hash` route that users visit
-- Lines 16-56: Main redirect logic
-  - Fetches visitor IP via ipify.org API
-  - Captures User-Agent and Referer
-  - Calls the filter Edge Function
-  - Redirects to the URL returned by the filtering engine
+Once you provide credentials, update `.env` and `src/integrations/supabase/client.ts` references:
+- `VITE_SUPABASE_URL` → your project URL
+- `VITE_SUPABASE_PUBLISHABLE_KEY` → your anon key
+- `VITE_SUPABASE_PROJECT_ID` → your project ID
 
-**3. Edge Function: `supabase/functions/filter/index.ts`**
-- The core backend logic for processing campaign links
-- Receives: campaign hash, IP, user agent, referer
-- Returns: destination URL (offer or safe page) based on filtering rules
-- Key processing steps:
-  - Campaign validation (lines 45-57)
-  - Click limit check (lines 59-71)
-  - Bot detection via User-Agent (lines 100-104)
-  - Proxy/VPN detection via Proxycheck.io (lines 106-120)
-  - Datacenter detection via IPinfo.io (lines 122-141)
-  - Request logging and click counting (lines 74-94, 143-151)
+**Step 4: Delete the `filter` Edge Function from codebase**
 
-### Data Flow
+Remove `supabase/functions/filter/` entirely since the cloaking engine now runs on your VPS. The remaining 7 Edge Functions stay:
+- `register`, `add-custom-hostname`, `check-hostname-status`, `delete-custom-hostname`, `verify-domain`, `verify-domains-cron`, `cron-billing-reset`
+- (`cf-api-test` also exists — will keep it as a utility)
 
-1. User clicks copy icon → `openLinkModal()` triggered
-2. Modal fetches verified domains from `domains` table
-3. User selects domain (or uses default)
-4. `getFullLink()` generates: `https://[domain]/c/[hash]`
-5. User clicks "Copy Link" → clipboard + toast notification
-6. When someone visits link → `CampaignRedirect.tsx` loads
-7. Redirect component calls `/filter` Edge Function
-8. Edge Function processes request and returns destination URL
-9. Browser redirects to final destination via `window.location.replace()`
+**Step 5: Update CloakTest page**
 
-### Related Configuration Files
+`src/pages/CloakTest.tsx` currently calls `supabase.functions.invoke("filter", ...)`. This needs to be updated to call your VPS endpoint instead, or be disabled/removed. I'll need your VPS filter endpoint URL.
 
-- `src/components/ui/dialog.tsx` - Dialog component used for modal
-- `src/components/ui/select.tsx` - Domain dropdown selector
-- `src/integrations/supabase/client.ts` - Supabase client configuration
-- `src/App.tsx` - Route definition for `/c/:hash` → `CampaignRedirect`
+### Secrets to Configure in Your New Project
+
+These must be added in your Supabase dashboard under Settings > Edge Functions > Secrets:
+- `CLOUDFLARE_ZONE_ID`
+- `CLOUDFLARE_API_TOKEN`
+- `CLOUDFLARE_EMAIL`
+- `IPINFO_API_KEY` (if still used by any remaining function)
+- `PROXYCHECK_API_KEY` (if still used)
+- `CRON_SECRET`
+
+### Important Notes
+
+- **Data is NOT migrated** — only schema. Export data separately if needed.
+- **Auth users** must be re-created (re-register or use Admin API).
+- The VPS will use `service_role` key to bypass RLS on `campaigns`, `requests_log`, `ip_cache`, and `blocked_ips` — this is correct and expected.
+- `ip_cache` has RLS disabled, which is fine since only the VPS accesses it.
 
