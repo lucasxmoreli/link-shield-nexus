@@ -75,7 +75,7 @@ export default function CloakTest() {
     const start = performance.now();
     try {
       const vpsUrl = import.meta.env.VITE_VPS_FILTER_URL || "http://187.124.233.229";
-      const res = await fetch(`${vpsUrl}/filter`, {
+      const res = await fetch(`${vpsUrl}/health`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ campaign_hash: campaignHash, ip, user_agent: userAgent, referer: referer || null }),
