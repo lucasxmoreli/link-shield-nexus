@@ -74,9 +74,15 @@ export default function CloakTest() {
     setTesting(true);
     const start = performance.now();
     try {
-      const { data, error } = await supabase.functions.invoke("filter", { body: { campaign_hash: campaignHash, ip, user_agent: userAgent, referer: referer || null } });
+      const vpsUrl = import.meta.env.VITE_VPS_FILTER_URL || "http://187.124.233.229";
+      const res = await fetch(`${vpsUrl}/filter`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ campaign_hash: campaignHash, ip, user_agent: userAgent, referer: referer || null }),
+      });
       const duration = Math.round(performance.now() - start);
-      if (error) throw error;
+      if (!res.ok) throw new Error(`VPS returned ${res.status}`);
+      const data = await res.json();
       const newLog: TestLog = { id: logCounter + 1, timestamp: new Date(), ip, userAgent: userAgent.substring(0, 60) + (userAgent.length > 60 ? "..." : ""), result: data as FilterResult, duration };
       setLogs(prev => [newLog, ...prev]);
       setLogCounter(prev => prev + 1);
