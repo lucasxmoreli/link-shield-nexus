@@ -301,7 +301,18 @@ export default function Domains() {
                       )}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">{new Date(d.created_at).toLocaleDateString()}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right flex items-center justify-end gap-1">
+                      {!d.is_verified && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleVerifyDns(d.id)}
+                          disabled={verifyingId === d.id}
+                          title="Verify DNS"
+                        >
+                          <RefreshCw className={`h-4 w-4 text-muted-foreground ${verifyingId === d.id ? "animate-spin" : ""}`} />
+                        </Button>
+                      )}
                       <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(d.id)} disabled={deleteMutation.isPending}>
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
