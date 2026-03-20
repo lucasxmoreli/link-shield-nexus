@@ -27,6 +27,7 @@ export default function Domains() {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [url, setUrl] = useState("");
+  const [verifyingId, setVerifyingId] = useState<string | null>(null);
 
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
