@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Plus, CheckCircle, XCircle, Trash2, Copy, Lock, Shield, Eye, Zap, AlertTriangle } from "lucide-react";
+import { Plus, CheckCircle, XCircle, Trash2, Copy, Lock, Shield, Eye, Zap, AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
@@ -27,6 +27,7 @@ export default function Domains() {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [url, setUrl] = useState("");
+  const [verifyingId, setVerifyingId] = useState<string | null>(null);
 
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
@@ -88,6 +89,26 @@ export default function Domains() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const handleVerifyDns = async (domainId: string) => {
+    setVerifyingId(domainId);
+    try {
+      const { data, error } = await supabase.functions.invoke("verify-domain", {
+        body: { domain_id: domainId },
+      });
+      if (error) throw error;
+      if (data?.verified) {
+        toast.success(t("domains.verified") + " ✓");
+        qc.invalidateQueries({ queryKey: ["domains"] });
+      } else {
+        toast.error("DNS not pointing to the server yet. Check your DNS settings.");
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Verification failed");
+    } finally {
+      setVerifyingId(null);
+    }
+  };
 
   const handleAddClick = () => {
     if (isLimitReached) {
@@ -280,7 +301,18 @@ export default function Domains() {
                       )}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">{new Date(d.created_at).toLocaleDateString()}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right flex items-center justify-end gap-1">
+                      {!d.is_verified && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleVerifyDns(d.id)}
+                          disabled={verifyingId === d.id}
+                          title="Verify DNS"
+                        >
+                          <RefreshCw className={`h-4 w-4 text-muted-foreground ${verifyingId === d.id ? "animate-spin" : ""}`} />
+                        </Button>
+                      )}
                       <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(d.id)} disabled={deleteMutation.isPending}>
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
