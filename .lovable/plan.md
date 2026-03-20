@@ -1,64 +1,41 @@
 
 
-## Plan: Export Schema and Reconfigure for External Supabase
+## Plan: Add Cloudflare Education Section to Domain Modal
 
-### What You Need to Do (Manual Steps)
+### Overview
+Add an informational section with 3 benefit cards and a warning note inside the "Connect Domain" modal, placed between the header and the DNS instructions. Also update i18n strings in all 3 languages.
 
-1. Create/open your Supabase project at supabase.com
-2. Run the exported SQL script (generated in Step 1 below) in the SQL Editor
-3. Create the auth trigger separately (it touches the `auth` schema)
-4. Copy your project's URL, anon key, and project ID from Settings > API
-5. Add Edge Function secrets in Settings > Edge Functions
-6. Provide the new credentials so I can update the codebase
+### Changes
 
-### What I Will Do
+**1. Update `src/pages/Domains.tsx`**
 
-**Step 1: Generate complete SQL export file**
+Inside the modal's form state (lines 254-299), insert a new section between the domain input field and the DNS steps:
 
-Export to `/mnt/documents/cloakguard_schema.sql` containing:
-- 3 enum types: `app_role`, `device_type`, `action_taken`
-- 9 tables: `profiles`, `campaigns`, `domains`, `requests_log`, `blocked_ips`, `ip_cache`, `invite_codes`, `promo_codes`, `user_roles`
-- RLS enabled on all tables except `ip_cache` (intentionally open for service_role VPS access)
-- 28 RLS policies
-- 13 database functions (including `has_role`, `handle_new_user`, `protect_privileged_profile_columns`, admin functions, promo/invite functions)
-- 3 triggers: `protect_profile_privileged_cols`, `update_profiles_updated_at`, `on_auth_user_created`
-- No realtime publications currently active
+- Import `Shield, Eye, Zap` icons from lucide-react (reuse existing or add new)
+- Add a subtitle: "Por que a Cloudflare e obrigatoria?" (via i18n key)
+- Render 3 compact cards in a vertical stack, each with an icon and text:
+  1. **Ban Wave Protection** — Shield icon, explains IP hiding from ad networks
+  2. **Cloaking Engine Security** — Eye icon, explains mandatory Cloudflare validation
+  3. **Free SSL & DDoS Protection** — Zap icon, explains automatic SSL and DDoS
+- Below the cards, a warning alert with amber/orange styling: "Domains without active Cloudflare (orange cloud) will not work with CloakGuard."
+- Then the existing DNS instructions follow
 
-**Step 2: Generate separate auth trigger script**
+The modal `max-w` will be bumped from `sm:max-w-md` to `sm:max-w-lg` to accommodate the extra content.
 
-The `on_auth_user_created` trigger attaches to `auth.users` and cannot be created via migrations. I'll include it as a clearly labeled separate block in the SQL file.
+**2. Update i18n files (en.ts, pt.ts, es.ts)**
 
-**Step 3: Update frontend environment variables**
+Add new keys under `domains`:
+- `cfWhyTitle` — section title
+- `cfBanWaveTitle` / `cfBanWaveDesc`
+- `cfSecurityTitle` / `cfSecurityDesc`
+- `cfSslTitle` / `cfSslDesc`
+- `cfWarning` — the warning note
 
-Once you provide credentials, update `.env` and `src/integrations/supabase/client.ts` references:
-- `VITE_SUPABASE_URL` → your project URL
-- `VITE_SUPABASE_PUBLISHABLE_KEY` → your anon key
-- `VITE_SUPABASE_PROJECT_ID` → your project ID
+Also update DNS instruction keys to reference A record + VPS IP (`187.124.233.229`) instead of CNAME, as part of the previously approved simplification plan.
 
-**Step 4: Delete the `filter` Edge Function from codebase**
-
-Remove `supabase/functions/filter/` entirely since the cloaking engine now runs on your VPS. The remaining 7 Edge Functions stay:
-- `register`, `add-custom-hostname`, `check-hostname-status`, `delete-custom-hostname`, `verify-domain`, `verify-domains-cron`, `cron-billing-reset`
-- (`cf-api-test` also exists — will keep it as a utility)
-
-**Step 5: Update CloakTest page**
-
-`src/pages/CloakTest.tsx` currently calls `supabase.functions.invoke("filter", ...)`. This needs to be updated to call your VPS endpoint instead, or be disabled/removed. I'll need your VPS filter endpoint URL.
-
-### Secrets to Configure in Your New Project
-
-These must be added in your Supabase dashboard under Settings > Edge Functions > Secrets:
-- `CLOUDFLARE_ZONE_ID`
-- `CLOUDFLARE_API_TOKEN`
-- `CLOUDFLARE_EMAIL`
-- `IPINFO_API_KEY` (if still used by any remaining function)
-- `PROXYCHECK_API_KEY` (if still used)
-- `CRON_SECRET`
-
-### Important Notes
-
-- **Data is NOT migrated** — only schema. Export data separately if needed.
-- **Auth users** must be re-created (re-register or use Admin API).
-- The VPS will use `service_role` key to bypass RLS on `campaigns`, `requests_log`, `ip_cache`, and `blocked_ips` — this is correct and expected.
-- `ip_cache` has RLS disabled, which is fine since only the VPS accesses it.
+### Technical Details
+- Cards use existing `rounded-lg border` pattern with a left-side icon in a colored circle
+- Warning note uses `bg-orange-500/10 border-orange-500/30 text-orange-400` styling consistent with the app's dark theme
+- No new components needed — all inline in the modal JSX
+- No database or Edge Function changes
 
