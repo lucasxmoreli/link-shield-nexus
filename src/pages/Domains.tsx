@@ -90,6 +90,26 @@ export default function Domains() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const handleVerifyDns = async (domainId: string) => {
+    setVerifyingId(domainId);
+    try {
+      const { data, error } = await supabase.functions.invoke("verify-domain", {
+        body: { domain_id: domainId },
+      });
+      if (error) throw error;
+      if (data?.verified) {
+        toast.success(t("domains.verified") + " ✓");
+        qc.invalidateQueries({ queryKey: ["domains"] });
+      } else {
+        toast.error("DNS not pointing to the server yet. Check your DNS settings.");
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Verification failed");
+    } finally {
+      setVerifyingId(null);
+    }
+  };
+
   const handleAddClick = () => {
     if (isLimitReached) {
       navigate("/billing");
