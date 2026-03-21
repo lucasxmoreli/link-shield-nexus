@@ -308,7 +308,7 @@ export default function CampaignEdit() {
                           {d.ssl_status === "active" ? (
                             <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-green-500/30 text-green-400">{t("campaignEdit.domainSslActive")}</Badge>
                           ) : (
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-yellow-500/30 text-yellow-400">{t("campaignEdit.domainSslPending")}</Badge>
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-blue-500/30 text-blue-400">{t("campaignEdit.domainSslPending")}</Badge>
                           )}
                         </span>
                       </SelectItem>
