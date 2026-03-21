@@ -297,6 +297,8 @@ const es = {
     fillRequired: "Por favor, completa todos los campos obligatorios",
     testError: "Error en la prueba: {{message}}",
     logCopied: "¡Log copiado!",
+    resultApproved: "Aprobado — Offer Page",
+    resultBlocked: "Bloqueado — Safe Page",
   },
 
   billing: {
