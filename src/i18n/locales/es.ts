@@ -471,6 +471,14 @@ const es = {
     promoUpdated: "Código promocional actualizado.",
     promoDeleted: "Código promocional eliminado.",
     noPromos: "No se han creado códigos promocionales aún.",
+    domains: "Dominios",
+    campaigns: "Campañas",
+    expiresAt: "Expira en",
+    expired: "Expirado",
+    filterByPlan: "Filtrar por plan",
+    allPlans: "Todos los Planes",
+    resetBilling: "Resetear Billing",
+    billingReset: "Billing reseteado para este usuario.",
   },
 
   languages: {

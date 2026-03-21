@@ -490,6 +490,14 @@ const en = {
     promoUpdated: "Promo code updated.",
     promoDeleted: "Promo code deleted.",
     noPromos: "No promo codes created yet.",
+    domains: "Domains",
+    campaigns: "Campaigns",
+    expiresAt: "Expires",
+    expired: "Expired",
+    filterByPlan: "Filter by plan",
+    allPlans: "All Plans",
+    resetBilling: "Reset Billing",
+    billingReset: "Billing reset for this user.",
   },
 
   // Languages
