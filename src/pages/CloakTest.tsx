@@ -9,12 +9,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { FlaskConical, Play, Shield, ShieldAlert, ShieldCheck, Loader2, Copy, RotateCcw, CheckCircle2, XCircle, ExternalLink } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { FlaskConical, Play, Loader2, Copy, RotateCcw, CheckCircle2, XCircle, ExternalLink, Info } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
 type FilterResult = { action: string; url?: string; reason?: string };
-type TestLog = { id: number; timestamp: Date; ip: string; userAgent: string; result: FilterResult; duration: number };
+type TestLog = { id: number; timestamp: Date; ip: string; userAgent: string; result: FilterResult; duration: number; simulated: boolean };
 
 const PRESET_USER_AGENTS: { label: string; value: string; expected: "offer" | "safe" }[] = [
   {
