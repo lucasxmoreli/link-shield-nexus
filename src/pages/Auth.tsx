@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Shield, Loader2, ArrowLeft, Eye, EyeOff, Mail, Lock, Ticket, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { LanguageSelector } from "@/components/LanguageSelector";
 
 type AuthView = "login" | "invite" | "register";
 
