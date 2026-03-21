@@ -1,11 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
-import { Users, Megaphone, MousePointerClick, ShieldAlert, Crown, Ban } from "lucide-react";
+import { Users, Megaphone, MousePointerClick, ShieldAlert, Crown, Ban, RotateCcw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -22,9 +22,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { useState } from "react";
 import { toast } from "sonner";
-import { getPlanByName } from "@/lib/plan-config";
 
 const PLANS = [
   { name: "Free", clicks: 0, domains: 0 },
@@ -33,6 +31,8 @@ const PLANS = [
   { name: "FREEDOM PLAN", clicks: 300000, domains: 20 },
   { name: "ENTERPRISE CONQUEST", clicks: 1000000, domains: 25 },
 ];
+
+const PLAN_FILTER_OPTIONS = ["All", "Free", "BASIC PLAN", "PRO PLAN", "FREEDOM PLAN", "ENTERPRISE CONQUEST"];
 
 interface AdminUser {
   user_id: string;
@@ -43,6 +43,8 @@ interface AdminUser {
   is_suspended: boolean;
   created_at: string;
   campaign_count: number;
+  domain_count: number;
+  billing_cycle_end: string | null;
 }
 
 export default function AdminDashboard() {
@@ -54,6 +56,7 @@ export default function AdminDashboard() {
 
   const [planDialog, setPlanDialog] = useState<{ open: boolean; user: AdminUser | null }>({ open: false, user: null });
   const [selectedPlan, setSelectedPlan] = useState("");
+  const [planFilter, setPlanFilter] = useState("All");
 
   useEffect(() => {
     if (!adminLoading && !isAdmin) {
@@ -116,6 +119,20 @@ export default function AdminDashboard() {
     onError: (err: Error) => toast.error(err.message),
   });
 
+  const resetBillingMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const { error } = await supabase.rpc("admin_reset_billing" as any, {
+        p_user_id: userId,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin_users"] });
+      toast.success(t("admin.billingReset"));
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
   if (adminLoading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
@@ -128,6 +145,16 @@ export default function AdminDashboard() {
 
   const formatNumber = (n: number) => n.toLocaleString();
   const formatDate = (d: string) => new Date(d).toLocaleDateString();
+  const now = new Date();
+
+  const isExpired = (billingEnd: string | null) => {
+    if (!billingEnd) return false;
+    return new Date(billingEnd) < now;
+  };
+
+  const filteredUsers = planFilter === "All"
+    ? users
+    : users.filter((u) => (u.plan_name || "Free") === planFilter);
 
   return (
     <div className="space-y-6">
@@ -171,8 +198,20 @@ export default function AdminDashboard() {
 
       {/* Users Table */}
       <Card className="border-border bg-card">
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-foreground">All Users</CardTitle>
+          <Select value={planFilter} onValueChange={setPlanFilter}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder={t("admin.filterByPlan")} />
+            </SelectTrigger>
+            <SelectContent>
+              {PLAN_FILTER_OPTIONS.map((p) => (
+                <SelectItem key={p} value={p}>
+                  {p === "All" ? t("admin.allPlans") : p}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </CardHeader>
         <CardContent>
           {usersLoading ? (
@@ -187,17 +226,23 @@ export default function AdminDashboard() {
                     <TableHead>Email</TableHead>
                     <TableHead>Plan</TableHead>
                     <TableHead>Click Usage</TableHead>
-                    <TableHead className="text-center">Campaigns</TableHead>
+                    <TableHead className="text-center">{t("admin.domains")}</TableHead>
+                    <TableHead className="text-center">{t("admin.campaigns")}</TableHead>
+                    <TableHead>{t("admin.expiresAt")}</TableHead>
                     <TableHead>Registered</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {users.map((u) => {
+                  {filteredUsers.map((u) => {
                     const pct = u.max_clicks > 0 ? Math.min((u.current_clicks / u.max_clicks) * 100, 100) : 0;
+                    const expired = isExpired(u.billing_cycle_end);
                     return (
-                      <TableRow key={u.user_id} className={u.is_suspended ? "opacity-60" : ""}>
+                      <TableRow
+                        key={u.user_id}
+                        className={`${u.is_suspended ? "opacity-60" : ""} ${expired ? "border-l-2 border-l-destructive" : ""}`}
+                      >
                         <TableCell className="font-medium text-foreground">{u.email || "—"}</TableCell>
                         <TableCell>
                           <Badge variant="outline" className="text-xs">
@@ -212,7 +257,19 @@ export default function AdminDashboard() {
                             </span>
                           </div>
                         </TableCell>
+                        <TableCell className="text-center">{u.domain_count ?? 0}</TableCell>
                         <TableCell className="text-center">{u.campaign_count}</TableCell>
+                        <TableCell>
+                          {u.billing_cycle_end ? (
+                            expired ? (
+                              <Badge variant="destructive" className="text-xs">{t("admin.expired")}</Badge>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">{formatDate(u.billing_cycle_end)}</span>
+                            )
+                          ) : (
+                            <span className="text-sm text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
                         <TableCell className="text-muted-foreground text-sm">{formatDate(u.created_at)}</TableCell>
                         <TableCell>
                           {u.is_suspended ? (
@@ -241,6 +298,12 @@ export default function AdminDashboard() {
                               >
                                 <Crown className="mr-2 h-4 w-4" />
                                 Change Plan
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => resetBillingMutation.mutate(u.user_id)}
+                              >
+                                <RotateCcw className="mr-2 h-4 w-4" />
+                                {t("admin.resetBilling")}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
