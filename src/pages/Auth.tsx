@@ -131,7 +131,7 @@ export default function Auth() {
           </div>
           <div className="flex gap-6 pt-4">
             {[
-              { value: "99.9%", label: t("auth.detection") },
+              { value: "99.9%", label: t("auth.detectionFull") },
               { value: "<50ms", label: t("auth.latency") },
               { value: "24/7", label: t("common.monitoring") },
             ].map((stat) => (
