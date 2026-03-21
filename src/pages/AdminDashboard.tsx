@@ -288,7 +288,7 @@ export default function AdminDashboard() {
                                 onClick={() => suspendMutation.mutate({ userId: u.user_id, suspend: !u.is_suspended })}
                               >
                                 <Ban className="mr-2 h-4 w-4" />
-                                {u.is_suspended ? "Reactivate" : "Suspend User"}
+                                {u.is_suspended ? t("admin.reactivate") : t("admin.suspendUser")}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => {
