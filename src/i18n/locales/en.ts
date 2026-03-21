@@ -411,6 +411,7 @@ const en = {
     realResults: "Real results.",
     authDescription: "Filter bots and moderators in real time. Your visitors see the offer, everyone else sees the safe page.",
     detection: "Detection",
+    detectionFull: "Bot Detection",
     latency: "Latency",
   },
 

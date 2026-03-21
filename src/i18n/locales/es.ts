@@ -395,6 +395,7 @@ const es = {
     realResults: "Resultados reales.",
     authDescription: "Filtra bots y moderadores en tiempo real. Tus visitantes ven la oferta, todos los demás ven la página segura.",
     detection: "Detección",
+    detectionFull: "Detección de Bots",
     latency: "Latencia",
   },
 
