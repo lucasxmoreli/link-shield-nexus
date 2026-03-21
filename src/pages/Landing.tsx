@@ -3,6 +3,7 @@ import { Shield, Zap, Eye, Globe, ArrowRight, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
+import { LanguageSelector } from "@/components/LanguageSelector";
 
 export default function Landing() {
   const { session } = useAuth();
@@ -31,6 +32,7 @@ export default function Landing() {
             <span className="text-xl font-bold tracking-tight">CloakGuard</span>
           </div>
           <div className="flex items-center gap-3">
+            <LanguageSelector />
             {session ? (
               <Button asChild>
                 <Link to="/dashboard">
