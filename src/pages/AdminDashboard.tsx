@@ -347,7 +347,7 @@ export default function AdminDashboard() {
               }}
               disabled={changePlanMutation.isPending}
             >
-              Save
+              {t("common.save")}
             </Button>
           </DialogFooter>
         </DialogContent>
