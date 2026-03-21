@@ -310,6 +310,8 @@ const en = {
     fillRequired: "Please fill in all required fields",
     testError: "Test error: {{message}}",
     logCopied: "Log copied!",
+    resultApproved: "Approved — Offer Page",
+    resultBlocked: "Blocked — Safe Page",
   },
 
   // Billing
