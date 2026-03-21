@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Plus, CheckCircle, XCircle, Trash2, Lock, RefreshCw } from "lucide-react";
+import { Plus, CheckCircle, XCircle, AlertTriangle, Trash2, Lock, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { getPlanByName } from "@/lib/plan-config";
 import { AddDomainModal } from "@/components/domains/AddDomainModal";
+import { DnsConfigTable } from "@/components/domains/DnsConfigTable";
 
 export default function Domains() {
   const { user } = useAuth();
@@ -23,7 +24,7 @@ export default function Domains() {
   const [open, setOpen] = useState(false);
   const [url, setUrl] = useState("");
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
-
+  const [failedIds, setFailedIds] = useState<Set<string>>(new Set());
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
     queryFn: async () => {
@@ -94,8 +95,10 @@ export default function Domains() {
       if (error) throw error;
       if (data?.verified) {
         toast.success(t("domains.verified") + " ✓");
+        setFailedIds((prev) => { const next = new Set(prev); next.delete(domainId); return next; });
         qc.invalidateQueries({ queryKey: ["domains"] });
       } else {
+        setFailedIds((prev) => new Set(prev).add(domainId));
         toast.error(t("domains.dnsNotPointing"));
       }
     } catch (e: any) {
@@ -198,9 +201,13 @@ export default function Domains() {
                         <Badge variant="outline" className="border-[hsl(var(--success))]/30 bg-[hsl(var(--success))]/10 text-[hsl(var(--success))]">
                           <CheckCircle className="h-3 w-3 mr-1" /> {t("domains.verified")}
                         </Badge>
+                      ) : failedIds.has(d.id) ? (
+                        <Badge variant="outline" className="border-destructive/30 bg-destructive/10 text-destructive">
+                          <AlertTriangle className="h-3 w-3 mr-1" /> {t("domains.dnsError")}
+                        </Badge>
                       ) : (
                         <Badge variant="outline" className="border-yellow-500/30 bg-yellow-500/10 text-yellow-500">
-                          <XCircle className="h-3 w-3 mr-1" /> {t("domains.pending")}
+                          <XCircle className="h-3 w-3 mr-1" /> {t("domains.verifying")}
                         </Badge>
                       )}
                     </TableCell>
@@ -228,6 +235,9 @@ export default function Domains() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* DNS Configuration Reference Table */}
+      <DnsConfigTable />
     </div>
   );
 }

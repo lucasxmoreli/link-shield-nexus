@@ -352,9 +352,11 @@ export type Database = {
       admin_list_users: {
         Args: never
         Returns: {
+          billing_cycle_end: string
           campaign_count: number
           created_at: string
           current_clicks: number
+          domain_count: number
           email: string
           is_suspended: boolean
           max_clicks: number
@@ -362,6 +364,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      admin_reset_billing: { Args: { p_user_id: string }; Returns: undefined }
       admin_toggle_suspend: {
         Args: { p_suspend: boolean; p_user_id: string }
         Returns: undefined
