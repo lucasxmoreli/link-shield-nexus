@@ -199,7 +199,7 @@ export default function AdminDashboard() {
       {/* Users Table */}
       <Card className="border-border bg-card">
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-foreground">All Users</CardTitle>
+          <CardTitle className="text-foreground">{t("admin.allUsers")}</CardTitle>
           <Select value={planFilter} onValueChange={setPlanFilter}>
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder={t("admin.filterByPlan")} />
