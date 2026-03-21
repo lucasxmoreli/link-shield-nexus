@@ -299,6 +299,11 @@ const es = {
     logCopied: "¡Log copiado!",
     resultApproved: "Aprobado — Offer Page",
     resultBlocked: "Bloqueado — Safe Page",
+    simulatedMode: "Modo Simulado",
+    simulatedTooltip: "En modo simulado, no se consultan APIs externas. Usa el Modo Real para probar con verificación completa de IP.",
+    realModeWarning: "Esta prueba consume créditos de las APIs de verificación de IP.",
+    badgeSimulated: "Simulado",
+    badgeReal: "Real",
   },
 
   billing: {

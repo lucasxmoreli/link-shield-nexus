@@ -9,12 +9,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { FlaskConical, Play, Shield, ShieldAlert, ShieldCheck, Loader2, Copy, RotateCcw, CheckCircle2, XCircle, ExternalLink } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { FlaskConical, Play, Loader2, Copy, RotateCcw, CheckCircle2, XCircle, ExternalLink, Info } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
 type FilterResult = { action: string; url?: string; reason?: string };
-type TestLog = { id: number; timestamp: Date; ip: string; userAgent: string; result: FilterResult; duration: number };
+type TestLog = { id: number; timestamp: Date; ip: string; userAgent: string; result: FilterResult; duration: number; simulated: boolean };
 
 const PRESET_USER_AGENTS: { label: string; value: string; expected: "offer" | "safe" }[] = [
   {
@@ -66,6 +68,7 @@ export default function CloakTest() {
   const [testing, setTesting] = useState(false);
   const [logs, setLogs] = useState<TestLog[]>([]);
   const [logCounter, setLogCounter] = useState(0);
+  const [simulatedMode, setSimulatedMode] = useState(true);
 
   const { data: campaigns, isLoading: loadingCampaigns } = useQuery({
     queryKey: ["campaigns-for-test"],
@@ -81,12 +84,37 @@ export default function CloakTest() {
   const getUA = () => { if (customUA) return customUA; return PRESET_USER_AGENTS.find(p => p.value === selectedUAPreset)?.value ?? ""; };
   const getCampaignHash = () => campaigns?.find(c => c.id === selectedCampaign)?.hash ?? "";
 
+  const BOT_PATTERNS = /googlebot|facebookexternalhit|crawler|bot|spider|slurp|bingbot|yandex|baidu|duckduck|semrush|ahref/i;
+
+  const runSimulatedTest = () => {
+    const userAgent = getUA();
+    const campaign = campaigns?.find(c => c.id === selectedCampaign);
+    const isBot = BOT_PATTERNS.test(userAgent);
+    const start = performance.now();
+    const result: FilterResult = isBot
+      ? { action: "safe_page", url: campaign?.safe_url, reason: "bot_user_agent" }
+      : { action: "offer_page", url: campaign?.offer_url };
+    const duration = Math.round(performance.now() - start);
+    return { result, duration };
+  };
+
   const runTest = async () => {
     const ip = getIP();
     const userAgent = getUA();
     const campaignHash = getCampaignHash();
     if (!campaignHash || !ip || !userAgent) { toast.error(t("cloakTest.fillRequired")); return; }
     setTesting(true);
+
+    if (simulatedMode) {
+      const { result, duration } = runSimulatedTest();
+      const uaShort = userAgent.substring(0, 60) + (userAgent.length > 60 ? "..." : "");
+      const newLog: TestLog = { id: logCounter + 1, timestamp: new Date(), ip, userAgent: uaShort, result, duration, simulated: true };
+      setLogs(prev => [newLog, ...prev]);
+      setLogCounter(prev => prev + 1);
+      setTesting(false);
+      return;
+    }
+
     const start = performance.now();
     try {
       const vpsUrl = import.meta.env.VITE_VPS_FILTER_URL || "http://187.124.233.229";
@@ -98,7 +126,7 @@ export default function CloakTest() {
       const duration = Math.round(performance.now() - start);
       if (!res.ok) throw new Error(`VPS returned ${res.status}`);
       const data = await res.json();
-      const newLog: TestLog = { id: logCounter + 1, timestamp: new Date(), ip, userAgent: userAgent.substring(0, 60) + (userAgent.length > 60 ? "..." : ""), result: data as FilterResult, duration };
+      const newLog: TestLog = { id: logCounter + 1, timestamp: new Date(), ip, userAgent: userAgent.substring(0, 60) + (userAgent.length > 60 ? "..." : ""), result: data as FilterResult, duration, simulated: false };
       setLogs(prev => [newLog, ...prev]);
       setLogCounter(prev => prev + 1);
     } catch (err: any) {
@@ -135,6 +163,28 @@ export default function CloakTest() {
             <CardDescription>{t("cloakTest.testConfigDesc")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
+            {/* Simulated Mode Toggle */}
+            <div className="flex items-center justify-between rounded-lg border border-border bg-muted/30 p-3">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="simulated-mode" className="font-medium cursor-pointer">{t("cloakTest.simulatedMode")}</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="text-xs">{t("cloakTest.simulatedTooltip")}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <Switch id="simulated-mode" checked={simulatedMode} onCheckedChange={setSimulatedMode} />
+            </div>
+            {!simulatedMode && (
+              <div className="rounded-md bg-yellow-500/10 border border-yellow-500/30 px-3 py-2">
+                <p className="text-xs text-yellow-400">{t("cloakTest.realModeWarning")}</p>
+              </div>
+            )}
             <div className="space-y-2">
               <Label>{t("cloakTest.campaignRequired")}</Label>
               <Select value={selectedCampaign} onValueChange={setSelectedCampaign}>
@@ -240,7 +290,14 @@ export default function CloakTest() {
                             <p className={`font-semibold text-sm ${approved ? "text-emerald-400" : "text-red-400"}`}>
                               {approved ? t("cloakTest.resultApproved") : t("cloakTest.resultBlocked")}
                             </p>
-                            <p className="text-xs text-muted-foreground">{log.duration}ms • {log.timestamp.toLocaleTimeString()}</p>
+                            <div className="flex items-center gap-1.5">
+                              <p className="text-xs text-muted-foreground">{log.duration}ms • {log.timestamp.toLocaleTimeString()}</p>
+                              {log.simulated ? (
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-yellow-500/40 text-yellow-400 bg-yellow-500/10">{t("cloakTest.badgeSimulated")}</Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-emerald-500/40 text-emerald-400 bg-emerald-500/10">{t("cloakTest.badgeReal")}</Badge>
+                              )}
+                            </div>
                           </div>
                         </div>
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => copyLog(log)}><Copy className="h-3 w-3" /></Button>
