@@ -251,14 +251,30 @@ export default function Domains() {
       {/* Domain usage card */}
       <Card className="border-border bg-card">
         <CardContent className="p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-muted-foreground">{t("domains.domainUsage")}</p>
-            <span className="text-sm font-mono text-foreground">
-              {currentDomains} / {maxDomains} <span className="text-muted-foreground">{t("domains.domainsUsed")}</span>
-            </span>
-          </div>
-          <Progress value={usagePercent} className="h-2" />
-          {maxDomains <= 0 && <p className="text-xs text-muted-foreground">{t("domains.noPlanDomains")}</p>}
+          {maxDomains <= 0 ? (
+            <>
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-muted-foreground">{t("domains.domainUsage")}</p>
+                <span className="text-sm font-mono text-foreground">
+                  — {t("domains.domainsUsed")}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">{t("domains.noPlanDomains")}</p>
+              <Badge variant="outline" className="border-primary/30 text-primary cursor-pointer" onClick={() => navigate("/billing")}>
+                {t("domains.upgradeToDomains")}
+              </Badge>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-muted-foreground">{t("domains.domainUsage")}</p>
+                <span className="text-sm font-mono text-foreground">
+                  {currentDomains} / {maxDomains} <span className="text-muted-foreground">{t("domains.domainsUsed")}</span>
+                </span>
+              </div>
+              <Progress value={usagePercent} className="h-2" />
+            </>
+          )}
         </CardContent>
       </Card>
 
