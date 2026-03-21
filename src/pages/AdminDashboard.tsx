@@ -114,7 +114,7 @@ export default function AdminDashboard() {
       queryClient.invalidateQueries({ queryKey: ["admin_users"] });
       queryClient.invalidateQueries({ queryKey: ["admin_stats"] });
       setPlanDialog({ open: false, user: null });
-      toast.success("Plan updated");
+      toast.success(t("admin.planUpdatedSuccess"));
     },
     onError: (err: Error) => toast.error(err.message),
   });
