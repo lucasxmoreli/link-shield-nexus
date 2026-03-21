@@ -347,6 +347,25 @@ const en = {
     seePlans: "SEE PLANS & UPGRADE",
     language: "Language",
     languageDesc: "Select your preferred language",
+    freePlanStatus: "Free Plan",
+    noClicksIncluded: "Upgrade to unlock click tracking",
+    noCampaignsIncluded: "Upgrade to create campaigns",
+    noDomainsIncluded: "Upgrade to add custom domains",
+  },
+
+  onboarding: {
+    welcomeTitle: "Welcome to CloakGuard!",
+    welcomeDesc: "Complete these 3 steps to start protecting your traffic.",
+    step1Title: "Add a Domain",
+    step1Desc: "Connect your custom domain with Cloudflare DNS.",
+    step2Title: "Create a Campaign",
+    step2Desc: "Set up your offer and safe pages.",
+    step3Title: "Go Live",
+    step3Desc: "Activate your campaign and start filtering traffic.",
+    completed: "Completed",
+    pending: "Pending",
+    letsGo: "Let's Go",
+    skipForNow: "Skip for now",
   },
 
   // Auth

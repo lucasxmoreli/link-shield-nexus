@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Activity, ShieldCheck, Target, Percent, Globe, Monitor, Smartphone, Tablet, Clock, MapPin } from "lucide-react";
 import { LiveThreatInterceptions } from "@/components/dashboard/LiveThreatInterceptions";
 import { VolatilityRadar } from "@/components/dashboard/VolatilityRadar";
+import { OnboardingWizard } from "@/components/dashboard/OnboardingWizard";
 import { useDopamineToast } from "@/components/dashboard/useDopamineToast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -117,6 +118,8 @@ export default function Dashboard() {
           <span className="text-xs text-muted-foreground font-mono">{t("common.live")}</span>
         </div>
       </div>
+
+      <OnboardingWizard />
 
       <VolatilityRadar />
 

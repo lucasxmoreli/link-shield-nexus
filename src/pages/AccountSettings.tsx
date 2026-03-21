@@ -48,15 +48,15 @@ export default function AccountSettings() {
   });
 
   const activePlan = getPlanByName(profile?.plan_name);
+  const planName = profile?.plan_name ?? "Free";
+  const isFreePlan = planName.toLowerCase() === "free";
+
   const maxClicks = (profile?.max_clicks && profile.max_clicks > 0) ? profile.max_clicks : activePlan.maxClicksLimit;
   const currentClicks = profile?.current_clicks ?? 0;
   const rawUsagePercent = maxClicks > 0 ? (currentClicks / maxClicks) * 100 : 0;
   const usagePercent = Math.round(rawUsagePercent);
   const usageDisplay = currentClicks > 0 && rawUsagePercent < 1 ? "< 1" : `${usagePercent}`;
   const progressValue = currentClicks > 0 && usagePercent < 1 ? 1 : usagePercent;
-
-  const planName = profile?.plan_name ?? "Free";
-  const isFreePlan = planName.toLowerCase() === "free";
 
   const maxDomains = profile?.max_domains || activePlan.maxDomains;
   const domainsPercent = maxDomains > 0 ? Math.round((domainsCount / maxDomains) * 100) : 0;
@@ -93,7 +93,7 @@ export default function AccountSettings() {
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">{t("common.status")}</span>
             {isFreePlan ? (
-              <Badge className="bg-destructive/20 text-destructive border-0">{t("common.inactive")}</Badge>
+              <Badge className="bg-muted text-muted-foreground border-0">{t("settings.freePlanStatus")}</Badge>
             ) : (
               <Badge className="bg-success/20 text-success border-0">{t("common.active")}</Badge>
             )}
@@ -113,35 +113,53 @@ export default function AccountSettings() {
       <Card className="border-border bg-card">
         <CardHeader><CardTitle className="text-lg">{t("settings.planUsage")}</CardTitle></CardHeader>
         <CardContent className="space-y-6">
+          {/* Clicks */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">{t("settings.clicksUsed")}</span>
-              <span className="font-mono">{currentClicks.toLocaleString()} / {maxClicks > 0 ? maxClicks.toLocaleString() : "0"}</span>
+              <span className="font-mono">
+                {isFreePlan ? "— / —" : `${currentClicks.toLocaleString()} / ${maxClicks > 0 ? maxClicks.toLocaleString() : "0"}`}
+              </span>
             </div>
-            <Progress value={progressValue} className="h-3 bg-secondary" />
-            <p className="text-xs text-muted-foreground">{t("settings.ofLimitUsed", { percent: usageDisplay })}</p>
+            {isFreePlan ? (
+              <p className="text-xs text-muted-foreground">{t("settings.noClicksIncluded")}</p>
+            ) : (
+              <>
+                <Progress value={progressValue} className="h-3 bg-secondary" />
+                <p className="text-xs text-muted-foreground">{t("settings.ofLimitUsed", { percent: usageDisplay })}</p>
+              </>
+            )}
           </div>
 
+          {/* Domains */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">{t("settings.domainsUsed")}</span>
-              <span className="font-mono">{domainsCount} / {maxDomains}</span>
+              <span className="font-mono">
+                {isFreePlan || maxDomains <= 0 ? "— / —" : `${domainsCount} / ${maxDomains}`}
+              </span>
             </div>
-            <Progress value={domainsPercent} className="h-3 bg-secondary" />
-            <p className="text-xs text-muted-foreground">
-              {maxDomains > 0 ? t("settings.ofLimitUsed", { percent: domainsPercent }) : t("settings.upgradeForDomains")}
-            </p>
+            {isFreePlan || maxDomains <= 0 ? (
+              <p className="text-xs text-muted-foreground">{t("settings.noDomainsIncluded")}</p>
+            ) : (
+              <>
+                <Progress value={domainsPercent} className="h-3 bg-secondary" />
+                <p className="text-xs text-muted-foreground">{t("settings.ofLimitUsed", { percent: domainsPercent })}</p>
+              </>
+            )}
           </div>
 
+          {/* Campaigns */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">{t("settings.campaignsCreated")}</span>
               <span className="font-mono">
-                {campaignsCount.toLocaleString()}
-                {!campaignsUnlimited && maxCampaigns > 0 && ` / ${maxCampaigns}`}
+                {isFreePlan ? "— / —" : campaignsUnlimited ? campaignsCount.toLocaleString() : `${campaignsCount.toLocaleString()} / ${maxCampaigns}`}
               </span>
             </div>
-            {campaignsUnlimited ? (
+            {isFreePlan ? (
+              <p className="text-xs text-muted-foreground">{t("settings.noCampaignsIncluded")}</p>
+            ) : campaignsUnlimited ? (
               <Badge variant="secondary" className="text-[10px] tracking-wider">{t("settings.unlimitedAccess")}</Badge>
             ) : maxCampaigns > 0 ? (
               <>
@@ -149,10 +167,7 @@ export default function AccountSettings() {
                 <p className="text-xs text-muted-foreground">{t("settings.ofLimitUsed", { percent: campaignsPercent })}</p>
               </>
             ) : (
-              <>
-                <Progress value={0} className="h-3 bg-secondary" />
-                <p className="text-xs text-muted-foreground">{t("settings.upgradeForCampaigns")}</p>
-              </>
+              <p className="text-xs text-muted-foreground">{t("settings.upgradeForCampaigns")}</p>
             )}
           </div>
         </CardContent>
