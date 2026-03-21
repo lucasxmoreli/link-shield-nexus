@@ -95,7 +95,7 @@ export default function AdminDashboard() {
     onSuccess: (_, { suspend }) => {
       queryClient.invalidateQueries({ queryKey: ["admin_users"] });
       queryClient.invalidateQueries({ queryKey: ["admin_stats"] });
-      toast.success(suspend ? "User suspended" : "User reactivated");
+      toast.success(suspend ? t("admin.userSuspended") : t("admin.userReactivated"));
     },
     onError: (err: Error) => toast.error(err.message),
   });
