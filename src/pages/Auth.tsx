@@ -191,6 +191,14 @@ export default function Auth() {
                   {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                   {t("auth.signInButton")}
                 </Button>
+                <button
+                  type="button"
+                  onClick={() => { setView("invite"); setInviteError(""); }}
+                  className="flex items-center justify-center gap-1.5 w-full text-sm text-muted-foreground hover:text-primary transition-colors pt-1"
+                >
+                  <Ticket className="h-4 w-4" />
+                  <span>{t("auth.iHaveInvite")}</span>
+                </button>
               </form>
             )}
 
