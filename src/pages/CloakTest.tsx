@@ -9,24 +9,39 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { FlaskConical, Play, Shield, ShieldAlert, ShieldCheck, Loader2, Copy, RotateCcw } from "lucide-react";
+import { FlaskConical, Play, Shield, ShieldAlert, ShieldCheck, Loader2, Copy, RotateCcw, CheckCircle2, XCircle, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
 type FilterResult = { action: string; url?: string; reason?: string };
 type TestLog = { id: number; timestamp: Date; ip: string; userAgent: string; result: FilterResult; duration: number };
 
-const PRESET_USER_AGENTS: { label: string; value: string; type: "bot" | "real" | "suspicious" }[] = [
-  { label: "Chrome Desktop (Real)", value: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36", type: "real" },
-  { label: "Safari iPhone (Real)", value: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1", type: "real" },
-  { label: "Chrome Android (Real)", value: "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36", type: "real" },
-  { label: "Googlebot", value: "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)", type: "bot" },
-  { label: "Bingbot", value: "Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)", type: "bot" },
-  { label: "Facebook Crawler", value: "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatype.html)", type: "bot" },
-  { label: "TikTok Bot", value: "Mozilla/5.0 (compatible; TikTok/26.2; +https://www.tiktok.com)", type: "bot" },
-  { label: "SemrushBot", value: "Mozilla/5.0 (compatible; SemrushBot/7~bl; +http://www.semrush.com/bot.html)", type: "bot" },
-  { label: "AhrefsBot", value: "Mozilla/5.0 (compatible; AhrefsBot/7.0; +http://ahrefs.com/robot/)", type: "bot" },
-  { label: "ByteSpider (TikTok)", value: "Mozilla/5.0 (Linux; Android 5.0) AppleWebKit/537.36 (KHTML, like Gecko) Mobile Safari/537.36 (compatible; Bytespider)", type: "bot" },
+const PRESET_USER_AGENTS: { label: string; value: string; expected: "offer" | "safe" }[] = [
+  {
+    label: "Googlebot (bot → safe page)",
+    value: "Googlebot/2.1 (+http://www.google.com/bot.html)",
+    expected: "safe",
+  },
+  {
+    label: "iPhone Safari (lead → offer)",
+    value: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+    expected: "offer",
+  },
+  {
+    label: "TikTok Android (lead → offer)",
+    value: "Mozilla/5.0 (Linux; Android 13; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36 TikTok/30.0",
+    expected: "offer",
+  },
+  {
+    label: "Facebook Crawler (bot → safe page)",
+    value: "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)",
+    expected: "safe",
+  },
+  {
+    label: "Chrome Desktop (lead → offer)",
+    value: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    expected: "offer",
+  },
 ];
 
 const PRESET_IPS: { label: string; value: string; type: "real" | "datacenter" | "vpn" }[] = [
@@ -93,16 +108,8 @@ export default function CloakTest() {
     }
   };
 
-  const getActionBadge = (action: string) => {
-    switch (action) {
-      case "redirect": return <Badge className="bg-green-500/20 text-green-400 border-green-500/30 gap-1"><ShieldCheck className="h-3 w-3" /> {t("dashboard.offerPage")}</Badge>;
-      case "safe_page": return <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 gap-1"><Shield className="h-3 w-3" /> {t("requests.safePage")}</Badge>;
-      case "bot_blocked": return <Badge className="bg-red-500/20 text-red-400 border-red-500/30 gap-1"><ShieldAlert className="h-3 w-3" /> {t("dashboard.botsBlocked")}</Badge>;
-      default: return <Badge variant="outline">{action}</Badge>;
-    }
-  };
+  const isApproved = (action: string) => action === "redirect" || action === "offer_page";
 
-  const getUATypeColor = (type: string) => { switch (type) { case "bot": return "text-red-400"; case "real": return "text-green-400"; default: return "text-muted-foreground"; } };
   const getIPTypeColor = (type: string) => { switch (type) { case "datacenter": return "text-red-400"; case "vpn": return "text-yellow-400"; case "real": return "text-green-400"; default: return "text-muted-foreground"; } };
 
   const copyLog = (log: TestLog) => {
@@ -149,7 +156,14 @@ export default function CloakTest() {
                 <SelectContent>
                   {PRESET_USER_AGENTS.map(ua => (
                     <SelectItem key={ua.value} value={ua.value}>
-                      <span className={`flex items-center gap-2 ${getUATypeColor(ua.type)}`}>{ua.type === "bot" ? "🤖" : "👤"} {ua.label}</span>
+                      <span className="flex items-center gap-2">
+                        {ua.expected === "safe" ? "🤖" : "👤"} {ua.label}
+                        {ua.expected === "safe" ? (
+                          <Badge variant="outline" className="ml-1 text-[10px] px-1.5 py-0 border-red-500/40 text-red-400 bg-red-500/10">→ Safe Page</Badge>
+                        ) : (
+                          <Badge variant="outline" className="ml-1 text-[10px] px-1.5 py-0 border-emerald-500/40 text-emerald-400 bg-emerald-500/10">→ Offer Page</Badge>
+                        )}
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -203,25 +217,64 @@ export default function CloakTest() {
               </div>
             ) : (
               <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
-                {logs.map(log => (
-                  <div key={log.id} className="rounded-lg border border-border bg-background p-3 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground font-mono">#{log.id}</span>
-                        {getActionBadge(log.result.action)}
-                        <span className="text-xs text-muted-foreground">{log.duration}ms</span>
+                {logs.map(log => {
+                  const approved = isApproved(log.result.action);
+                  return (
+                    <div
+                      key={log.id}
+                      className={`rounded-lg border p-4 space-y-3 ${
+                        approved
+                          ? "border-emerald-500/30 bg-emerald-500/5"
+                          : "border-red-500/30 bg-red-500/5"
+                      }`}
+                    >
+                      {/* Hero result */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          {approved ? (
+                            <CheckCircle2 className="h-8 w-8 text-emerald-400" />
+                          ) : (
+                            <XCircle className="h-8 w-8 text-red-400" />
+                          )}
+                          <div>
+                            <p className={`font-semibold text-sm ${approved ? "text-emerald-400" : "text-red-400"}`}>
+                              {approved ? t("cloakTest.resultApproved") : t("cloakTest.resultBlocked")}
+                            </p>
+                            <p className="text-xs text-muted-foreground">{log.duration}ms • {log.timestamp.toLocaleTimeString()}</p>
+                          </div>
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => copyLog(log)}><Copy className="h-3 w-3" /></Button>
                       </div>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyLog(log)}><Copy className="h-3 w-3" /></Button>
+
+                      {/* Block reason highlight */}
+                      {!approved && log.result.reason && (
+                        <div className="rounded-md bg-red-500/10 border border-red-500/20 px-3 py-2">
+                          <p className="text-xs text-red-300 font-medium">{t("requests.reason")}: <span className="text-red-400">{log.result.reason}</span></p>
+                        </div>
+                      )}
+
+                      {/* Destination URL */}
+                      {log.result.url && (
+                        <a
+                          href={log.result.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 text-xs font-mono text-primary hover:underline break-all"
+                        >
+                          <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                          {log.result.url}
+                        </a>
+                      )}
+
+                      {/* Meta info */}
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs border-t border-border/50 pt-2">
+                        <div><span className="text-muted-foreground">IP: </span><span className="font-mono text-foreground">{log.ip}</span></div>
+                        <div><span className="text-muted-foreground">Action: </span><span className="text-foreground">{log.result.action}</span></div>
+                        <div className="col-span-2"><span className="text-muted-foreground">UA: </span><span className="font-mono text-foreground">{log.userAgent}</span></div>
+                      </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                      <div><span className="text-muted-foreground">IP: </span><span className="font-mono text-foreground">{log.ip}</span></div>
-                      <div><span className="text-muted-foreground">Time: </span><span className="text-foreground">{log.timestamp.toLocaleTimeString()}</span></div>
-                      <div className="col-span-2"><span className="text-muted-foreground">UA: </span><span className="font-mono text-foreground">{log.userAgent}</span></div>
-                      {log.result.url && <div className="col-span-2"><span className="text-muted-foreground">URL: </span><span className="font-mono text-primary break-all">{log.result.url}</span></div>}
-                      {log.result.reason && <div className="col-span-2"><span className="text-muted-foreground">{t("requests.reason")}: </span><span className="text-yellow-400">{log.result.reason}</span></div>}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>
