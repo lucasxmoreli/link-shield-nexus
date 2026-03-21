@@ -95,8 +95,10 @@ export default function Domains() {
       if (error) throw error;
       if (data?.verified) {
         toast.success(t("domains.verified") + " ✓");
+        setFailedIds((prev) => { const next = new Set(prev); next.delete(domainId); return next; });
         qc.invalidateQueries({ queryKey: ["domains"] });
       } else {
+        setFailedIds((prev) => new Set(prev).add(domainId));
         toast.error(t("domains.dnsNotPointing"));
       }
     } catch (e: any) {
