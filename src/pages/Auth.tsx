@@ -150,7 +150,10 @@ export default function Auth() {
             <ArrowLeft className="h-4 w-4" />
             {t("common.back")}
           </Link>
-          {headerAction()}
+          <div className="flex items-center gap-3">
+            <LanguageSelector />
+            {headerAction()}
+          </div>
         </div>
 
         <div className="flex-1 flex items-center justify-center px-6 pb-12">
