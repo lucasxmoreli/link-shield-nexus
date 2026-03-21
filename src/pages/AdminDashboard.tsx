@@ -95,7 +95,7 @@ export default function AdminDashboard() {
     onSuccess: (_, { suspend }) => {
       queryClient.invalidateQueries({ queryKey: ["admin_users"] });
       queryClient.invalidateQueries({ queryKey: ["admin_stats"] });
-      toast.success(suspend ? "User suspended" : "User reactivated");
+      toast.success(suspend ? t("admin.userSuspended") : t("admin.userReactivated"));
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -114,7 +114,7 @@ export default function AdminDashboard() {
       queryClient.invalidateQueries({ queryKey: ["admin_users"] });
       queryClient.invalidateQueries({ queryKey: ["admin_stats"] });
       setPlanDialog({ open: false, user: null });
-      toast.success("Plan updated");
+      toast.success(t("admin.planUpdatedSuccess"));
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -160,14 +160,14 @@ export default function AdminDashboard() {
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <ShieldAlert className="h-7 w-7 text-primary" />
-        <h1 className="text-2xl font-bold text-foreground">Admin Command Center</h1>
+        <h1 className="text-2xl font-bold text-foreground">{t("admin.commandCenter")}</h1>
       </div>
 
       {/* Metric Cards */}
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="border-border bg-card">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Users</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("admin.totalUsers")}</CardTitle>
             <Users className="h-5 w-5 text-primary" />
           </CardHeader>
           <CardContent>
@@ -177,7 +177,7 @@ export default function AdminDashboard() {
 
         <Card className="border-border bg-card">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Active Campaigns</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("admin.activeCampaigns")}</CardTitle>
             <Megaphone className="h-5 w-5 text-accent-foreground" />
           </CardHeader>
           <CardContent>
@@ -187,7 +187,7 @@ export default function AdminDashboard() {
 
         <Card className="border-border bg-card">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Clicks This Cycle</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("admin.clicksThisCycle")}</CardTitle>
             <MousePointerClick className="h-5 w-5 text-destructive" />
           </CardHeader>
           <CardContent>
@@ -199,7 +199,7 @@ export default function AdminDashboard() {
       {/* Users Table */}
       <Card className="border-border bg-card">
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-foreground">All Users</CardTitle>
+          <CardTitle className="text-foreground">{t("admin.allUsers")}</CardTitle>
           <Select value={planFilter} onValueChange={setPlanFilter}>
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder={t("admin.filterByPlan")} />
@@ -223,15 +223,15 @@ export default function AdminDashboard() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Plan</TableHead>
-                    <TableHead>Click Usage</TableHead>
-                    <TableHead className="text-center">{t("admin.domains")}</TableHead>
-                    <TableHead className="text-center">{t("admin.campaigns")}</TableHead>
-                    <TableHead>{t("admin.expiresAt")}</TableHead>
-                    <TableHead>Registered</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                     <TableHead>{t("admin.email")}</TableHead>
+                     <TableHead>{t("admin.plan")}</TableHead>
+                     <TableHead>{t("admin.clickUsage")}</TableHead>
+                     <TableHead className="text-center">{t("admin.domains")}</TableHead>
+                     <TableHead className="text-center">{t("admin.campaigns")}</TableHead>
+                     <TableHead>{t("admin.expiresAt")}</TableHead>
+                     <TableHead>{t("admin.registered")}</TableHead>
+                     <TableHead>{t("admin.statusLabel")}</TableHead>
+                     <TableHead className="text-right">{t("common.actions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -273,9 +273,9 @@ export default function AdminDashboard() {
                         <TableCell className="text-muted-foreground text-sm">{formatDate(u.created_at)}</TableCell>
                         <TableCell>
                           {u.is_suspended ? (
-                            <Badge variant="destructive" className="text-xs">Suspended</Badge>
+                            <Badge variant="destructive" className="text-xs">{t("admin.suspended")}</Badge>
                           ) : (
-                            <Badge variant="default" className="text-xs bg-emerald-600">Active</Badge>
+                            <Badge variant="default" className="text-xs bg-emerald-600">{t("admin.activeStatus")}</Badge>
                           )}
                         </TableCell>
                         <TableCell className="text-right">
@@ -288,7 +288,7 @@ export default function AdminDashboard() {
                                 onClick={() => suspendMutation.mutate({ userId: u.user_id, suspend: !u.is_suspended })}
                               >
                                 <Ban className="mr-2 h-4 w-4" />
-                                {u.is_suspended ? "Reactivate" : "Suspend User"}
+                                {u.is_suspended ? t("admin.reactivate") : t("admin.suspendUser")}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => {
@@ -297,7 +297,7 @@ export default function AdminDashboard() {
                                 }}
                               >
                                 <Crown className="mr-2 h-4 w-4" />
-                                Change Plan
+                                 {t("admin.changePlan")}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => resetBillingMutation.mutate(u.user_id)}
@@ -322,7 +322,7 @@ export default function AdminDashboard() {
       <Dialog open={planDialog.open} onOpenChange={(o) => !o && setPlanDialog({ open: false, user: null })}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Change Plan — {planDialog.user?.email}</DialogTitle>
+            <DialogTitle>{t("admin.changePlanTitle", { email: planDialog.user?.email })}</DialogTitle>
           </DialogHeader>
           <Select value={selectedPlan} onValueChange={setSelectedPlan}>
             <SelectTrigger>
@@ -337,7 +337,7 @@ export default function AdminDashboard() {
             </SelectContent>
           </Select>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setPlanDialog({ open: false, user: null })}>Cancel</Button>
+            <Button variant="outline" onClick={() => setPlanDialog({ open: false, user: null })}>{t("common.cancel")}</Button>
             <Button
               onClick={() => {
                 const plan = PLANS.find((p) => p.name === selectedPlan);
@@ -347,7 +347,7 @@ export default function AdminDashboard() {
               }}
               disabled={changePlanMutation.isPending}
             >
-              Save
+              {t("common.save")}
             </Button>
           </DialogFooter>
         </DialogContent>
