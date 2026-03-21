@@ -322,7 +322,7 @@ export default function AdminDashboard() {
       <Dialog open={planDialog.open} onOpenChange={(o) => !o && setPlanDialog({ open: false, user: null })}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Change Plan — {planDialog.user?.email}</DialogTitle>
+            <DialogTitle>{t("admin.changePlanTitle", { email: planDialog.user?.email })}</DialogTitle>
           </DialogHeader>
           <Select value={selectedPlan} onValueChange={setSelectedPlan}>
             <SelectTrigger>
