@@ -297,7 +297,7 @@ export default function AdminDashboard() {
                                 }}
                               >
                                 <Crown className="mr-2 h-4 w-4" />
-                                Change Plan
+                                 {t("admin.changePlan")}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => resetBillingMutation.mutate(u.user_id)}
