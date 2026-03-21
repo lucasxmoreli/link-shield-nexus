@@ -167,7 +167,7 @@ export default function AdminDashboard() {
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="border-border bg-card">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Users</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("admin.totalUsers")}</CardTitle>
             <Users className="h-5 w-5 text-primary" />
           </CardHeader>
           <CardContent>
