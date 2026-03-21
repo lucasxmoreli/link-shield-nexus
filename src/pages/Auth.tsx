@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Shield, Loader2, ArrowLeft, Eye, EyeOff, Mail, Lock, Ticket, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { LanguageSelector } from "@/components/LanguageSelector";
 
 type AuthView = "login" | "invite" | "register";
 
@@ -130,7 +131,7 @@ export default function Auth() {
           </div>
           <div className="flex gap-6 pt-4">
             {[
-              { value: "99.9%", label: t("auth.detection") },
+              { value: "99.9%", label: t("auth.detectionFull") },
               { value: "<50ms", label: t("auth.latency") },
               { value: "24/7", label: t("common.monitoring") },
             ].map((stat) => (
@@ -149,7 +150,10 @@ export default function Auth() {
             <ArrowLeft className="h-4 w-4" />
             {t("common.back")}
           </Link>
-          {headerAction()}
+          <div className="flex items-center gap-3">
+            <LanguageSelector />
+            {headerAction()}
+          </div>
         </div>
 
         <div className="flex-1 flex items-center justify-center px-6 pb-12">
@@ -187,6 +191,14 @@ export default function Auth() {
                   {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                   {t("auth.signInButton")}
                 </Button>
+                <button
+                  type="button"
+                  onClick={() => { setView("invite"); setInviteError(""); }}
+                  className="flex items-center justify-center gap-1.5 w-full text-sm text-muted-foreground hover:text-primary transition-colors pt-1"
+                >
+                  <Ticket className="h-4 w-4" />
+                  <span>{t("auth.iHaveInvite")}</span>
+                </button>
               </form>
             )}
 
