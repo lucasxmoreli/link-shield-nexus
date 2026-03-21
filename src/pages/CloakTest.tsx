@@ -163,6 +163,28 @@ export default function CloakTest() {
             <CardDescription>{t("cloakTest.testConfigDesc")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
+            {/* Simulated Mode Toggle */}
+            <div className="flex items-center justify-between rounded-lg border border-border bg-muted/30 p-3">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="simulated-mode" className="font-medium cursor-pointer">{t("cloakTest.simulatedMode")}</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="text-xs">{t("cloakTest.simulatedTooltip")}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <Switch id="simulated-mode" checked={simulatedMode} onCheckedChange={setSimulatedMode} />
+            </div>
+            {!simulatedMode && (
+              <div className="rounded-md bg-yellow-500/10 border border-yellow-500/30 px-3 py-2">
+                <p className="text-xs text-yellow-400">{t("cloakTest.realModeWarning")}</p>
+              </div>
+            )}
             <div className="space-y-2">
               <Label>{t("cloakTest.campaignRequired")}</Label>
               <Select value={selectedCampaign} onValueChange={setSelectedCampaign}>
