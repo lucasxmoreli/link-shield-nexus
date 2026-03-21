@@ -223,15 +223,15 @@ export default function AdminDashboard() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Plan</TableHead>
-                    <TableHead>Click Usage</TableHead>
-                    <TableHead className="text-center">{t("admin.domains")}</TableHead>
-                    <TableHead className="text-center">{t("admin.campaigns")}</TableHead>
-                    <TableHead>{t("admin.expiresAt")}</TableHead>
-                    <TableHead>Registered</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                     <TableHead>{t("admin.email")}</TableHead>
+                     <TableHead>{t("admin.plan")}</TableHead>
+                     <TableHead>{t("admin.clickUsage")}</TableHead>
+                     <TableHead className="text-center">{t("admin.domains")}</TableHead>
+                     <TableHead className="text-center">{t("admin.campaigns")}</TableHead>
+                     <TableHead>{t("admin.expiresAt")}</TableHead>
+                     <TableHead>{t("admin.registered")}</TableHead>
+                     <TableHead>{t("admin.statusLabel")}</TableHead>
+                     <TableHead className="text-right">{t("common.actions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
