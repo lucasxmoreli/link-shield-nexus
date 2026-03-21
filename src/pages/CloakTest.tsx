@@ -84,12 +84,37 @@ export default function CloakTest() {
   const getUA = () => { if (customUA) return customUA; return PRESET_USER_AGENTS.find(p => p.value === selectedUAPreset)?.value ?? ""; };
   const getCampaignHash = () => campaigns?.find(c => c.id === selectedCampaign)?.hash ?? "";
 
+  const BOT_PATTERNS = /googlebot|facebookexternalhit|crawler|bot|spider|slurp|bingbot|yandex|baidu|duckduck|semrush|ahref/i;
+
+  const runSimulatedTest = () => {
+    const userAgent = getUA();
+    const campaign = campaigns?.find(c => c.id === selectedCampaign);
+    const isBot = BOT_PATTERNS.test(userAgent);
+    const start = performance.now();
+    const result: FilterResult = isBot
+      ? { action: "safe_page", url: campaign?.safe_url, reason: "bot_user_agent" }
+      : { action: "offer_page", url: campaign?.offer_url };
+    const duration = Math.round(performance.now() - start);
+    return { result, duration };
+  };
+
   const runTest = async () => {
     const ip = getIP();
     const userAgent = getUA();
     const campaignHash = getCampaignHash();
     if (!campaignHash || !ip || !userAgent) { toast.error(t("cloakTest.fillRequired")); return; }
     setTesting(true);
+
+    if (simulatedMode) {
+      const { result, duration } = runSimulatedTest();
+      const uaShort = userAgent.substring(0, 60) + (userAgent.length > 60 ? "..." : "");
+      const newLog: TestLog = { id: logCounter + 1, timestamp: new Date(), ip, userAgent: uaShort, result, duration, simulated: true };
+      setLogs(prev => [newLog, ...prev]);
+      setLogCounter(prev => prev + 1);
+      setTesting(false);
+      return;
+    }
+
     const start = performance.now();
     try {
       const vpsUrl = import.meta.env.VITE_VPS_FILTER_URL || "http://187.124.233.229";
@@ -101,7 +126,7 @@ export default function CloakTest() {
       const duration = Math.round(performance.now() - start);
       if (!res.ok) throw new Error(`VPS returned ${res.status}`);
       const data = await res.json();
-      const newLog: TestLog = { id: logCounter + 1, timestamp: new Date(), ip, userAgent: userAgent.substring(0, 60) + (userAgent.length > 60 ? "..." : ""), result: data as FilterResult, duration };
+      const newLog: TestLog = { id: logCounter + 1, timestamp: new Date(), ip, userAgent: userAgent.substring(0, 60) + (userAgent.length > 60 ? "..." : ""), result: data as FilterResult, duration, simulated: false };
       setLogs(prev => [newLog, ...prev]);
       setLogCounter(prev => prev + 1);
     } catch (err: any) {
