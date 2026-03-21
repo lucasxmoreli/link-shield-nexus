@@ -299,6 +299,11 @@ const pt = {
     logCopied: "Log copiado!",
     resultApproved: "Aprovado — Offer Page",
     resultBlocked: "Bloqueado — Safe Page",
+    simulatedMode: "Modo Simulado",
+    simulatedTooltip: "No modo simulado, nenhuma API externa é consultada. Use o Modo Real para testar com verificação de IP completa.",
+    realModeWarning: "Este teste consome créditos das APIs de verificação de IP.",
+    badgeSimulated: "Simulado",
+    badgeReal: "Real",
   },
 
   billing: {

@@ -290,7 +290,14 @@ export default function CloakTest() {
                             <p className={`font-semibold text-sm ${approved ? "text-emerald-400" : "text-red-400"}`}>
                               {approved ? t("cloakTest.resultApproved") : t("cloakTest.resultBlocked")}
                             </p>
-                            <p className="text-xs text-muted-foreground">{log.duration}ms • {log.timestamp.toLocaleTimeString()}</p>
+                            <div className="flex items-center gap-1.5">
+                              <p className="text-xs text-muted-foreground">{log.duration}ms • {log.timestamp.toLocaleTimeString()}</p>
+                              {log.simulated ? (
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-yellow-500/40 text-yellow-400 bg-yellow-500/10">{t("cloakTest.badgeSimulated")}</Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-emerald-500/40 text-emerald-400 bg-emerald-500/10">{t("cloakTest.badgeReal")}</Badge>
+                              )}
+                            </div>
                           </div>
                         </div>
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => copyLog(log)}><Copy className="h-3 w-3" /></Button>
