@@ -68,6 +68,7 @@ export default function CloakTest() {
   const [testing, setTesting] = useState(false);
   const [logs, setLogs] = useState<TestLog[]>([]);
   const [logCounter, setLogCounter] = useState(0);
+  const [simulatedMode, setSimulatedMode] = useState(true);
 
   const { data: campaigns, isLoading: loadingCampaigns } = useQuery({
     queryKey: ["campaigns-for-test"],
