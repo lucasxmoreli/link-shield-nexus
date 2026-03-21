@@ -24,7 +24,7 @@ export default function Domains() {
   const [open, setOpen] = useState(false);
   const [url, setUrl] = useState("");
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
-
+  const [failedIds, setFailedIds] = useState<Set<string>>(new Set());
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
     queryFn: async () => {
