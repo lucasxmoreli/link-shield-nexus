@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Plus, CheckCircle, XCircle, Trash2, Lock, RefreshCw } from "lucide-react";
+import { Plus, CheckCircle, XCircle, AlertTriangle, Trash2, Lock, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { getPlanByName } from "@/lib/plan-config";
 import { AddDomainModal } from "@/components/domains/AddDomainModal";
+import { DnsConfigTable } from "@/components/domains/DnsConfigTable";
 
 export default function Domains() {
   const { user } = useAuth();
