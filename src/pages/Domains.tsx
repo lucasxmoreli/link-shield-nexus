@@ -101,7 +101,7 @@ export default function Domains() {
         toast.success(t("domains.verified") + " ✓");
         qc.invalidateQueries({ queryKey: ["domains"] });
       } else {
-        toast.error("DNS not pointing to the server yet. Check your DNS settings.");
+        toast.error(t("domains.dnsNotPointing"));
       }
     } catch (e: any) {
       toast.error(e.message || "Verification failed");
