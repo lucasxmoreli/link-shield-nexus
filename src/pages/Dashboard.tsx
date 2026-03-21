@@ -125,9 +125,9 @@ export default function Dashboard() {
           Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-[88px] rounded-lg" />)
         ) : (
           <>
-            <StatCard title={t("dashboard.totalRequests")} value={stats.total_requests} icon={Activity} trend={{ value: t("dashboard.thisWeek"), positive: true }} />
+            <StatCard title={t("dashboard.totalRequests")} value={stats.total_requests} icon={Activity} />
             <StatCard title={t("dashboard.passRate")} value={`${stats.pass_rate}%`} icon={Percent} variant="primary" trend={{ value: t("dashboard.realTrafficRatio"), positive: true }} />
-            <StatCard title={t("dashboard.offerPage")} value={stats.offer_page} icon={Target} variant="success" trend={{ value: t("dashboard.offerWeek"), positive: true }} />
+            <StatCard title={t("dashboard.offerPage")} value={stats.offer_page} icon={Target} variant="success" />
             <StatCard title={t("dashboard.botsBlocked")} value={stats.bots_blocked} icon={ShieldCheck} variant="destructive" trend={{ value: t("dashboard.allRejected"), positive: false }} />
           </>
         )}

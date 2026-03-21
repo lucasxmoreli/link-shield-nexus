@@ -104,7 +104,7 @@ export default function Domains() {
         toast.error(t("domains.dnsNotPointing"));
       }
     } catch (e: any) {
-      toast.error(e.message || "Verification failed");
+      toast.error(e.message || t("domains.verificationFailed"));
     } finally {
       setVerifyingId(null);
     }

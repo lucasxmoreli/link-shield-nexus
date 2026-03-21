@@ -320,9 +320,9 @@ export default function CampaignEdit() {
                   const selectedDomainObj = domains.find(d => d.url === domain);
                   if (selectedDomainObj && selectedDomainObj.ssl_status !== "active") {
                     return (
-                      <div className="flex items-start gap-2 rounded-lg border border-yellow-500/30 bg-yellow-500/5 p-3">
-                        <AlertTriangle className="h-4 w-4 mt-0.5 text-yellow-500 shrink-0" />
-                        <p className="text-xs text-yellow-200/80">{t("campaignEdit.domainSslWarning")}</p>
+                      <div className="flex items-start gap-2 rounded-lg border border-blue-500/30 bg-blue-500/5 p-3">
+                        <Info className="h-4 w-4 mt-0.5 text-blue-400 shrink-0" />
+                        <p className="text-xs text-blue-200/80">{t("campaignEdit.domainSslWarning")}</p>
                       </div>
                     );
                   }
