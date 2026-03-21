@@ -10,10 +10,10 @@ export default function Landing() {
   const { t } = useTranslation();
 
   const features = [
-    { icon: Shield, title: t("landing.advancedCloaking"), description: t("landing.advancedCloakingDesc") },
-    { icon: Eye, title: t("landing.proxyDetection"), description: t("landing.proxyDetectionDesc") },
-    { icon: Zap, title: t("landing.ultraLowLatency"), description: t("landing.ultraLowLatencyDesc") },
-    { icon: Globe, title: t("landing.multiPlatform"), description: t("landing.multiPlatformDesc") },
+    { icon: Shield, title: t("landing.advancedCloaking"), description: t("landing.advancedCloakingDesc"), color: "text-primary", bg: "bg-primary/10" },
+    { icon: Eye, title: t("landing.proxyDetection"), description: t("landing.proxyDetectionDesc"), color: "text-emerald-500", bg: "bg-emerald-500/10" },
+    { icon: Zap, title: t("landing.ultraLowLatency"), description: t("landing.ultraLowLatencyDesc"), color: "text-amber-500", bg: "bg-amber-500/10" },
+    { icon: Globe, title: t("landing.multiPlatform"), description: t("landing.multiPlatformDesc"), color: "text-sky-500", bg: "bg-sky-500/10" },
   ];
 
   const benefits = [
