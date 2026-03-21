@@ -88,8 +88,8 @@ export default function Landing() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {features.map((f) => (
             <div key={f.title} className="rounded-xl border border-border bg-card p-6 hover:border-primary/40 transition-colors">
-              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                <f.icon className="h-5 w-5 text-primary" strokeWidth={2} />
+              <div className={`h-10 w-10 rounded-lg ${f.bg} flex items-center justify-center mb-4`}>
+                <f.icon className={`h-5 w-5 ${f.color}`} strokeWidth={2} />
               </div>
               <h3 className="font-semibold text-lg mb-2">{f.title}</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">{f.description}</p>
