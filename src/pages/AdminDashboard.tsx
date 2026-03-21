@@ -177,7 +177,7 @@ export default function AdminDashboard() {
 
         <Card className="border-border bg-card">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Active Campaigns</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("admin.activeCampaigns")}</CardTitle>
             <Megaphone className="h-5 w-5 text-accent-foreground" />
           </CardHeader>
           <CardContent>
