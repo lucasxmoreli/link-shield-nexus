@@ -235,6 +235,9 @@ export default function Domains() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* DNS Configuration Reference Table */}
+      <DnsConfigTable />
     </div>
   );
 }
