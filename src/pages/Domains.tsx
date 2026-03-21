@@ -201,9 +201,13 @@ export default function Domains() {
                         <Badge variant="outline" className="border-[hsl(var(--success))]/30 bg-[hsl(var(--success))]/10 text-[hsl(var(--success))]">
                           <CheckCircle className="h-3 w-3 mr-1" /> {t("domains.verified")}
                         </Badge>
+                      ) : failedIds.has(d.id) ? (
+                        <Badge variant="outline" className="border-destructive/30 bg-destructive/10 text-destructive">
+                          <AlertTriangle className="h-3 w-3 mr-1" /> {t("domains.dnsError")}
+                        </Badge>
                       ) : (
                         <Badge variant="outline" className="border-yellow-500/30 bg-yellow-500/10 text-yellow-500">
-                          <XCircle className="h-3 w-3 mr-1" /> {t("domains.pending")}
+                          <XCircle className="h-3 w-3 mr-1" /> {t("domains.verifying")}
                         </Badge>
                       )}
                     </TableCell>
