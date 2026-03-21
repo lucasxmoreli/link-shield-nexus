@@ -337,7 +337,7 @@ export default function AdminDashboard() {
             </SelectContent>
           </Select>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setPlanDialog({ open: false, user: null })}>Cancel</Button>
+            <Button variant="outline" onClick={() => setPlanDialog({ open: false, user: null })}>{t("common.cancel")}</Button>
             <Button
               onClick={() => {
                 const plan = PLANS.find((p) => p.name === selectedPlan);
