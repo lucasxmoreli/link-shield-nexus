@@ -273,9 +273,9 @@ export default function AdminDashboard() {
                         <TableCell className="text-muted-foreground text-sm">{formatDate(u.created_at)}</TableCell>
                         <TableCell>
                           {u.is_suspended ? (
-                            <Badge variant="destructive" className="text-xs">Suspended</Badge>
+                            <Badge variant="destructive" className="text-xs">{t("admin.suspended")}</Badge>
                           ) : (
-                            <Badge variant="default" className="text-xs bg-emerald-600">Active</Badge>
+                            <Badge variant="default" className="text-xs bg-emerald-600">{t("admin.activeStatus")}</Badge>
                           )}
                         </TableCell>
                         <TableCell className="text-right">
