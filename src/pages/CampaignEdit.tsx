@@ -89,41 +89,7 @@ export default function CampaignEdit() {
   const [postbackBaseUrl, setPostbackBaseUrl] = useState("");
   const [postbackParams, setPostbackParams] = useState<{key: string, value: string, isCustom: boolean}[]>([{ key: "", value: "", isCustom: false }]);
   const [postbackMethod, setPostbackMethod] = useState<"GET" | "POST">("GET");
-
-  const { data: domains = [] } = useQuery({
-    queryKey: ["domains", user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("domains").select("*");
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user,
-  });
-
-  const { data: profile } = useQuery({
-    queryKey: ["profile", user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("profiles").select("*").eq("user_id", user!.id).single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user,
-  });
-
-  const userPlan = getPlanByName(profile?.plan_name);
-  const allowedSources = getAllowedSources(userPlan);
-  const hasLockedSources = allowedSources.length < TRAFFIC_SOURCES.length;
-
-  const { data: campaign } = useQuery({
-    queryKey: ["campaign", id],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("campaigns").select("*").eq("id", id!).single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: isEditing,
-  });
-
+...
   useEffect(() => {
     if (campaign) {
       setName(campaign.name);
@@ -140,34 +106,26 @@ export default function CampaignEdit() {
       setTargetDevices((campaign as any).target_devices ?? []);
       setTags((campaign as any).tags ?? []);
       setStrictMode((campaign as any).strict_mode ?? false);
-      const rawPostbackUrl: string = (campaign as any).postback_url ?? "";
-      const MACRO_VALUES = POSTBACK_MACROS.map((m) => m.macro);
-      if (rawPostbackUrl) {
-        const qIndex = rawPostbackUrl.indexOf("?");
-        if (qIndex !== -1) {
-          setPostbackBaseUrl(rawPostbackUrl.substring(0, qIndex));
-          const qs = rawPostbackUrl.substring(qIndex + 1);
-          const pairs = qs.split("&").filter(Boolean).map((pair) => {
-            const eqIndex = pair.indexOf("=");
-            if (eqIndex === -1) return { key: pair, value: "", isCustom: false };
-            const val = pair.substring(eqIndex + 1);
-            return { key: pair.substring(0, eqIndex), value: val, isCustom: !MACRO_VALUES.includes(val) };
-          });
-          setPostbackParams(pairs.length > 0 ? pairs : [{ key: "", value: "", isCustom: false }]);
-        } else {
-          setPostbackBaseUrl(rawPostbackUrl);
-          setPostbackParams([{ key: "", value: "", isCustom: false }]);
-        }
+      const raw = (campaign as any).postback_url ?? "";
+      const MACROS = ["{click_id}","{campaign_id}","{ip}","{country}","{device}","{cost}","{timestamp}"];
+      if (raw.includes("?")) {
+        const [base, query] = raw.split("?");
+        setPostbackBaseUrl(base);
+        const params = query.split("&").map((p: string) => {
+          const eqIdx = p.indexOf("=");
+          const key = p.slice(0, eqIdx);
+          const value = p.slice(eqIdx + 1);
+          return { key, value, isCustom: !MACROS.includes(value) };
+        });
+        setPostbackParams(params.length ? params : [{ key: "", value: "", isCustom: false }]);
       } else {
-        setPostbackBaseUrl("");
+        setPostbackBaseUrl(raw);
         setPostbackParams([{ key: "", value: "", isCustom: false }]);
       }
       setPostbackMethod(((campaign as any).postback_method as "GET" | "POST") ?? "GET");
     }
   }, [campaign]);
-
-  const [pendingHash, setPendingHash] = useState("");
-
+...
   const saveMutation = useMutation({
     mutationFn: async () => {
       const payload: any = {
@@ -184,12 +142,12 @@ export default function CampaignEdit() {
         tags,
         strict_mode: strictMode,
         postback_url: (() => {
-          const base = postbackBaseUrl.trim();
-          if (!base) return null;
-          const validParams = postbackParams.filter((p) => p.key.trim());
-          if (validParams.length === 0) return base;
-          const qs = validParams.map((p) => `${p.key.trim()}=${p.value}`).join("&");
-          return `${base}?${qs}`;
+          const qs = postbackParams
+            .filter(p => p.key.trim() !== "")
+            .map(p => `${p.key.trim()}=${p.value}`)
+            .join("&");
+          const full = qs ? `${postbackBaseUrl.trim()}?${qs}` : postbackBaseUrl.trim();
+          return full || null;
         })(),
         postback_method: postbackMethod,
       };
