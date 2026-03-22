@@ -1,0 +1,1 @@
+ALTER TABLE public.blocked_ips ADD COLUMN IF NOT EXISTS is_global boolean NOT NULL DEFAULT false;

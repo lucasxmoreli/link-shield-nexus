@@ -20,6 +20,7 @@ export type Database = {
           expires_at: string
           id: string
           ip_address: string
+          is_global: boolean
           reason: string
           user_id: string
         }
@@ -28,6 +29,7 @@ export type Database = {
           expires_at?: string
           id?: string
           ip_address: string
+          is_global?: boolean
           reason: string
           user_id: string
         }
@@ -36,6 +38,7 @@ export type Database = {
           expires_at?: string
           id?: string
           ip_address?: string
+          is_global?: boolean
           reason?: string
           user_id?: string
         }
