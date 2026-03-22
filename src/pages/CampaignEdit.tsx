@@ -632,9 +632,14 @@ export default function CampaignEdit() {
       </section>
 
       {/* BLOCK 3.7: Webhook Postback — Visual Builder */}
-      <section className="rounded-xl bg-[hsl(var(--card))] p-6 space-y-4">
+       <section className="rounded-xl border border-primary/20 bg-[hsl(var(--card))] p-6 space-y-4">
         <div>
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Webhook Postback</h2>
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            Webhook Postback
+            <Badge variant="secondary" className="ml-2 text-[10px] bg-primary/10 text-primary border-primary/20 uppercase tracking-wider">
+              {t("common.advanced")}
+            </Badge>
+          </h2>
           <p className="text-xs text-muted-foreground mt-1">
             Fired when a lead is approved. Build your tracker URL visually using macros.
           </p>
