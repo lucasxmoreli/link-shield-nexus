@@ -71,6 +71,7 @@ export default function Analytics() {
         source_platform: string | null;
         cost: number | null;
         is_unique: boolean | null;
+        risk_score: number | null;
       }>;
     },
     enabled: !!selectedCampaign,
