@@ -141,6 +141,7 @@ export default function CampaignEdit() {
       setTags((campaign as any).tags ?? []);
       setStrictMode((campaign as any).strict_mode ?? false);
       const rawPostbackUrl: string = (campaign as any).postback_url ?? "";
+      const MACRO_VALUES = POSTBACK_MACROS.map((m) => m.macro);
       if (rawPostbackUrl) {
         const qIndex = rawPostbackUrl.indexOf("?");
         if (qIndex !== -1) {
@@ -148,17 +149,18 @@ export default function CampaignEdit() {
           const qs = rawPostbackUrl.substring(qIndex + 1);
           const pairs = qs.split("&").filter(Boolean).map((pair) => {
             const eqIndex = pair.indexOf("=");
-            if (eqIndex === -1) return { key: pair, value: "" };
-            return { key: pair.substring(0, eqIndex), value: pair.substring(eqIndex + 1) };
+            if (eqIndex === -1) return { key: pair, value: "", isCustom: false };
+            const val = pair.substring(eqIndex + 1);
+            return { key: pair.substring(0, eqIndex), value: val, isCustom: !MACRO_VALUES.includes(val) };
           });
-          setPostbackParams(pairs.length > 0 ? pairs : [{ key: "", value: "" }]);
+          setPostbackParams(pairs.length > 0 ? pairs : [{ key: "", value: "", isCustom: false }]);
         } else {
           setPostbackBaseUrl(rawPostbackUrl);
-          setPostbackParams([{ key: "", value: "" }]);
+          setPostbackParams([{ key: "", value: "", isCustom: false }]);
         }
       } else {
         setPostbackBaseUrl("");
-        setPostbackParams([{ key: "", value: "" }]);
+        setPostbackParams([{ key: "", value: "", isCustom: false }]);
       }
       setPostbackMethod(((campaign as any).postback_method as "GET" | "POST") ?? "GET");
     }
