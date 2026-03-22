@@ -564,6 +564,7 @@ const en = {
     avgCpc: "Avg CPC",
     country: "Country",
     device: "Device",
+    avgScore: "Avg Score",
   },
 
   // Languages

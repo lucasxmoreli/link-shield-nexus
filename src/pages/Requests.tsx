@@ -171,6 +171,14 @@ export default function Requests() {
                     <TableCell>{r.campaigns?.name ?? "—"}</TableCell>
                     <TableCell className="font-mono text-sm text-primary">{r.campaigns?.hash ?? "—"}</TableCell>
                     <TableCell>{r.country_code ?? "—"}</TableCell>
+                    <TableCell>
+                      {(r as any).risk_score != null ? (() => {
+                        const s = (r as any).risk_score as number;
+                        if (s <= 25) return <Badge variant="outline" className="bg-success/20 text-success border-0">{t("requests.scoreLow")}</Badge>;
+                        if (s <= 65) return <Badge variant="outline" className="bg-[hsl(45_93%_47%)]/20 text-[hsl(45_93%_47%)] border-0">{t("requests.scoreMedium")}</Badge>;
+                        return <Badge variant="outline" className="bg-destructive/20 text-destructive border-0">{t("requests.scoreHigh")}</Badge>;
+                      })() : <span className="text-muted-foreground">—</span>}
+                    </TableCell>
                     <TableCell className="font-mono text-sm">{r.ip_address ?? "—"}</TableCell>
                     <TableCell><Badge variant="outline" className="border-border text-muted-foreground">{r.device_type ?? "—"}</Badge></TableCell>
                     <TableCell><Badge variant="outline" className={actionStyles[r.action_taken] ?? ""}>{actionLabel[r.action_taken] ?? r.action_taken.replace("_", " ")}</Badge></TableCell>

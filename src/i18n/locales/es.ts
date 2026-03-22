@@ -544,6 +544,7 @@ const es = {
     avgCpc: "CPC Promedio",
     country: "País",
     device: "Dispositivo",
+    avgScore: "Puntuación Prom.",
   },
 
   languages: {
