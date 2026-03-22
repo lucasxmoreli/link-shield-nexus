@@ -231,7 +231,7 @@ export default function Analytics() {
           </div>
 
           {/* Chart */}
-          {chartData.length > 0 && (
+          {chartData.length >= 2 ? (
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">{t("analytics.dailyChart")}</CardTitle>
