@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Plus, Copy, Pencil, Trash2, Link, Check, Lock, AlertTriangle } from "lucide-react";
+import { Plus, Copy, Pencil, Trash2, Link, Check, Lock, AlertTriangle, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -18,13 +18,43 @@ import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { getSourceByKey, getPlanByName } from "@/lib/plan-config";
 
+function buildTrackingUrl(domain: string, hash: string, source: string): string {
+  const base = domain.trim().replace(/\/+$/, "");
+  const dm = base.startsWith("http") ? base : `https://${base}`;
+  const root = `${dm}/c/${hash}`;
+
+  switch (source) {
+    case "tiktok":
+      return `${root}?click_id=__CALLBACK_PARAM__&campaign=__CID_NAME__&adset=__AID_NAME__&cost=__VALUE__&placement=__PLACEMENT__&source_platform=tiktok`;
+    case "facebook":
+    case "instagram":
+      return `${root}?click_id={{fbclid}}&campaign={{campaign.name}}&adset={{adset.name}}&cost={{cost_per_result}}&source_platform=facebook`;
+    case "google":
+    case "youtube":
+      return `${root}?click_id={gclid}&campaign={campaign}&adset={adgroup}&cost={cost_per_conversion}&source_platform=google`;
+    default:
+      return `${root}?utm_source={source}&utm_campaign={campaign}&utm_medium={medium}`;
+  }
+}
+
+function getSourceLabel(source: string): string {
+  const labels: Record<string, string> = {
+    tiktok: "TikTok Ads",
+    facebook: "Facebook Ads",
+    instagram: "Instagram Ads",
+    google: "Google Ads",
+    youtube: "YouTube Ads",
+  };
+  return labels[source] || "Organic / Other";
+}
+
 export default function Campaigns() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const navigate = useNavigate();
   const { t } = useTranslation();
 
-  const [linkModal, setLinkModal] = useState<{ open: boolean; hash: string; name: string }>({ open: false, hash: "", name: "" });
+  const [linkModal, setLinkModal] = useState<{ open: boolean; hash: string; name: string; source: string }>({ open: false, hash: "", name: "", source: "" });
   const [selectedDomain, setSelectedDomain] = useState<string>("");
   const [copied, setCopied] = useState(false);
 
@@ -61,22 +91,20 @@ export default function Campaigns() {
 
   const getFullLink = () => {
     if (!selectedDomain) return "";
-    const base = selectedDomain.trim().replace(/\/+$/, "");
-    const dm = base.startsWith("http") ? base : `https://${base}`;
-    return `${dm}/c/${linkModal.hash}`;
+    return buildTrackingUrl(selectedDomain, linkModal.hash, linkModal.source);
   };
 
-  const openLinkModal = (hash: string, name: string) => {
+  const openLinkModal = (hash: string, name: string, source: string) => {
     setCopied(false);
     setSelectedDomain(domains.length > 0 ? domains[0].url : "");
-    setLinkModal({ open: true, hash, name });
+    setLinkModal({ open: true, hash, name, source });
   };
 
   const handleCopyLink = async () => {
     await navigator.clipboard.writeText(getFullLink());
     setCopied(true);
     setTimeout(() => {
-      setLinkModal({ open: false, hash: "", name: "" });
+      setLinkModal({ open: false, hash: "", name: "", source: "" });
       setCopied(false);
       toast.success(t("campaigns.campaignLinkCopied"), { style: { background: "hsl(var(--success))", color: "#fff", border: "none" } });
     }, 600);
@@ -146,7 +174,7 @@ export default function Campaigns() {
                     <TableCell><Switch checked={c.is_active ?? false} disabled={isFreePlan} onCheckedChange={(v) => toggleMutation.mutate({ id: c.id, is_active: v })} /></TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => openLinkModal(c.hash, c.name)}><Copy className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => openLinkModal(c.hash, c.name, c.traffic_source)}><Copy className="h-4 w-4" /></Button>
                         <Button variant="ghost" size="icon" onClick={() => navigate(`/campaigns/${c.id}/edit`)}><Pencil className="h-4 w-4" /></Button>
                         <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(c.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                       </div>
@@ -160,12 +188,26 @@ export default function Campaigns() {
       </Card>
 
       <Dialog open={linkModal.open} onOpenChange={(open) => setLinkModal((prev) => ({ ...prev, open }))}>
-        <DialogContent className="sm:max-w-md border-border bg-card">
+        <DialogContent className="sm:max-w-lg border-border bg-card">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-lg"><Link className="h-5 w-5 text-primary" />{t("campaigns.campaignLink")}</DialogTitle>
             <DialogDescription className="text-muted-foreground">{linkModal.name}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-2">
+            {/* Platform badge */}
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="text-xs">
+                {(() => {
+                  const src = getSourceByKey(linkModal.source);
+                  if (src) {
+                    const Icon = src.icon;
+                    return <><Icon size={12} style={{ color: src.color }} className="mr-1" />{getSourceLabel(linkModal.source)}</>;
+                  }
+                  return getSourceLabel(linkModal.source);
+                })()}
+              </Badge>
+            </div>
+
             <div className="space-y-2">
               <label className="text-sm font-medium text-muted-foreground">{t("campaigns.domain")}</label>
               {domains.length === 0 ? (
@@ -197,8 +239,14 @@ export default function Campaigns() {
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-muted-foreground">{t("campaigns.campaignUrl")}</label>
-              <Input readOnly value={getFullLink()} className="font-mono text-sm border-border bg-muted/30 cursor-default" />
+              <Input readOnly value={getFullLink()} className="font-mono text-xs border-border bg-muted/30 cursor-default" />
             </div>
+
+            <div className="flex items-start gap-2 text-xs text-muted-foreground">
+              <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+              <span>{t("campaigns.macrosHint")}</span>
+            </div>
+
             <Button className="w-full neon-glow" onClick={handleCopyLink} disabled={copied || !selectedDomain}>
               {copied ? (<><Check className="h-4 w-4 mr-2" /> {t("common.copied")}</>) : (<><Copy className="h-4 w-4 mr-2" /> {t("campaigns.copyLink")}</>)}
             </Button>
