@@ -43,6 +43,7 @@ const pt = {
     domains: "Domínios",
     campaigns: "Campanhas",
     requests: "Requisições",
+    analytics: "Analytics",
     cloakTest: "Teste de Cloak",
     billing: "Planos e Cobranças",
     settings: "Configurações",
