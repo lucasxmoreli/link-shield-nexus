@@ -151,9 +151,11 @@ const pt = {
     safePagePlaceholder: "https://blog.exemplo.com/...",
     method: "Método",
     redirect: "Redirecionamento (302)",
-    redirectDesc: "Método mais rápido. A URL muda no navegador.",
+    redirectDesc: "O visitante é redirecionado para a URL. A URL de destino aparece na barra do navegador. Mais rápido e compatível com qualquer página.",
     contentFetch: "Busca de Conteúdo (Masking)",
-    contentFetchDesc: "Recomendado para Cloaking. O visitante permanece no seu domínio enquanto visualiza a oferta. Mais seguro contra revisões de plataformas de anúncios.",
+    contentFetchDesc: "O motor baixa o conteúdo da página e serve no seu domínio. A URL real da oferta nunca aparece no navegador. ⚠️ Use apenas se a página de oferta permitir acesso externo (evite Kiwify, Hotmart e páginas com proteção anti-bot).",
+    safeMethodHint: "💡 Recomendado: Use Redirecionamento para a safe page. A Busca de Conteúdo na safe page raramente é necessária.",
+    offerMethodHint: "💡 Recomendado: Use Redirecionamento para a maioria das ofertas. Use Busca de Conteúdo (Masking) apenas se quiser esconder completamente a URL da oferta e tiver certeza que a página aceita acesso externo.",
 
     offerPageSection: "💰 Página de Oferta",
     offerPageSectionDesc: "A página real de conversão. Exibida apenas para visitantes reais e segmentados.",
