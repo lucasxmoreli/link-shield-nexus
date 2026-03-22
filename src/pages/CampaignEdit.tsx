@@ -151,6 +151,8 @@ export default function CampaignEdit() {
         target_devices: targetDevices,
         tags,
         strict_mode: strictMode,
+        postback_url: postbackUrl.trim() || null,
+        postback_method: postbackMethod,
       };
       if (isEditing) {
         const { error } = await supabase.from("campaigns").update(payload).eq("id", id!);
