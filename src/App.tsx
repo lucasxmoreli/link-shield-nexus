@@ -60,6 +60,7 @@ const App = () => (
               <Route path="/campaigns/new" element={<CampaignEdit />} />
               <Route path="/campaigns/:id/edit" element={<CampaignEdit />} />
               <Route path="/requests" element={<Requests />} />
+              <Route path="/analytics" element={<Analytics />} />
               <Route path="/cloak-test" element={<CloakTest />} />
               <Route path="/billing" element={<Billing />} />
               <Route path="/invite-codes" element={<InviteCodes />} />
