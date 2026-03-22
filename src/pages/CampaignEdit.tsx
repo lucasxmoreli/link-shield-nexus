@@ -87,7 +87,7 @@ export default function CampaignEdit() {
   const [successModal, setSuccessModal] = useState<{ link: string; offerUrl: string; safeUrl: string } | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
   const [postbackBaseUrl, setPostbackBaseUrl] = useState("");
-  const [postbackParams, setPostbackParams] = useState<{key: string, value: string}[]>([{ key: "", value: "" }]);
+  const [postbackParams, setPostbackParams] = useState<{key: string, value: string, isCustom: boolean}[]>([{ key: "", value: "", isCustom: false }]);
   const [postbackMethod, setPostbackMethod] = useState<"GET" | "POST">("GET");
 
   const { data: domains = [] } = useQuery({
