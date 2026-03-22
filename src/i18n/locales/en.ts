@@ -123,6 +123,7 @@ const en = {
     campaignUrl: "Campaign URL",
     copyLink: "Copy Link",
     campaignLinkCopied: "Campaign link copied!",
+    macrosHint: "The macros will be automatically replaced by the ad platform when it receives the click.",
     campaignRemoved: "Campaign removed",
     noDomainsWarning: "⚠️ No domains available. You must connect and verify a custom domain in the Domains tab before generating a campaign link.",
     goToDomains: "Go to Domains",
