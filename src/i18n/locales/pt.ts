@@ -528,6 +528,7 @@ const pt = {
     totalCost: "Custo Total",
     cpl: "CPL",
     dailyChart: "Cliques aprovados vs bloqueados por dia",
+    insufficientChartData: "Dados insuficientes para o gráfico. Continue rodando tráfego para ver a evolução diária aqui.",
     platformBreakdown: "Breakdown por Plataforma",
     countryBreakdown: "Breakdown por País",
     deviceBreakdown: "Breakdown por Dispositivo",
