@@ -33,6 +33,16 @@ const COUNTRIES = [
 
 const DEVICES = ["desktop", "mobile", "tablet"] as const;
 
+const POSTBACK_MACROS = [
+  { macro: "{click_id}", desc: "Platform click ID" },
+  { macro: "{campaign_id}", desc: "CloakGuard campaign ID" },
+  { macro: "{ip}", desc: "Visitor IP address" },
+  { macro: "{country}", desc: "Visitor country code" },
+  { macro: "{device}", desc: "mobile / desktop / tablet" },
+  { macro: "{cost}", desc: "Click cost from platform" },
+  { macro: "{timestamp}", desc: "Unix timestamp" },
+];
+
 function generateHash(len = 10) {
   const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   const randomBytes = crypto.getRandomValues(new Uint8Array(len));
@@ -76,7 +86,8 @@ export default function CampaignEdit() {
   const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
   const [successModal, setSuccessModal] = useState<{ link: string; offerUrl: string; safeUrl: string } | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
-  const [postbackUrl, setPostbackUrl] = useState("");
+  const [postbackBaseUrl, setPostbackBaseUrl] = useState("");
+  const [postbackParams, setPostbackParams] = useState<{key: string, value: string}[]>([{ key: "", value: "" }]);
   const [postbackMethod, setPostbackMethod] = useState<"GET" | "POST">("GET");
 
   const { data: domains = [] } = useQuery({
@@ -129,7 +140,26 @@ export default function CampaignEdit() {
       setTargetDevices((campaign as any).target_devices ?? []);
       setTags((campaign as any).tags ?? []);
       setStrictMode((campaign as any).strict_mode ?? false);
-      setPostbackUrl((campaign as any).postback_url ?? "");
+      const rawPostbackUrl: string = (campaign as any).postback_url ?? "";
+      if (rawPostbackUrl) {
+        const qIndex = rawPostbackUrl.indexOf("?");
+        if (qIndex !== -1) {
+          setPostbackBaseUrl(rawPostbackUrl.substring(0, qIndex));
+          const qs = rawPostbackUrl.substring(qIndex + 1);
+          const pairs = qs.split("&").filter(Boolean).map((pair) => {
+            const eqIndex = pair.indexOf("=");
+            if (eqIndex === -1) return { key: pair, value: "" };
+            return { key: pair.substring(0, eqIndex), value: pair.substring(eqIndex + 1) };
+          });
+          setPostbackParams(pairs.length > 0 ? pairs : [{ key: "", value: "" }]);
+        } else {
+          setPostbackBaseUrl(rawPostbackUrl);
+          setPostbackParams([{ key: "", value: "" }]);
+        }
+      } else {
+        setPostbackBaseUrl("");
+        setPostbackParams([{ key: "", value: "" }]);
+      }
       setPostbackMethod(((campaign as any).postback_method as "GET" | "POST") ?? "GET");
     }
   }, [campaign]);
@@ -151,7 +181,14 @@ export default function CampaignEdit() {
         target_devices: targetDevices,
         tags,
         strict_mode: strictMode,
-        postback_url: postbackUrl.trim() || null,
+        postback_url: (() => {
+          const base = postbackBaseUrl.trim();
+          if (!base) return null;
+          const validParams = postbackParams.filter((p) => p.key.trim());
+          if (validParams.length === 0) return base;
+          const qs = validParams.map((p) => `${p.key.trim()}=${p.value}`).join("&");
+          return `${base}?${qs}`;
+        })(),
         postback_method: postbackMethod,
       };
       if (isEditing) {
@@ -511,22 +548,110 @@ export default function CampaignEdit() {
         <div>
           <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Webhook Postback</h2>
           <p className="text-xs text-muted-foreground mt-1">
-            Fire a GET or POST request when a lead is approved. Use macros to pass real-time data to your tracker.
+            {t("campaignEdit.webhookDesc")}
           </p>
         </div>
 
         <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">Postback URL</Label>
+          <Label className="text-xs text-muted-foreground">{t("campaignEdit.webhookBaseUrl")}</Label>
           <Input
-            placeholder="https://tracker.com/postback?cid={click_id}&payout=0"
+            placeholder="https://tracker.com/api/postback"
             className="bg-secondary border-border font-mono text-xs"
-            value={postbackUrl}
-            onChange={(e) => setPostbackUrl(e.target.value)}
+            value={postbackBaseUrl}
+            onChange={(e) => setPostbackBaseUrl(e.target.value)}
           />
         </div>
 
+        <div className="space-y-3">
+          <Label className="text-xs text-muted-foreground">{t("campaignEdit.webhookParams")}</Label>
+          <div className="space-y-2">
+            {postbackParams.map((param, idx) => {
+              const isMacro = POSTBACK_MACROS.some((m) => m.macro === param.value);
+              const isCustomSelected = !isMacro && param.value !== "";
+              const selectValue = isMacro ? param.value : isCustomSelected ? "__custom" : "";
+
+              return (
+                <div key={idx} className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      placeholder={t("campaignEdit.paramKey")}
+                      className="bg-secondary border-border text-xs flex-1"
+                      value={param.key}
+                      onChange={(e) => {
+                        const updated = [...postbackParams];
+                        updated[idx] = { ...updated[idx], key: e.target.value };
+                        setPostbackParams(updated);
+                      }}
+                    />
+                    <Select
+                      value={selectValue}
+                      onValueChange={(val) => {
+                        const updated = [...postbackParams];
+                        if (val === "__custom") {
+                          updated[idx] = { ...updated[idx], value: "" };
+                        } else {
+                          updated[idx] = { ...updated[idx], value: val };
+                        }
+                        setPostbackParams(updated);
+                      }}
+                    >
+                      <SelectTrigger className="bg-secondary border-border text-xs flex-1">
+                        <SelectValue placeholder={t("campaignEdit.selectMacro")} />
+                      </SelectTrigger>
+                      <SelectContent className="bg-card border-border">
+                        {POSTBACK_MACROS.map((m) => (
+                          <SelectItem key={m.macro} value={m.macro}>
+                            <span className="font-mono text-xs">{m.macro}</span>
+                            <span className="text-muted-foreground ml-1 text-[10px]">— {m.desc}</span>
+                          </SelectItem>
+                        ))}
+                        <SelectItem value="__custom">
+                          <span className="text-xs">Custom</span>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {postbackParams.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="shrink-0"
+                        onClick={() => setPostbackParams(postbackParams.filter((_, i) => i !== idx))}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    )}
+                  </div>
+                  {selectValue === "__custom" && (
+                    <Input
+                      placeholder={t("campaignEdit.paramValue")}
+                      className="bg-secondary border-border text-xs font-mono ml-0"
+                      value={param.value}
+                      onChange={(e) => {
+                        const updated = [...postbackParams];
+                        updated[idx] = { ...updated[idx], value: e.target.value };
+                        setPostbackParams(updated);
+                      }}
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setPostbackParams([...postbackParams, { key: "", value: "" }])}
+            className="gap-1.5"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            {t("campaignEdit.addParam")}
+          </Button>
+        </div>
+
         <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">Method</Label>
+          <Label className="text-xs text-muted-foreground">{t("campaignEdit.methodLabel")}</Label>
           <div className="flex gap-2">
             {(["GET", "POST"] as const).map((m) => (
               <button
@@ -544,39 +669,8 @@ export default function CampaignEdit() {
             ))}
           </div>
           <p className="text-xs text-muted-foreground">
-            Use <span className="text-primary font-medium">GET</span> for external trackers (RedTrack, UTMify, BeMob). Use <span className="text-primary font-medium">POST</span> for Facebook CAPI or TikTok Events API.
+            {t("campaignEdit.methodHint")}
           </p>
-        </div>
-
-        <div className="rounded-lg border border-border bg-secondary/50 p-4 space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Available Macros</p>
-          <div className="grid grid-cols-2 gap-2">
-            {[
-              { macro: "{click_id}", desc: "Platform click ID" },
-              { macro: "{campaign_id}", desc: "CloakGuard campaign ID" },
-              { macro: "{country}", desc: "Visitor country code" },
-              { macro: "{device}", desc: "mobile / desktop / tablet" },
-              { macro: "{cost}", desc: "Click cost from platform" },
-              { macro: "{timestamp}", desc: "Unix timestamp" },
-            ].map(({ macro, desc }) => (
-              <div key={macro} className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2">
-                <div>
-                  <p className="text-xs font-mono text-primary">{macro}</p>
-                  <p className="text-[10px] text-muted-foreground">{desc}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigator.clipboard.writeText(macro);
-                    toast.success(`${macro} copied`);
-                  }}
-                  className="ml-2 text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <Copy className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 
