@@ -90,6 +90,40 @@ export default function CampaignEdit() {
   const [postbackParams, setPostbackParams] = useState<{key: string, value: string, isCustom: boolean}[]>([{ key: "", value: "", isCustom: false }]);
   const [postbackMethod, setPostbackMethod] = useState<"GET" | "POST">("GET");
 
+  const { data: domains = [] } = useQuery({
+    queryKey: ["domains", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("domains").select("*");
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const { data: profile } = useQuery({
+    queryKey: ["profile", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("profiles").select("*").eq("user_id", user!.id).single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const userPlan = getPlanByName(profile?.plan_name);
+  const allowedSources = getAllowedSources(userPlan);
+  const hasLockedSources = allowedSources.length < TRAFFIC_SOURCES.length;
+
+  const { data: campaign } = useQuery({
+    queryKey: ["campaign", id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("campaigns").select("*").eq("id", id!).single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: isEditing,
+  });
+
   useEffect(() => {
     if (campaign) {
       setName(campaign.name);
