@@ -1,7 +1,22 @@
 import { useState, useEffect, KeyboardEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, X, AlertTriangle, Plus, Trash2, Lock, Zap, ShieldAlert, Info, Copy, Check, ExternalLink, Shield, Globe } from "lucide-react";
+import {
+  ArrowLeft,
+  X,
+  AlertTriangle,
+  Plus,
+  Trash2,
+  Lock,
+  Zap,
+  ShieldAlert,
+  Info,
+  Copy,
+  Check,
+  ExternalLink,
+  Shield,
+  Globe,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +26,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -19,29 +41,31 @@ import { useTranslation } from "react-i18next";
 import { TRAFFIC_SOURCES, getPlanByName, getAllowedSources } from "@/lib/plan-config";
 
 const COUNTRIES = [
-  { code: "US", name: "United States" }, { code: "BR", name: "Brazil" },
-  { code: "GB", name: "United Kingdom" }, { code: "DE", name: "Germany" },
-  { code: "FR", name: "France" }, { code: "ES", name: "Spain" },
-  { code: "IT", name: "Italy" }, { code: "PT", name: "Portugal" },
-  { code: "CA", name: "Canada" }, { code: "AU", name: "Australia" },
-  { code: "JP", name: "Japan" }, { code: "MX", name: "Mexico" },
-  { code: "AR", name: "Argentina" }, { code: "CO", name: "Colombia" },
-  { code: "IN", name: "India" }, { code: "NG", name: "Nigeria" },
-  { code: "ZA", name: "South Africa" }, { code: "PH", name: "Philippines" },
-  { code: "ID", name: "Indonesia" }, { code: "TH", name: "Thailand" },
+  { code: "US", name: "United States" },
+  { code: "BR", name: "Brazil" },
+  { code: "GB", name: "United Kingdom" },
+  { code: "DE", name: "Germany" },
+  { code: "FR", name: "France" },
+  { code: "ES", name: "Spain" },
+  { code: "IT", name: "Italy" },
+  { code: "PT", name: "Portugal" },
+  { code: "CA", name: "Canada" },
+  { code: "AU", name: "Australia" },
+  { code: "JP", name: "Japan" },
+  { code: "MX", name: "Mexico" },
+  { code: "AR", name: "Argentina" },
+  { code: "CO", name: "Colombia" },
+  { code: "IN", name: "India" },
+  { code: "NG", name: "Nigeria" },
+  { code: "ZA", name: "South Africa" },
+  { code: "PH", name: "Philippines" },
+  { code: "ID", name: "Indonesia" },
+  { code: "TH", name: "Thailand" },
 ];
 
 const DEVICES = ["desktop", "mobile", "tablet"] as const;
 
-const POSTBACK_MACROS = [
-  { macro: "{click_id}", desc: "Platform click ID" },
-  { macro: "{campaign_id}", desc: "CloakGuard campaign ID" },
-  { macro: "{ip}", desc: "Visitor IP address" },
-  { macro: "{country}", desc: "Visitor country code" },
-  { macro: "{device}", desc: "mobile / desktop / tablet" },
-  { macro: "{cost}", desc: "Click cost from platform" },
-  { macro: "{timestamp}", desc: "Unix timestamp" },
-];
+const POSTBACK_MACROS = ["{click_id}", "{campaign_id}", "{ip}", "{country}", "{device}", "{cost}", "{timestamp}"];
 
 function generateHash(len = 10) {
   const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -52,6 +76,12 @@ function generateHash(len = 10) {
 interface OfferEntry {
   url: string;
   weight: number;
+}
+
+interface PostbackParam {
+  key: string;
+  value: string;
+  isCustom: boolean;
 }
 
 export default function CampaignEdit() {
@@ -86,8 +116,10 @@ export default function CampaignEdit() {
   const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
   const [successModal, setSuccessModal] = useState<{ link: string; offerUrl: string; safeUrl: string } | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
+
+  // ── Webhook Postback states (Visual Builder) ─────────────────────────
   const [postbackBaseUrl, setPostbackBaseUrl] = useState("");
-  const [postbackParams, setPostbackParams] = useState<{key: string, value: string, isCustom: boolean}[]>([{ key: "", value: "", isCustom: false }]);
+  const [postbackParams, setPostbackParams] = useState<PostbackParam[]>([{ key: "", value: "", isCustom: false }]);
   const [postbackMethod, setPostbackMethod] = useState<"GET" | "POST">("GET");
 
   const { data: domains = [] } = useQuery({
@@ -140,8 +172,9 @@ export default function CampaignEdit() {
       setTargetDevices((campaign as any).target_devices ?? []);
       setTags((campaign as any).tags ?? []);
       setStrictMode((campaign as any).strict_mode ?? false);
+
+      // ── Parse postback_url into base + params ──────────────────────
       const raw = (campaign as any).postback_url ?? "";
-      const MACROS = ["{click_id}","{campaign_id}","{ip}","{country}","{device}","{cost}","{timestamp}"];
       if (raw.includes("?")) {
         const [base, query] = raw.split("?");
         setPostbackBaseUrl(base);
@@ -149,7 +182,7 @@ export default function CampaignEdit() {
           const eqIdx = p.indexOf("=");
           const key = p.slice(0, eqIdx);
           const value = p.slice(eqIdx + 1);
-          return { key, value, isCustom: !MACROS.includes(value) };
+          return { key, value, isCustom: !POSTBACK_MACROS.includes(value) };
         });
         setPostbackParams(params.length ? params : [{ key: "", value: "", isCustom: false }]);
       } else {
@@ -164,12 +197,22 @@ export default function CampaignEdit() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
+      // ── Build postback_url from base + params (no URLSearchParams — preserves {} macros) ──
+      const qs = postbackParams
+        .filter((p) => p.key.trim() !== "")
+        .map((p) => `${p.key.trim()}=${p.value}`)
+        .join("&");
+      const finalPostbackUrl = qs ? `${postbackBaseUrl.trim()}?${qs}` : postbackBaseUrl.trim();
+
       const payload: any = {
         name,
         domain: domain || null,
         traffic_source: trafficSource,
         safe_url: ensureAbsoluteUrl(safeUrl),
-        offer_url: offerMode === "single" ? ensureAbsoluteUrl(offerUrl) : abOffers.map((o) => ensureAbsoluteUrl(o.url)).join(","),
+        offer_url:
+          offerMode === "single"
+            ? ensureAbsoluteUrl(offerUrl)
+            : abOffers.map((o) => ensureAbsoluteUrl(o.url)).join(","),
         offer_page_b: abStormEnabled && offerPageB.trim() ? ensureAbsoluteUrl(offerPageB.trim()) : null,
         safe_page_method: safeMethod,
         offer_page_method: offerMethod,
@@ -177,14 +220,7 @@ export default function CampaignEdit() {
         target_devices: targetDevices,
         tags,
         strict_mode: strictMode,
-        postback_url: (() => {
-          const qs = postbackParams
-            .filter(p => p.key.trim() !== "")
-            .map(p => `${p.key.trim()}=${p.value}`)
-            .join("&");
-          const full = qs ? `${postbackBaseUrl.trim()}?${qs}` : postbackBaseUrl.trim();
-          return full || null;
-        })(),
+        postback_url: finalPostbackUrl || null,
         postback_method: postbackMethod,
       };
       if (isEditing) {
@@ -238,7 +274,10 @@ export default function CampaignEdit() {
   };
 
   const filteredCountries = COUNTRIES.filter(
-    (c) => !targetCountries.includes(c.code) && (c.name.toLowerCase().includes(countrySearch.toLowerCase()) || c.code.toLowerCase().includes(countrySearch.toLowerCase()))
+    (c) =>
+      !targetCountries.includes(c.code) &&
+      (c.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
+        c.code.toLowerCase().includes(countrySearch.toLowerCase())),
   );
   const addCountry = (code: string) => {
     setTargetCountries([...targetCountries, code]);
@@ -263,7 +302,6 @@ export default function CampaignEdit() {
   const isValidAbsoluteUrl = (url: string): boolean => {
     const normalized = ensureAbsoluteUrl(url);
     if (!normalized) return false;
-
     try {
       const parsed = new URL(normalized);
       return /^https?:$/i.test(parsed.protocol) && Boolean(parsed.hostname);
@@ -285,12 +323,22 @@ export default function CampaignEdit() {
 
   const isFormValid = Boolean(
     name &&
-      domain &&
-      trafficSource &&
-      safeUrl &&
-      (offerMode === "single" ? offerUrl : abOffers.every((o) => o.url)) &&
-      areDestinationUrlsValid,
+    domain &&
+    trafficSource &&
+    safeUrl &&
+    (offerMode === "single" ? offerUrl : abOffers.every((o) => o.url)) &&
+    areDestinationUrlsValid,
   );
+
+  // ── Postback preview URL (live, no encoding) ──────────────────────────
+  const postbackPreview = (() => {
+    if (!postbackBaseUrl.trim()) return "";
+    const qs = postbackParams
+      .filter((p) => p.key.trim())
+      .map((p) => `${p.key}=${p.value || "..."}`)
+      .join("&");
+    return qs ? `${postbackBaseUrl.trim()}?${qs}` : postbackBaseUrl.trim();
+  })();
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 pb-12">
@@ -298,16 +346,25 @@ export default function CampaignEdit() {
         <Button variant="ghost" size="icon" onClick={() => navigate("/campaigns")}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-2xl font-bold">{isEditing ? t("campaignEdit.editCampaign") : t("campaignEdit.newCampaign")}</h1>
+        <h1 className="text-2xl font-bold">
+          {isEditing ? t("campaignEdit.editCampaign") : t("campaignEdit.newCampaign")}
+        </h1>
       </div>
 
       {/* BLOCK 1: Campaign */}
       <section className="rounded-xl bg-[hsl(var(--card))] p-6 space-y-4">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("campaignEdit.campaignSection")}</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          {t("campaignEdit.campaignSection")}
+        </h2>
         <div className="space-y-4">
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">{t("campaignEdit.campaignName")}</Label>
-            <Input placeholder={t("campaignEdit.campaignNamePlaceholder")} className="bg-secondary border-border" value={name} onChange={(e) => setName(e.target.value)} />
+            <Input
+              placeholder={t("campaignEdit.campaignNamePlaceholder")}
+              className="bg-secondary border-border"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
           </div>
           <div className="space-y-1.5">
             <div className="flex items-center gap-1.5">
@@ -328,7 +385,11 @@ export default function CampaignEdit() {
                 <AlertTriangle className="h-4 w-4 mt-0.5 text-destructive shrink-0" />
                 <p className="text-sm text-muted-foreground">
                   {t("campaignEdit.noDomainsBlock")}{" "}
-                  <button type="button" onClick={() => navigate("/domains")} className="underline text-primary hover:text-primary/80 transition-colors">
+                  <button
+                    type="button"
+                    onClick={() => navigate("/domains")}
+                    className="underline text-primary hover:text-primary/80 transition-colors"
+                  >
                     {t("campaignEdit.noDomainsAction")}
                   </button>
                 </p>
@@ -345,9 +406,19 @@ export default function CampaignEdit() {
                         <span className="flex items-center gap-2">
                           {d.url}
                           {d.ssl_status === "active" ? (
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-green-500/30 text-green-400">{t("campaignEdit.domainSslActive")}</Badge>
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] px-1.5 py-0 border-green-500/30 text-green-400"
+                            >
+                              {t("campaignEdit.domainSslActive")}
+                            </Badge>
                           ) : (
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-blue-500/30 text-blue-400">{t("campaignEdit.domainSslPending")}</Badge>
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] px-1.5 py-0 border-blue-500/30 text-blue-400"
+                            >
+                              {t("campaignEdit.domainSslPending")}
+                            </Badge>
                           )}
                         </span>
                       </SelectItem>
@@ -355,18 +426,19 @@ export default function CampaignEdit() {
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">{t("campaignEdit.domainHelper")}</p>
-                {domain && (() => {
-                  const selectedDomainObj = domains.find(d => d.url === domain);
-                  if (selectedDomainObj && selectedDomainObj.ssl_status !== "active") {
-                    return (
-                      <div className="flex items-start gap-2 rounded-lg border border-blue-500/30 bg-blue-500/5 p-3">
-                        <Info className="h-4 w-4 mt-0.5 text-blue-400 shrink-0" />
-                        <p className="text-xs text-blue-200/80">{t("campaignEdit.domainSslWarning")}</p>
-                      </div>
-                    );
-                  }
-                  return null;
-                })()}
+                {domain &&
+                  (() => {
+                    const selectedDomainObj = domains.find((d) => d.url === domain);
+                    if (selectedDomainObj && selectedDomainObj.ssl_status !== "active") {
+                      return (
+                        <div className="flex items-start gap-2 rounded-lg border border-blue-500/30 bg-blue-500/5 p-3">
+                          <Info className="h-4 w-4 mt-0.5 text-blue-400 shrink-0" />
+                          <p className="text-xs text-blue-200/80">{t("campaignEdit.domainSslWarning")}</p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
               </>
             )}
           </div>
@@ -421,17 +493,25 @@ export default function CampaignEdit() {
         <div className="space-y-2">
           <Label className="text-xs text-muted-foreground">{t("campaignEdit.method")}</Label>
           <RadioGroup value={safeMethod} onValueChange={setSafeMethod} className="flex flex-col sm:flex-row gap-3">
-            <label className={`flex-1 flex items-start gap-3 cursor-pointer rounded-lg border px-4 py-3 text-sm transition-colors ${safeMethod === "redirect" ? "border-primary bg-primary/10" : "border-border bg-secondary"}`}>
+            <label
+              className={`flex-1 flex items-start gap-3 cursor-pointer rounded-lg border px-4 py-3 text-sm transition-colors ${safeMethod === "redirect" ? "border-primary bg-primary/10" : "border-border bg-secondary"}`}
+            >
               <RadioGroupItem value="redirect" className="mt-0.5" />
               <div>
-                <p className={`font-medium ${safeMethod === "redirect" ? "text-primary" : "text-foreground"}`}>{t("campaignEdit.redirect")}</p>
+                <p className={`font-medium ${safeMethod === "redirect" ? "text-primary" : "text-foreground"}`}>
+                  {t("campaignEdit.redirect")}
+                </p>
                 <p className="text-xs text-muted-foreground mt-0.5">{t("campaignEdit.redirectDesc")}</p>
               </div>
             </label>
-            <label className={`flex-1 flex items-start gap-3 cursor-pointer rounded-lg border px-4 py-3 text-sm transition-colors ${safeMethod === "content_fetch" ? "border-primary bg-primary/10" : "border-border bg-secondary"}`}>
+            <label
+              className={`flex-1 flex items-start gap-3 cursor-pointer rounded-lg border px-4 py-3 text-sm transition-colors ${safeMethod === "content_fetch" ? "border-primary bg-primary/10" : "border-border bg-secondary"}`}
+            >
               <RadioGroupItem value="content_fetch" className="mt-0.5" />
               <div>
-                <p className={`font-medium ${safeMethod === "content_fetch" ? "text-primary" : "text-foreground"}`}>{t("campaignEdit.contentFetch")}</p>
+                <p className={`font-medium ${safeMethod === "content_fetch" ? "text-primary" : "text-foreground"}`}>
+                  {t("campaignEdit.contentFetch")}
+                </p>
                 <p className="text-xs text-muted-foreground mt-0.5">{t("campaignEdit.contentFetchDesc")}</p>
               </div>
             </label>
@@ -445,7 +525,6 @@ export default function CampaignEdit() {
           <h2 className="text-sm font-semibold text-foreground">{t("campaignEdit.offerPageSection")}</h2>
           <p className="text-xs text-muted-foreground mt-0.5">{t("campaignEdit.offerPageSectionDesc")}</p>
         </div>
-
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">{t("campaignEdit.primaryOffer")}</Label>
           <Input
@@ -456,8 +535,6 @@ export default function CampaignEdit() {
             onBlur={(e) => normalizeUrlField(setOfferUrl)(e.target.value)}
           />
         </div>
-
-        {/* A/B Storm Toggle */}
         <div className="flex items-center justify-between rounded-lg border border-border bg-secondary/50 px-4 py-3">
           <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
@@ -476,7 +553,6 @@ export default function CampaignEdit() {
             }}
           />
         </div>
-
         <Collapsible open={abStormEnabled}>
           <CollapsibleContent className="overflow-hidden data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-up-2 data-[state=open]:slide-down-2">
             <div className="space-y-3 rounded-lg border border-primary/20 bg-primary/5 p-4">
@@ -491,30 +567,44 @@ export default function CampaignEdit() {
                 />
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                {t("campaignEdit.abStormHelp").split("<bold>").map((part, i) => {
-                  if (i === 0) return part;
-                  const [bold, rest] = part.split("</bold>");
-                  return <span key={i}><span className="font-semibold text-primary">{bold}</span>{rest}</span>;
-                })}
+                {t("campaignEdit.abStormHelp")
+                  .split("<bold>")
+                  .map((part, i) => {
+                    if (i === 0) return part;
+                    const [bold, rest] = part.split("</bold>");
+                    return (
+                      <span key={i}>
+                        <span className="font-semibold text-primary">{bold}</span>
+                        {rest}
+                      </span>
+                    );
+                  })}
               </p>
             </div>
           </CollapsibleContent>
         </Collapsible>
-
         <div className="space-y-2">
           <Label className="text-xs text-muted-foreground">{t("campaignEdit.method")}</Label>
           <RadioGroup value={offerMethod} onValueChange={setOfferMethod} className="flex flex-col sm:flex-row gap-3">
-            <label className={`flex-1 flex items-start gap-3 cursor-pointer rounded-lg border px-4 py-3 text-sm transition-colors ${offerMethod === "redirect" ? "border-primary bg-primary/10" : "border-border bg-secondary"}`}>
+            <label
+              className={`flex-1 flex items-start gap-3 cursor-pointer rounded-lg border px-4 py-3 text-sm transition-colors ${offerMethod === "redirect" ? "border-primary bg-primary/10" : "border-border bg-secondary"}`}
+            >
               <RadioGroupItem value="redirect" className="mt-0.5" />
               <div>
-                <p className={`font-medium ${offerMethod === "redirect" ? "text-primary" : "text-foreground"}`}>{t("campaignEdit.redirect")}</p>
+                <p className={`font-medium ${offerMethod === "redirect" ? "text-primary" : "text-foreground"}`}>
+                  {t("campaignEdit.redirect")}
+                </p>
                 <p className="text-xs text-muted-foreground mt-0.5">{t("campaignEdit.redirectDesc")}</p>
               </div>
             </label>
-            <label className={`flex-1 flex items-start gap-3 cursor-pointer rounded-lg border px-4 py-3 text-sm transition-colors ${offerMethod === "content_fetch" ? "border-primary bg-primary/10" : "border-border bg-secondary"}`}>
+            <label
+              className={`flex-1 flex items-start gap-3 cursor-pointer rounded-lg border px-4 py-3 text-sm transition-colors ${offerMethod === "content_fetch" ? "border-primary bg-primary/10" : "border-border bg-secondary"}`}
+            >
               <RadioGroupItem value="content_fetch" className="mt-0.5" />
               <div>
-                <p className={`font-medium ${offerMethod === "content_fetch" ? "text-primary" : "text-foreground"}`}>{t("campaignEdit.contentFetch")}</p>
+                <p className={`font-medium ${offerMethod === "content_fetch" ? "text-primary" : "text-foreground"}`}>
+                  {t("campaignEdit.contentFetch")}
+                </p>
                 <p className="text-xs text-muted-foreground mt-0.5">{t("campaignEdit.contentFetchDesc")}</p>
               </div>
             </label>
@@ -524,7 +614,9 @@ export default function CampaignEdit() {
 
       {/* BLOCK 3.5: Strict Mode */}
       <section className="rounded-xl bg-[hsl(var(--card))] p-6 space-y-4">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("campaignEdit.securitySection")}</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          {t("campaignEdit.securitySection")}
+        </h2>
         <div className="flex items-center justify-between rounded-lg border border-border bg-secondary/50 px-4 py-3">
           <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-destructive/10">
@@ -539,86 +631,148 @@ export default function CampaignEdit() {
         </div>
       </section>
 
-      {/* BLOCK 3.7: Webhook Postback */}
+      {/* BLOCK 3.7: Webhook Postback — Visual Builder */}
       <section className="rounded-xl bg-[hsl(var(--card))] p-6 space-y-4">
         <div>
           <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Webhook Postback</h2>
-          <p className="text-xs text-muted-foreground mt-1">Fired when a lead is approved. Build your tracker URL visually using macros.</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Fired when a lead is approved. Build your tracker URL visually using macros.
+          </p>
         </div>
+
+        {/* Base URL */}
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Base URL</Label>
-          <Input placeholder="https://tracker.com/postback" className="bg-secondary border-border font-mono text-xs" value={postbackBaseUrl} onChange={(e) => setPostbackBaseUrl(e.target.value)} />
+          <Input
+            placeholder="https://tracker.com/postback"
+            className="bg-secondary border-border font-mono text-xs"
+            value={postbackBaseUrl}
+            onChange={(e) => setPostbackBaseUrl(e.target.value)}
+          />
         </div>
+
+        {/* Query Parameters */}
         <div className="space-y-2">
           <Label className="text-xs text-muted-foreground">Query Parameters</Label>
           <div className="space-y-2">
             {postbackParams.map((param, index) => (
               <div key={index} className="flex gap-2 items-center">
-                <Input placeholder="key" className="bg-secondary border-border font-mono text-xs w-28 shrink-0" value={param.key}
-                  onChange={(e) => { const u = [...postbackParams]; u[index] = { ...u[index], key: e.target.value }; setPostbackParams(u); }} />
+                <Input
+                  placeholder="key"
+                  className="bg-secondary border-border font-mono text-xs w-28 shrink-0"
+                  value={param.key}
+                  onChange={(e) => {
+                    const updated = [...postbackParams];
+                    updated[index] = { ...updated[index], key: e.target.value };
+                    setPostbackParams(updated);
+                  }}
+                />
                 {param.isCustom ? (
-                  <Input placeholder="custom value" className="bg-secondary border-border font-mono text-xs flex-1" value={param.value}
-                    onChange={(e) => { const u = [...postbackParams]; u[index] = { ...u[index], value: e.target.value }; setPostbackParams(u); }} />
+                  <Input
+                    placeholder="custom value"
+                    className="bg-secondary border-border font-mono text-xs flex-1"
+                    value={param.value}
+                    onChange={(e) => {
+                      const updated = [...postbackParams];
+                      updated[index] = { ...updated[index], value: e.target.value };
+                      setPostbackParams(updated);
+                    }}
+                  />
                 ) : (
-                  <Select value={param.value || "__placeholder__"} onValueChange={(val) => {
-                    const u = [...postbackParams];
-                    if (val === "__custom__") { u[index] = { ...u[index], isCustom: true, value: "" }; }
-                    else if (val !== "__placeholder__") { u[index] = { ...u[index], value: val, isCustom: false }; }
-                    setPostbackParams(u);
-                  }}>
-                    <SelectTrigger className="bg-secondary border-border font-mono text-xs flex-1"><SelectValue placeholder="select macro" /></SelectTrigger>
+                  <Select
+                    value={param.value || "__placeholder__"}
+                    onValueChange={(val) => {
+                      const updated = [...postbackParams];
+                      if (val === "__custom__") {
+                        updated[index] = { ...updated[index], isCustom: true, value: "" };
+                      } else if (val !== "__placeholder__") {
+                        updated[index] = { ...updated[index], value: val, isCustom: false };
+                      }
+                      setPostbackParams(updated);
+                    }}
+                  >
+                    <SelectTrigger className="bg-secondary border-border font-mono text-xs flex-1">
+                      <SelectValue placeholder="select macro" />
+                    </SelectTrigger>
                     <SelectContent>
-                      {["{click_id}","{campaign_id}","{ip}","{country}","{device}","{cost}","{timestamp}"].map(m => (
-                        <SelectItem key={m} value={m} className="font-mono text-xs">{m}</SelectItem>
+                      {POSTBACK_MACROS.map((m) => (
+                        <SelectItem key={m} value={m} className="font-mono text-xs">
+                          {m}
+                        </SelectItem>
                       ))}
-                      <SelectItem value="__custom__" className="text-xs italic text-muted-foreground">✏ Custom value</SelectItem>
+                      <SelectItem value="__custom__" className="text-xs italic text-muted-foreground">
+                        ✏ Custom value
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 )}
-                <Button type="button" variant="ghost" size="icon" className="shrink-0" disabled={postbackParams.length === 1}
-                  onClick={() => setPostbackParams(postbackParams.filter((_, i) => i !== index))}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="shrink-0"
+                  disabled={postbackParams.length === 1}
+                  onClick={() => setPostbackParams(postbackParams.filter((_, i) => i !== index))}
+                >
                   <Trash2 className="h-4 w-4 text-destructive" />
                 </Button>
               </div>
             ))}
           </div>
-          <Button type="button" variant="outline" size="sm" className="gap-1.5 text-xs mt-1"
-            onClick={() => setPostbackParams([...postbackParams, { key: "", value: "", isCustom: false }])}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="gap-1.5 text-xs mt-1"
+            onClick={() => setPostbackParams([...postbackParams, { key: "", value: "", isCustom: false }])}
+          >
             <Plus className="h-3.5 w-3.5" /> Add Parameter
           </Button>
         </div>
-        {postbackBaseUrl.trim() && (
+
+        {/* Live Preview */}
+        {postbackPreview && (
           <div className="rounded-lg border border-border bg-secondary/50 p-3 space-y-1">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Preview</p>
-            <p className="text-xs font-mono text-primary break-all leading-relaxed">
-              {postbackBaseUrl.trim()}{postbackParams.filter(p => p.key.trim()).length > 0 && "?" + postbackParams.filter(p => p.key.trim()).map(p => `${p.key}=${p.value || "..."}`).join("&")}
-            </p>
+            <p className="text-xs font-mono text-primary break-all leading-relaxed">{postbackPreview}</p>
           </div>
         )}
+
+        {/* Method */}
         <div className="space-y-2">
           <Label className="text-xs text-muted-foreground">Method</Label>
           <div className="flex gap-2">
             {(["GET", "POST"] as const).map((m) => (
-              <button key={m} type="button" onClick={() => setPostbackMethod(m)}
-                className={`rounded-lg border px-5 py-2 text-sm font-medium transition-colors ${postbackMethod === m ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary text-muted-foreground"}`}>
+              <button
+                key={m}
+                type="button"
+                onClick={() => setPostbackMethod(m)}
+                className={`rounded-lg border px-5 py-2 text-sm font-medium transition-colors ${
+                  postbackMethod === m
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-secondary text-muted-foreground"
+                }`}
+              >
                 {m}
               </button>
             ))}
           </div>
           <p className="text-xs text-muted-foreground">
-            Use <span className="text-primary font-medium">GET</span> for trackers (RedTrack, UTMify, BeMob). Use <span className="text-primary font-medium">POST</span> for Facebook CAPI or TikTok Events API.
+            Use <span className="text-primary font-medium">GET</span> for trackers (RedTrack, UTMify, BeMob). Use{" "}
+            <span className="text-primary font-medium">POST</span> for Facebook CAPI or TikTok Events API.
           </p>
         </div>
       </section>
 
       {/* BLOCK 4: Target */}
       <section className="rounded-xl bg-[hsl(var(--card))] p-6 space-y-4">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("campaignEdit.targetSection")}</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          {t("campaignEdit.targetSection")}
+        </h2>
         <div className="flex items-start gap-3 rounded-lg border border-yellow-500/30 bg-yellow-500/5 p-3">
           <AlertTriangle className="h-4 w-4 mt-0.5 text-yellow-500 shrink-0" />
           <p className="text-sm text-yellow-200/80">{t("campaignEdit.tiktokWarning")}</p>
         </div>
-
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">{t("campaignEdit.countries")}</Label>
           <div className="relative">
@@ -626,15 +780,27 @@ export default function CampaignEdit() {
               placeholder={t("campaignEdit.searchCountries")}
               className="bg-secondary border-border"
               value={countrySearch}
-              onChange={(e) => { setCountrySearch(e.target.value); setCountryDropdownOpen(true); }}
+              onChange={(e) => {
+                setCountrySearch(e.target.value);
+                setCountryDropdownOpen(true);
+              }}
               onFocus={() => setCountryDropdownOpen(true)}
               onBlur={() => setTimeout(() => setCountryDropdownOpen(false), 200)}
             />
             {countryDropdownOpen && filteredCountries.length > 0 && (
               <div className="absolute z-50 mt-1 w-full max-h-48 overflow-y-auto rounded-lg border border-border bg-card shadow-lg">
                 {filteredCountries.slice(0, 10).map((c) => (
-                  <button key={c.code} type="button" className="w-full text-left px-3 py-2 text-sm hover:bg-secondary transition-colors" onMouseDown={(e) => { e.preventDefault(); addCountry(c.code); }}>
-                    <span className="font-mono text-primary mr-2">{c.code}</span>{c.name}
+                  <button
+                    key={c.code}
+                    type="button"
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-secondary transition-colors"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      addCountry(c.code);
+                    }}
+                  >
+                    <span className="font-mono text-primary mr-2">{c.code}</span>
+                    {c.name}
                   </button>
                 ))}
               </div>
@@ -645,18 +811,24 @@ export default function CampaignEdit() {
               {targetCountries.map((code) => (
                 <Badge key={code} variant="secondary" className="gap-1 bg-primary/10 text-primary border-primary/20">
                   {code}
-                  <button type="button" onClick={() => removeCountry(code)} className="hover:text-destructive"><X className="h-3 w-3" /></button>
+                  <button type="button" onClick={() => removeCountry(code)} className="hover:text-destructive">
+                    <X className="h-3 w-3" />
+                  </button>
                 </Badge>
               ))}
             </div>
           )}
         </div>
-
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">{t("campaignEdit.devices")}</Label>
           <div className="flex gap-2">
             {DEVICES.map((d) => (
-              <button key={d} type="button" onClick={() => toggleDevice(d)} className={`rounded-lg border px-4 py-2 text-sm font-medium capitalize transition-colors ${targetDevices.includes(d) ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary text-muted-foreground"}`}>
+              <button
+                key={d}
+                type="button"
+                onClick={() => toggleDevice(d)}
+                className={`rounded-lg border px-4 py-2 text-sm font-medium capitalize transition-colors ${targetDevices.includes(d) ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary text-muted-foreground"}`}
+              >
                 {d}
               </button>
             ))}
@@ -666,17 +838,27 @@ export default function CampaignEdit() {
 
       {/* BLOCK 5: Tags */}
       <section className="rounded-xl bg-[hsl(var(--card))] p-6 space-y-4">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("campaignEdit.tagsSection")}</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          {t("campaignEdit.tagsSection")}
+        </h2>
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">{t("campaignEdit.tagHelper")}</Label>
-          <Input placeholder={t("campaignEdit.tagPlaceholder")} className="bg-secondary border-border" value={tagInput} onChange={(e) => setTagInput(e.target.value)} onKeyDown={handleTagKeyDown} />
+          <Input
+            placeholder={t("campaignEdit.tagPlaceholder")}
+            className="bg-secondary border-border"
+            value={tagInput}
+            onChange={(e) => setTagInput(e.target.value)}
+            onKeyDown={handleTagKeyDown}
+          />
         </div>
         {tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {tags.map((tg) => (
               <Badge key={tg} variant="secondary" className="gap-1 bg-primary/10 text-primary border-primary/20">
                 {tg}
-                <button type="button" onClick={() => removeTag(tg)} className="hover:text-destructive"><X className="h-3 w-3" /></button>
+                <button type="button" onClick={() => removeTag(tg)} className="hover:text-destructive">
+                  <X className="h-3 w-3" />
+                </button>
               </Badge>
             ))}
           </div>
@@ -685,24 +867,21 @@ export default function CampaignEdit() {
 
       {/* Footer */}
       <div className="flex justify-end gap-3 pt-2">
-        <Button variant="outline" onClick={() => navigate("/campaigns")}>{t("common.cancel")}</Button>
+        <Button variant="outline" onClick={() => navigate("/campaigns")}>
+          {t("common.cancel")}
+        </Button>
         <Button
           onClick={() => {
             normalizeUrlField(setSafeUrl)(safeUrl);
             normalizeUrlField(setOfferUrl)(offerUrl);
-            if (abStormEnabled && offerPageB.trim()) {
-              normalizeUrlField(setOfferPageB)(offerPageB);
-            }
-
+            if (abStormEnabled && offerPageB.trim()) normalizeUrlField(setOfferPageB)(offerPageB);
             if (!areDestinationUrlsValid) {
               toast.error(t("campaignEdit.invalidUrl"));
               return;
             }
-
             if (domain) {
               try {
                 const selectedDomain = domain.replace(/^(https?:\/\/)?(www\.)?/, "").replace(/\/+$/, "");
-                // Only check URLs that use redirect method — content_fetch proxies are safe on the same domain
                 const urlsToCheck: string[] = [];
                 if (safeMethod === "redirect") {
                   const s = ensureAbsoluteUrl(safeUrl);
@@ -720,7 +899,9 @@ export default function CampaignEdit() {
                   try {
                     const host = new URL(u).hostname.replace(/^www\./, "");
                     return host === selectedDomain || host.endsWith(`.${selectedDomain}`);
-                  } catch { return false; }
+                  } catch {
+                    return false;
+                  }
                 });
                 if (hasConflict) {
                   setConflictDialogOpen(true);
@@ -749,13 +930,22 @@ export default function CampaignEdit() {
             </DialogTitle>
             <DialogDescription className="text-sm leading-relaxed pt-2">
               {t("campaignEdit.conflictDesc", { domain })}
-              <br /><br />
+              <br />
+              <br />
               {t("campaignEdit.conflictRecommend")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setConflictDialogOpen(false)}>{t("common.goBack")}</Button>
-            <Button variant="destructive" onClick={() => { setConflictDialogOpen(false); saveMutation.mutate(); }}>
+            <Button variant="outline" onClick={() => setConflictDialogOpen(false)}>
+              {t("common.goBack")}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                setConflictDialogOpen(false);
+                saveMutation.mutate();
+              }}
+            >
               {t("common.saveAnyway")}
             </Button>
           </DialogFooter>
@@ -763,7 +953,15 @@ export default function CampaignEdit() {
       </Dialog>
 
       {/* Success Modal */}
-      <Dialog open={!!successModal} onOpenChange={(open) => { if (!open) { setSuccessModal(null); navigate("/campaigns"); } }}>
+      <Dialog
+        open={!!successModal}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSuccessModal(null);
+            navigate("/campaigns");
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="text-xl">{t("campaignEdit.successTitle")}</DialogTitle>
@@ -771,10 +969,11 @@ export default function CampaignEdit() {
               {t("campaignEdit.successDesc", { name })}
             </DialogDescription>
           </DialogHeader>
-
           <div className="space-y-4 pt-2">
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">{t("campaignEdit.trackingLink")}</Label>
+              <Label className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">
+                {t("campaignEdit.trackingLink")}
+              </Label>
               <div className="relative">
                 <Input
                   readOnly
@@ -797,12 +996,13 @@ export default function CampaignEdit() {
                 </Button>
               </div>
             </div>
-
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-lg border border-border bg-secondary/50 p-3 space-y-1.5">
                 <div className="flex items-center gap-1.5">
                   <Globe className="h-3.5 w-3.5 text-primary" />
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("campaignEdit.offerPageLabel")}</span>
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    {t("campaignEdit.offerPageLabel")}
+                  </span>
                 </div>
                 <p className="text-xs font-mono text-foreground truncate" title={successModal?.offerUrl}>
                   {successModal?.offerUrl || "—"}
@@ -811,35 +1011,52 @@ export default function CampaignEdit() {
               <div className="rounded-lg border border-border bg-secondary/50 p-3 space-y-1.5">
                 <div className="flex items-center gap-1.5">
                   <Shield className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("campaignEdit.safePageLabel")}</span>
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    {t("campaignEdit.safePageLabel")}
+                  </span>
                 </div>
                 <p className="text-xs font-mono text-foreground truncate" title={successModal?.safeUrl}>
                   {successModal?.safeUrl || "—"}
                 </p>
               </div>
             </div>
-
             <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-2.5">
-              <p className="text-xs font-semibold uppercase tracking-wider text-primary">{t("campaignEdit.quickSetup")}</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-primary">
+                {t("campaignEdit.quickSetup")}
+              </p>
               <div className="space-y-2">
                 {["step1", "step2", "step3"].map((stepKey, i) => (
                   <div key={stepKey} className="flex items-start gap-2.5">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold text-primary">{i + 1}</span>
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold text-primary">
+                      {i + 1}
+                    </span>
                     <p className="text-sm text-muted-foreground">
-                      {t(`campaignEdit.${stepKey}`).split("<bold>").map((part: string, j: number) => {
-                        if (j === 0) return part;
-                        const [bold, rest] = part.split("</bold>");
-                        return <span key={j}><span className="font-medium text-foreground">{bold}</span>{rest}</span>;
-                      })}
+                      {t(`campaignEdit.${stepKey}`)
+                        .split("<bold>")
+                        .map((part: string, j: number) => {
+                          if (j === 0) return part;
+                          const [bold, rest] = part.split("</bold>");
+                          return (
+                            <span key={j}>
+                              <span className="font-medium text-foreground">{bold}</span>
+                              {rest}
+                            </span>
+                          );
+                        })}
                     </p>
                   </div>
                 ))}
               </div>
             </div>
           </div>
-
           <DialogFooter>
-            <Button onClick={() => { setSuccessModal(null); navigate("/campaigns"); }} className="w-full">
+            <Button
+              onClick={() => {
+                setSuccessModal(null);
+                navigate("/campaigns");
+              }}
+              className="w-full"
+            >
               {t("campaignEdit.goToCampaigns")}
             </Button>
           </DialogFooter>
