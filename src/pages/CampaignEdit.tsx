@@ -546,7 +546,7 @@ export default function CampaignEdit() {
       {/* BLOCK 3.7: Webhook Postback */}
       <section className="rounded-xl bg-[hsl(var(--card))] p-6 space-y-4">
         <div>
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Webhook Postback</h2>
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("campaignEdit.webhookTitle")}</h2>
           <p className="text-xs text-muted-foreground mt-1">
             {t("campaignEdit.webhookDesc")}
           </p>
@@ -606,7 +606,7 @@ export default function CampaignEdit() {
                           </SelectItem>
                         ))}
                         <SelectItem value="__custom">
-                          <span className="text-xs">Custom</span>
+                          <span className="text-xs">{t("campaignEdit.customValue")}</span>
                         </SelectItem>
                       </SelectContent>
                     </Select>
