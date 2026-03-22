@@ -548,6 +548,7 @@ const en = {
     totalCost: "Total Cost",
     cpl: "CPL",
     dailyChart: "Daily approved vs blocked clicks",
+    insufficientChartData: "Insufficient data for the chart. Keep running traffic to see the daily evolution here.",
     platformBreakdown: "Breakdown by Platform",
     countryBreakdown: "Breakdown by Country",
     deviceBreakdown: "Breakdown by Device",
