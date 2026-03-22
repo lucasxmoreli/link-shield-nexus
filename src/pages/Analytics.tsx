@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatCard } from "@/components/StatCard";
-import { BarChart2, MousePointerClick, Users, CheckCircle, Percent, DollarSign, TrendingUp } from "lucide-react";
+import { BarChart2, MousePointerClick, Users, CheckCircle, Percent, DollarSign, TrendingUp, Shield } from "lucide-react";
 import {
   ChartContainer,
   ChartTooltip,
