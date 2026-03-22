@@ -87,7 +87,7 @@ export default function CampaignEdit() {
   const [successModal, setSuccessModal] = useState<{ link: string; offerUrl: string; safeUrl: string } | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
   const [postbackBaseUrl, setPostbackBaseUrl] = useState("");
-  const [postbackParams, setPostbackParams] = useState<{key: string, value: string}[]>([{ key: "", value: "" }]);
+  const [postbackParams, setPostbackParams] = useState<{key: string, value: string, isCustom: boolean}[]>([{ key: "", value: "", isCustom: false }]);
   const [postbackMethod, setPostbackMethod] = useState<"GET" | "POST">("GET");
 
   const { data: domains = [] } = useQuery({
@@ -141,6 +141,7 @@ export default function CampaignEdit() {
       setTags((campaign as any).tags ?? []);
       setStrictMode((campaign as any).strict_mode ?? false);
       const rawPostbackUrl: string = (campaign as any).postback_url ?? "";
+      const MACRO_VALUES = POSTBACK_MACROS.map((m) => m.macro);
       if (rawPostbackUrl) {
         const qIndex = rawPostbackUrl.indexOf("?");
         if (qIndex !== -1) {
@@ -148,17 +149,18 @@ export default function CampaignEdit() {
           const qs = rawPostbackUrl.substring(qIndex + 1);
           const pairs = qs.split("&").filter(Boolean).map((pair) => {
             const eqIndex = pair.indexOf("=");
-            if (eqIndex === -1) return { key: pair, value: "" };
-            return { key: pair.substring(0, eqIndex), value: pair.substring(eqIndex + 1) };
+            if (eqIndex === -1) return { key: pair, value: "", isCustom: false };
+            const val = pair.substring(eqIndex + 1);
+            return { key: pair.substring(0, eqIndex), value: val, isCustom: !MACRO_VALUES.includes(val) };
           });
-          setPostbackParams(pairs.length > 0 ? pairs : [{ key: "", value: "" }]);
+          setPostbackParams(pairs.length > 0 ? pairs : [{ key: "", value: "", isCustom: false }]);
         } else {
           setPostbackBaseUrl(rawPostbackUrl);
-          setPostbackParams([{ key: "", value: "" }]);
+          setPostbackParams([{ key: "", value: "", isCustom: false }]);
         }
       } else {
         setPostbackBaseUrl("");
-        setPostbackParams([{ key: "", value: "" }]);
+        setPostbackParams([{ key: "", value: "", isCustom: false }]);
       }
       setPostbackMethod(((campaign as any).postback_method as "GET" | "POST") ?? "GET");
     }
@@ -565,89 +567,94 @@ export default function CampaignEdit() {
         <div className="space-y-3">
           <Label className="text-xs text-muted-foreground">{t("campaignEdit.webhookParams")}</Label>
           <div className="space-y-2">
-            {postbackParams.map((param, idx) => {
-              const isMacro = POSTBACK_MACROS.some((m) => m.macro === param.value);
-              const isCustomSelected = !isMacro && param.value !== "";
-              const selectValue = isMacro ? param.value : isCustomSelected ? "__custom" : "";
-
-              return (
-                <div key={idx} className="space-y-1.5">
-                  <div className="flex items-center gap-2">
-                    <Input
-                      placeholder={t("campaignEdit.paramKey")}
-                      className="bg-secondary border-border text-xs flex-1"
-                      value={param.key}
-                      onChange={(e) => {
-                        const updated = [...postbackParams];
-                        updated[idx] = { ...updated[idx], key: e.target.value };
-                        setPostbackParams(updated);
-                      }}
-                    />
-                    <Select
-                      value={selectValue}
-                      onValueChange={(val) => {
-                        const updated = [...postbackParams];
-                        if (val === "__custom") {
-                          updated[idx] = { ...updated[idx], value: "" };
-                        } else {
-                          updated[idx] = { ...updated[idx], value: val };
-                        }
-                        setPostbackParams(updated);
-                      }}
-                    >
-                      <SelectTrigger className="bg-secondary border-border text-xs flex-1">
-                        <SelectValue placeholder={t("campaignEdit.selectMacro")} />
-                      </SelectTrigger>
-                      <SelectContent className="bg-card border-border">
-                        {POSTBACK_MACROS.map((m) => (
-                          <SelectItem key={m.macro} value={m.macro}>
-                            <span className="font-mono text-xs">{m.macro}</span>
-                            <span className="text-muted-foreground ml-1 text-[10px]">— {m.desc}</span>
-                          </SelectItem>
-                        ))}
-                        <SelectItem value="__custom">
-                          <span className="text-xs">{t("campaignEdit.customValue")}</span>
+            {postbackParams.map((param, idx) => (
+              <div key={idx} className="flex items-center gap-2">
+                <Input
+                  placeholder={t("campaignEdit.paramKey")}
+                  className="bg-secondary border-border font-mono text-xs w-32 shrink-0"
+                  value={param.key}
+                  onChange={(e) => {
+                    const updated = [...postbackParams];
+                    updated[idx] = { ...updated[idx], key: e.target.value };
+                    setPostbackParams(updated);
+                  }}
+                />
+                {param.isCustom ? (
+                  <Input
+                    placeholder={t("campaignEdit.paramValue")}
+                    className="bg-secondary border-border font-mono text-xs flex-1"
+                    value={param.value}
+                    onChange={(e) => {
+                      const updated = [...postbackParams];
+                      updated[idx] = { ...updated[idx], value: e.target.value };
+                      setPostbackParams(updated);
+                    }}
+                  />
+                ) : (
+                  <Select
+                    value={param.value || undefined}
+                    onValueChange={(val) => {
+                      const updated = [...postbackParams];
+                      if (val === "__custom__") {
+                        updated[idx] = { ...updated[idx], value: "", isCustom: true };
+                      } else {
+                        updated[idx] = { ...updated[idx], value: val, isCustom: false };
+                      }
+                      setPostbackParams(updated);
+                    }}
+                  >
+                    <SelectTrigger className="bg-secondary border-border font-mono text-xs flex-1">
+                      <SelectValue placeholder={t("campaignEdit.selectMacro")} />
+                    </SelectTrigger>
+                    <SelectContent className="bg-card border-border">
+                      {POSTBACK_MACROS.map((m) => (
+                        <SelectItem key={m.macro} value={m.macro} className="font-mono text-xs">
+                          {m.macro}
+                          <span className="text-muted-foreground ml-1 text-[10px]">— {m.desc}</span>
                         </SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {postbackParams.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="shrink-0"
-                        onClick={() => setPostbackParams(postbackParams.filter((_, i) => i !== idx))}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    )}
-                  </div>
-                  {selectValue === "__custom" && (
-                    <Input
-                      placeholder={t("campaignEdit.paramValue")}
-                      className="bg-secondary border-border text-xs font-mono ml-0"
-                      value={param.value}
-                      onChange={(e) => {
-                        const updated = [...postbackParams];
-                        updated[idx] = { ...updated[idx], value: e.target.value };
-                        setPostbackParams(updated);
-                      }}
-                    />
-                  )}
-                </div>
-              );
-            })}
+                      ))}
+                      <SelectItem value="__custom__" className="text-xs text-muted-foreground">
+                        ✏ {t("campaignEdit.customValue")}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="shrink-0"
+                  disabled={postbackParams.length === 1}
+                  onClick={() => setPostbackParams(postbackParams.filter((_, i) => i !== idx))}
+                >
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
+            ))}
           </div>
           <Button
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => setPostbackParams([...postbackParams, { key: "", value: "" }])}
-            className="gap-1.5"
+            onClick={() => setPostbackParams([...postbackParams, { key: "", value: "", isCustom: false }])}
+            className="gap-1.5 text-xs"
           >
             <Plus className="h-3.5 w-3.5" />
             {t("campaignEdit.addParam")}
           </Button>
+
+          {/* URL Preview */}
+          {postbackBaseUrl && (
+            <div className="rounded-lg border border-border bg-secondary/50 p-3 space-y-1">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Preview</p>
+              <p className="text-xs font-mono text-primary break-all">
+                {postbackBaseUrl}
+                {postbackParams.filter(p => p.key.trim()).length > 0 && (
+                  "?" + postbackParams.filter(p => p.key.trim()).map(p => `${p.key}=${p.value}`).join("&")
+                )}
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="space-y-2">
