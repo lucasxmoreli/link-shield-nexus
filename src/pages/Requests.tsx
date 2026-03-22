@@ -143,6 +143,7 @@ export default function Requests() {
                 <TableHead className="text-muted-foreground">{t("requests.campaign")}</TableHead>
                 <TableHead className="text-muted-foreground">Hash</TableHead>
                 <TableHead className="text-muted-foreground">{t("dashboard.country")}</TableHead>
+                <TableHead className="text-muted-foreground">{t("requests.score")}</TableHead>
                 <TableHead className="text-muted-foreground">{t("requests.ip")}</TableHead>
                 <TableHead className="text-muted-foreground">{t("dashboard.device")}</TableHead>
                 <TableHead className="text-muted-foreground">{t("dashboard.action")}</TableHead>
