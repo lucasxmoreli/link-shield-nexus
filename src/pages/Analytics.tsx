@@ -53,7 +53,7 @@ export default function Analytics() {
     queryFn: async () => {
       let query = supabase
         .from("requests_log")
-        .select("action_taken, country_code, device_type, created_at, source_platform, cost, is_unique")
+        .select("action_taken, country_code, device_type, created_at, source_platform, cost, is_unique, risk_score")
         .eq("campaign_id", selectedCampaign)
         .order("created_at", { ascending: true });
 
