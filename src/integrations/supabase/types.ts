@@ -55,6 +55,8 @@ export type Database = {
           offer_page_b: string | null
           offer_page_method: string
           offer_url: string
+          postback_method: string
+          postback_url: string | null
           safe_page_method: string
           safe_url: string
           strict_mode: boolean
@@ -74,6 +76,8 @@ export type Database = {
           offer_page_b?: string | null
           offer_page_method?: string
           offer_url: string
+          postback_method?: string
+          postback_url?: string | null
           safe_page_method?: string
           safe_url: string
           strict_mode?: boolean
@@ -93,6 +97,8 @@ export type Database = {
           offer_page_b?: string | null
           offer_page_method?: string
           offer_url?: string
+          postback_method?: string
+          postback_url?: string | null
           safe_page_method?: string
           safe_url?: string
           strict_mode?: boolean
