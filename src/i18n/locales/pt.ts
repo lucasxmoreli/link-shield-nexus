@@ -36,6 +36,7 @@ const pt = {
     goBack: "Voltar e Corrigir",
     saveAnyway: "Salvar Mesmo Assim",
     returnHome: "Voltar ao Início",
+    advanced: "Avançado",
   },
 
   nav: {

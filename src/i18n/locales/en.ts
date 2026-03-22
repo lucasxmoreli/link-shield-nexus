@@ -37,6 +37,7 @@ const en = {
     goBack: "Go Back & Fix",
     saveAnyway: "Save Anyway",
     returnHome: "Return to Home",
+    advanced: "Advanced",
   },
 
   // Sidebar navigation

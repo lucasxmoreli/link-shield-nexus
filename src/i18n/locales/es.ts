@@ -36,6 +36,7 @@ const es = {
     goBack: "Volver y Corregir",
     saveAnyway: "Guardar de Todos Modos",
     returnHome: "Volver al Inicio",
+    advanced: "Avanzado",
   },
 
   nav: {
