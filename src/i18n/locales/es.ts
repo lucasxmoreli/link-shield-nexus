@@ -116,6 +116,7 @@ const es = {
     campaignUrl: "URL de Campaña",
     copyLink: "Copiar Enlace",
     campaignLinkCopied: "¡Enlace de campaña copiado!",
+    macrosHint: "Los macros serán reemplazados automáticamente por la plataforma de anuncios al recibir el clic.",
     campaignRemoved: "Campaña eliminada",
     noDomainsWarning: "⚠️ No hay dominios disponibles. Debes conectar y verificar un dominio personalizado en la pestaña Dominios antes de generar un enlace de campaña.",
     goToDomains: "Ir a Dominios",
