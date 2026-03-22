@@ -565,79 +565,78 @@ export default function CampaignEdit() {
         <div className="space-y-3">
           <Label className="text-xs text-muted-foreground">{t("campaignEdit.webhookParams")}</Label>
           <div className="space-y-2">
-            {postbackParams.map((param, idx) => (
-              <div key={idx} className="flex items-center gap-2">
-                <Input
-                  placeholder={t("campaignEdit.paramKey")}
-                  className="bg-secondary border-border text-xs flex-1"
-                  value={param.key}
-                  onChange={(e) => {
-                    const updated = [...postbackParams];
-                    updated[idx] = { ...updated[idx], key: e.target.value };
-                    setPostbackParams(updated);
-                  }}
-                />
-                <Select
-                  value={POSTBACK_MACROS.some((m) => m.macro === param.value) ? param.value : param.value ? "__custom" : ""}
-                  onValueChange={(val) => {
-                    const updated = [...postbackParams];
-                    if (val === "__custom") {
-                      updated[idx] = { ...updated[idx], value: "" };
-                    } else {
-                      updated[idx] = { ...updated[idx], value: val };
-                    }
-                    setPostbackParams(updated);
-                  }}
-                >
-                  <SelectTrigger className="bg-secondary border-border text-xs flex-1">
-                    <SelectValue placeholder={t("campaignEdit.selectMacro")} />
-                  </SelectTrigger>
-                  <SelectContent className="bg-card border-border">
-                    {POSTBACK_MACROS.map((m) => (
-                      <SelectItem key={m.macro} value={m.macro}>
-                        <span className="font-mono text-xs">{m.macro}</span>
-                        <span className="text-muted-foreground ml-1 text-[10px]">— {m.desc}</span>
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="__custom">
-                      <span className="text-xs">Custom</span>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                {/* Show custom text input when value is not a known macro */}
-                {!POSTBACK_MACROS.some((m) => m.macro === param.value) && param.value !== "" ? null : null}
-                {postbackParams.length > 1 && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="shrink-0"
-                    onClick={() => setPostbackParams(postbackParams.filter((_, i) => i !== idx))}
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                )}
-              </div>
-            ))}
-            {/* Custom value input for rows that have non-macro values */}
             {postbackParams.map((param, idx) => {
               const isMacro = POSTBACK_MACROS.some((m) => m.macro === param.value);
-              if (isMacro) return null;
+              const isCustomSelected = !isMacro && param.value !== "";
+              const selectValue = isMacro ? param.value : isCustomSelected ? "__custom" : "";
+
               return (
-                <div key={`custom-${idx}`} className="flex items-center gap-2 pl-0">
-                  <div className="flex-1" />
-                  <Input
-                    placeholder={t("campaignEdit.paramValue")}
-                    className="bg-secondary border-border text-xs flex-1 font-mono"
-                    value={param.value}
-                    onChange={(e) => {
-                      const updated = [...postbackParams];
-                      updated[idx] = { ...updated[idx], value: e.target.value };
-                      setPostbackParams(updated);
-                    }}
-                  />
-                  <div className="w-10 shrink-0" />
+                <div key={idx} className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      placeholder={t("campaignEdit.paramKey")}
+                      className="bg-secondary border-border text-xs flex-1"
+                      value={param.key}
+                      onChange={(e) => {
+                        const updated = [...postbackParams];
+                        updated[idx] = { ...updated[idx], key: e.target.value };
+                        setPostbackParams(updated);
+                      }}
+                    />
+                    <Select
+                      value={selectValue}
+                      onValueChange={(val) => {
+                        const updated = [...postbackParams];
+                        if (val === "__custom") {
+                          updated[idx] = { ...updated[idx], value: "" };
+                        } else {
+                          updated[idx] = { ...updated[idx], value: val };
+                        }
+                        setPostbackParams(updated);
+                      }}
+                    >
+                      <SelectTrigger className="bg-secondary border-border text-xs flex-1">
+                        <SelectValue placeholder={t("campaignEdit.selectMacro")} />
+                      </SelectTrigger>
+                      <SelectContent className="bg-card border-border">
+                        {POSTBACK_MACROS.map((m) => (
+                          <SelectItem key={m.macro} value={m.macro}>
+                            <span className="font-mono text-xs">{m.macro}</span>
+                            <span className="text-muted-foreground ml-1 text-[10px]">— {m.desc}</span>
+                          </SelectItem>
+                        ))}
+                        <SelectItem value="__custom">
+                          <span className="text-xs">Custom</span>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {postbackParams.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="shrink-0"
+                        onClick={() => setPostbackParams(postbackParams.filter((_, i) => i !== idx))}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    )}
+                  </div>
+                  {selectValue === "__custom" && (
+                    <Input
+                      placeholder={t("campaignEdit.paramValue")}
+                      className="bg-secondary border-border text-xs font-mono ml-0"
+                      value={param.value}
+                      onChange={(e) => {
+                        const updated = [...postbackParams];
+                        updated[idx] = { ...updated[idx], value: e.target.value };
+                        setPostbackParams(updated);
+                      }}
+                    />
+                  )}
                 </div>
+              );
+            })}
               );
             })}
           </div>
