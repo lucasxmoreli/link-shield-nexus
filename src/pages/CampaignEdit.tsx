@@ -635,8 +635,7 @@ export default function CampaignEdit() {
                     />
                   )}
                 </div>
-              );
-          </div>
+            })}
           </div>
           <Button
             type="button"
