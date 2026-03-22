@@ -33,6 +33,16 @@ const COUNTRIES = [
 
 const DEVICES = ["desktop", "mobile", "tablet"] as const;
 
+const POSTBACK_MACROS = [
+  { macro: "{click_id}", desc: "Platform click ID" },
+  { macro: "{campaign_id}", desc: "CloakGuard campaign ID" },
+  { macro: "{ip}", desc: "Visitor IP address" },
+  { macro: "{country}", desc: "Visitor country code" },
+  { macro: "{device}", desc: "mobile / desktop / tablet" },
+  { macro: "{cost}", desc: "Click cost from platform" },
+  { macro: "{timestamp}", desc: "Unix timestamp" },
+];
+
 function generateHash(len = 10) {
   const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   const randomBytes = crypto.getRandomValues(new Uint8Array(len));
