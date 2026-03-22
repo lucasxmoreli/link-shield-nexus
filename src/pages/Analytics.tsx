@@ -98,14 +98,7 @@ export default function Analytics() {
       if (l.action_taken === "offer_page") dayMap[day].approved++;
       else dayMap[day].blocked++;
     });
-    const result = Object.entries(dayMap).map(([day, v]) => ({ day, ...v }));
-    // If only 1 day, prepend a zero-point for the previous day so the line is visible
-    if (result.length === 1) {
-      const onlyDate = logs[0]?.created_at ? new Date(logs[0].created_at) : new Date();
-      const prevDay = format(subDays(onlyDate, 1), "MM/dd");
-      result.unshift({ day: prevDay, approved: 0, blocked: 0 });
-    }
-    return result;
+    return Object.entries(dayMap).map(([day, v]) => ({ day, ...v }));
   }, [logs]);
 
   // Breakdown by platform
