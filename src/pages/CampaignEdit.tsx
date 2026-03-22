@@ -160,6 +160,8 @@ export default function CampaignEdit() {
     }
   }, [campaign]);
 
+  const [pendingHash, setPendingHash] = useState("");
+
   const saveMutation = useMutation({
     mutationFn: async () => {
       const payload: any = {
