@@ -159,9 +159,11 @@ const en = {
     safePagePlaceholder: "https://blog.example.com/...",
     method: "Method",
     redirect: "Redirect (302)",
-    redirectDesc: "Fastest method. URL changes in the browser.",
+    redirectDesc: "The visitor is redirected to the URL. The destination URL appears in the browser bar. Faster and compatible with any page.",
     contentFetch: "Content Fetch (Masking)",
-    contentFetchDesc: "Recommended for Cloaking. The visitor stays on your domain while viewing the offer. Safer against ad platform reviews.",
+    contentFetchDesc: "The engine fetches the page content and serves it on your domain. The real offer URL never appears in the browser. ⚠️ Use only if the offer page allows external access (avoid Kiwify, Hotmart, and pages with bot protection).",
+    safeMethodHint: "💡 Recommended: Use Redirect for the safe page. Content Fetch on the safe page is rarely needed.",
+    offerMethodHint: "💡 Recommended: Use Redirect for most offers. Use Content Fetch (Masking) only if you want to completely hide the offer URL and you are sure the page allows external access.",
 
     offerPageSection: "💰 Offer Page",
     offerPageSectionDesc: "The real money page. Only shown to real, targeted visitors.",
