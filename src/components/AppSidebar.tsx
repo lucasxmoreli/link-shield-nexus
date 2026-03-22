@@ -1,4 +1,4 @@
-import { LayoutDashboard, Globe, Megaphone, FileText, Settings, Shield, LogOut, FlaskConical, Ticket, CreditCard, ShieldAlert } from "lucide-react";
+import { LayoutDashboard, Globe, Megaphone, FileText, Settings, Shield, LogOut, FlaskConical, Ticket, CreditCard, ShieldAlert, BarChart2 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -28,6 +28,7 @@ export function AppSidebar() {
     { title: t("nav.domains"), url: "/domains", icon: Globe },
     { title: t("nav.campaigns"), url: "/campaigns", icon: Megaphone },
     { title: t("nav.requests"), url: "/requests", icon: FileText },
+    { title: t("nav.analytics"), url: "/analytics", icon: BarChart2 },
     { title: t("nav.cloakTest"), url: "/cloak-test", icon: FlaskConical },
     { title: t("nav.billing"), url: "/billing", icon: CreditCard },
     { title: t("nav.settings"), url: "/settings", icon: Settings },

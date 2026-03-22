@@ -18,6 +18,7 @@ import CloakTest from "./pages/CloakTest";
 import InviteCodes from "./pages/InviteCodes";
 import CampaignRedirect from "./pages/CampaignRedirect";
 import AdminDashboard from "./pages/AdminDashboard";
+import Analytics from "./pages/Analytics";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -59,6 +60,7 @@ const App = () => (
               <Route path="/campaigns/new" element={<CampaignEdit />} />
               <Route path="/campaigns/:id/edit" element={<CampaignEdit />} />
               <Route path="/requests" element={<Requests />} />
+              <Route path="/analytics" element={<Analytics />} />
               <Route path="/cloak-test" element={<CloakTest />} />
               <Route path="/billing" element={<Billing />} />
               <Route path="/invite-codes" element={<InviteCodes />} />

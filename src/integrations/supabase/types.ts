@@ -271,11 +271,16 @@ export type Database = {
           action_taken: Database["public"]["Enums"]["action_taken"]
           block_reason: string | null
           campaign_id: string
+          campaign_name_platform: string | null
+          click_id: string | null
+          cost: number | null
           country_code: string | null
           created_at: string
           device_type: Database["public"]["Enums"]["device_type"] | null
           id: string
           ip_address: string | null
+          is_unique: boolean | null
+          source_platform: string | null
           user_agent: string | null
           user_id: string
         }
@@ -283,11 +288,16 @@ export type Database = {
           action_taken: Database["public"]["Enums"]["action_taken"]
           block_reason?: string | null
           campaign_id: string
+          campaign_name_platform?: string | null
+          click_id?: string | null
+          cost?: number | null
           country_code?: string | null
           created_at?: string
           device_type?: Database["public"]["Enums"]["device_type"] | null
           id?: string
           ip_address?: string | null
+          is_unique?: boolean | null
+          source_platform?: string | null
           user_agent?: string | null
           user_id: string
         }
@@ -295,11 +305,16 @@ export type Database = {
           action_taken?: Database["public"]["Enums"]["action_taken"]
           block_reason?: string | null
           campaign_id?: string
+          campaign_name_platform?: string | null
+          click_id?: string | null
+          cost?: number | null
           country_code?: string | null
           created_at?: string
           device_type?: Database["public"]["Enums"]["device_type"] | null
           id?: string
           ip_address?: string | null
+          is_unique?: boolean | null
+          source_platform?: string | null
           user_agent?: string | null
           user_id?: string
         }
