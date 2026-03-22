@@ -198,6 +198,15 @@ const es = {
     goToCampaigns: "Ir a Campañas",
     linkCopied: "¡Enlace copiado!",
     invalidUrl: "Ingresa una URL de destino válida.",
+    webhookDesc: "Dispara una solicitud GET o POST cuando un lead es aprobado. Usa macros para pasar datos en tiempo real a tu tracker.",
+    webhookBaseUrl: "URL Base",
+    webhookParams: "Parámetros de Query",
+    paramKey: "Clave",
+    paramValue: "Valor personalizado",
+    addParam: "Agregar Parámetro",
+    selectMacro: "Seleccionar macro…",
+    methodLabel: "Método",
+    methodHint: "Usa GET para trackers externos (RedTrack, UTMify, BeMob). Usa POST para Facebook CAPI o TikTok Events API.",
   },
 
   domains: {
