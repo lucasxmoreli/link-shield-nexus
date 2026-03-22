@@ -76,7 +76,8 @@ export default function CampaignEdit() {
   const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
   const [successModal, setSuccessModal] = useState<{ link: string; offerUrl: string; safeUrl: string } | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
-  const [postbackUrl, setPostbackUrl] = useState("");
+  const [postbackBaseUrl, setPostbackBaseUrl] = useState("");
+  const [postbackParams, setPostbackParams] = useState<{key: string, value: string}[]>([{ key: "", value: "" }]);
   const [postbackMethod, setPostbackMethod] = useState<"GET" | "POST">("GET");
 
   const { data: domains = [] } = useQuery({
