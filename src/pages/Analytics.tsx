@@ -14,8 +14,8 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
-import { subDays, startOfDay, format, isAfter } from "date-fns";
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { subDays, startOfDay, format, subDays as subD } from "date-fns";
 
 type DatePreset = "today" | "7days" | "30days" | "all";
 
