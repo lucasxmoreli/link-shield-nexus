@@ -171,7 +171,14 @@ export default function CampaignEdit() {
         target_devices: targetDevices,
         tags,
         strict_mode: strictMode,
-        postback_url: postbackUrl.trim() || null,
+        postback_url: (() => {
+          const base = postbackBaseUrl.trim();
+          if (!base) return null;
+          const validParams = postbackParams.filter((p) => p.key.trim());
+          if (validParams.length === 0) return base;
+          const qs = validParams.map((p) => `${p.key.trim()}=${p.value}`).join("&");
+          return `${base}?${qs}`;
+        })(),
         postback_method: postbackMethod,
       };
       if (isEditing) {
