@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, X } from "lucide-react";
+import { Search, X, Globe } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
@@ -46,6 +46,34 @@ export default function Requests() {
     enabled: !!user,
   });
 
+  // Fetch global blacklist IPs to identify global vs user blocks
+  const { data: globalBlacklistIps = new Set<string>() } = useQuery({
+    queryKey: ["global_blacklist_ips", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("blocked_ips")
+        .select("ip_address")
+        .eq("is_global", true);
+      if (error) throw error;
+      return new Set((data ?? []).map((r) => r.ip_address));
+    },
+    enabled: !!user,
+  });
+
+  // Count global blacklist IPs
+  const { data: globalBlacklistCount = 0 } = useQuery({
+    queryKey: ["global_blacklist_count"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("blocked_ips")
+        .select("id", { count: "exact", head: true })
+        .eq("is_global", true);
+      if (error) throw error;
+      return count ?? 0;
+    },
+    enabled: !!user,
+  });
+
   const campaignOptions = useMemo(() => {
     const map = new Map<string, string>();
     logs.forEach((r) => { if (r.campaigns?.name && r.campaign_id) map.set(r.campaign_id, r.campaigns.name); });
@@ -78,9 +106,39 @@ export default function Requests() {
   const hasActiveFilters = search || statusFilter !== "all" || campaignFilter !== "all" || deviceFilter !== "all" || datePreset !== "all";
   const clearFilters = () => { setSearch(""); setStatusFilter("all"); setCampaignFilter("all"); setDeviceFilter("all"); setDatePreset("all"); };
 
+  const renderBlockReason = (reason: string | null, ipAddress: string | null) => {
+    if (!reason) return <span className="text-muted-foreground">—</span>;
+
+    if (reason.toLowerCase().startsWith("blacklist:")) {
+      const isGlobal = ipAddress ? globalBlacklistIps.has(ipAddress) : false;
+      if (isGlobal) {
+        return (
+          <Badge variant="outline" className="bg-[hsl(270_60%_50%)]/20 text-[hsl(270_60%_60%)] border-0">
+            {t("requests.globalBlacklist")}
+          </Badge>
+        );
+      }
+      return (
+        <Badge variant="outline" className="bg-destructive/20 text-destructive border-0">
+          {t("requests.userBlocked")}
+        </Badge>
+      );
+    }
+
+    return <span className="text-xs text-muted-foreground font-mono">{reason}</span>;
+  };
+
   return (
     <div className="space-y-4 sm:space-y-6">
-      <h1 className="text-xl sm:text-2xl font-bold">{t("requests.title")}</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl sm:text-2xl font-bold">{t("requests.title")}</h1>
+        {globalBlacklistCount > 0 && (
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <Globe className="h-4 w-4 text-[hsl(270_60%_60%)]" />
+            <span>{t("requests.globalBlacklistCount", { count: globalBlacklistCount })}</span>
+          </div>
+        )}
+      </div>
 
       <Card className="border-border bg-card/60 backdrop-blur-sm">
         <CardContent className="p-4">
@@ -172,8 +230,8 @@ export default function Requests() {
                     <TableCell className="font-mono text-sm text-primary">{r.campaigns?.hash ?? "—"}</TableCell>
                     <TableCell>{r.country_code ?? "—"}</TableCell>
                     <TableCell>
-                      {(r as any).risk_score != null ? (() => {
-                        const s = (r as any).risk_score as number;
+                      {r.risk_score != null ? (() => {
+                        const s = r.risk_score;
                         if (s <= 25) return <Badge variant="outline" className="bg-success/20 text-success border-0">{t("requests.scoreLow")}</Badge>;
                         if (s <= 65) return <Badge variant="outline" className="bg-[hsl(45_93%_47%)]/20 text-[hsl(45_93%_47%)] border-0">{t("requests.scoreMedium")}</Badge>;
                         return <Badge variant="outline" className="bg-destructive/20 text-destructive border-0">{t("requests.scoreHigh")}</Badge>;
@@ -182,7 +240,7 @@ export default function Requests() {
                     <TableCell className="font-mono text-sm">{r.ip_address ?? "—"}</TableCell>
                     <TableCell><Badge variant="outline" className="border-border text-muted-foreground">{r.device_type ?? "—"}</Badge></TableCell>
                     <TableCell><Badge variant="outline" className={actionStyles[r.action_taken] ?? ""}>{actionLabel[r.action_taken] ?? r.action_taken.replace("_", " ")}</Badge></TableCell>
-                    <TableCell className="text-xs text-muted-foreground font-mono">{(r as any).block_reason ?? "—"}</TableCell>
+                    <TableCell>{renderBlockReason(r.block_reason, r.ip_address)}</TableCell>
                   </TableRow>
                 ))
               )}
