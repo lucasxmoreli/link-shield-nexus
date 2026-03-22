@@ -606,7 +606,7 @@ export default function CampaignEdit() {
                           </SelectItem>
                         ))}
                         <SelectItem value="__custom">
-                          <span className="text-xs">Custom</span>
+                          <span className="text-xs">{t("campaignEdit.customValue")}</span>
                         </SelectItem>
                       </SelectContent>
                     </Select>
