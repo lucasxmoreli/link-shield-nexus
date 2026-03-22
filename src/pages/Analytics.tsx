@@ -158,7 +158,7 @@ export default function Analytics() {
   }, [logs]);
 
   const chartConfig = {
-    approved: { label: t("analytics.approved"), color: "hsl(var(--primary))" },
+    approved: { label: t("analytics.approved"), color: "hsl(142 71% 45%)" },
     blocked: { label: t("analytics.blocked"), color: "hsl(var(--destructive))" },
   };
 
