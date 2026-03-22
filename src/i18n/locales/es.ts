@@ -276,6 +276,10 @@ const es = {
     noRequests: "No se encontraron solicitudes con estos filtros.",
     clearAllFilters: "Limpiar todos los filtros",
     safePage: "Página Segura",
+    score: "Puntuación",
+    scoreLow: "Bajo",
+    scoreMedium: "Medio",
+    scoreHigh: "Alto",
   },
 
   cloakTest: {
