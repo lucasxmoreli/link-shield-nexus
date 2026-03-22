@@ -86,7 +86,9 @@ export default function Analytics() {
     const approvalRate = total > 0 ? ((approved / total) * 100).toFixed(1) : "0";
     const totalCost = logs.reduce((acc, l) => acc + (Number(l.cost) || 0), 0);
     const cpl = approved > 0 ? (totalCost / approved) : 0;
-    return { total, unique, approved, approvalRate, totalCost, cpl };
+    const approvedScores = logs.filter(l => l.action_taken === "offer_page" && l.risk_score != null).map(l => l.risk_score as number);
+    const avgScore = approvedScores.length > 0 ? Math.round(approvedScores.reduce((a, b) => a + b, 0) / approvedScores.length) : null;
+    return { total, unique, approved, approvalRate, totalCost, cpl, avgScore };
   }, [logs]);
 
   // Chart data
