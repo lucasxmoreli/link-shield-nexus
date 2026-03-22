@@ -89,7 +89,7 @@ export default function CampaignEdit() {
   const [postbackBaseUrl, setPostbackBaseUrl] = useState("");
   const [postbackParams, setPostbackParams] = useState<{key: string, value: string, isCustom: boolean}[]>([{ key: "", value: "", isCustom: false }]);
   const [postbackMethod, setPostbackMethod] = useState<"GET" | "POST">("GET");
-...
+
   useEffect(() => {
     if (campaign) {
       setName(campaign.name);
@@ -125,7 +125,7 @@ export default function CampaignEdit() {
       setPostbackMethod(((campaign as any).postback_method as "GET" | "POST") ?? "GET");
     }
   }, [campaign]);
-...
+
   const saveMutation = useMutation({
     mutationFn: async () => {
       const payload: any = {
