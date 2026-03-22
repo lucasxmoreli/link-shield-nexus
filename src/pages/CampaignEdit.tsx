@@ -284,8 +284,7 @@ export default function CampaignEdit() {
     onSuccess: (result) => {
       qc.invalidateQueries({ queryKey: ["campaigns"] });
       const selectedDomain = result.domain || domain || "yourdomain.com";
-      const cleanDomain = selectedDomain.replace(/^(https?:\/\/)/, "").replace(/\/+$/, "");
-      const finalLink = `https://${cleanDomain}/c/${result.hash}`;
+      const finalLink = buildTrackingUrl(selectedDomain, result.hash, trafficSource);
       setSuccessModal({
         link: finalLink,
         offerUrl: ensureAbsoluteUrl(offerUrl),
