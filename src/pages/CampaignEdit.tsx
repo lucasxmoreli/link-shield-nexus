@@ -558,6 +558,10 @@ export default function CampaignEdit() {
               </div>
             </label>
           </RadioGroup>
+          <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/30 p-3">
+            <Info className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
+            <p className="text-xs text-muted-foreground">{t("campaignEdit.safeMethodHint")}</p>
+          </div>
         </div>
       </section>
 
