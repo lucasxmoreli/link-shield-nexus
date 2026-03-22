@@ -67,6 +67,49 @@ const DEVICES = ["desktop", "mobile", "tablet"] as const;
 
 const POSTBACK_MACROS = ["{click_id}", "{campaign_id}", "{ip}", "{country}", "{device}", "{cost}", "{timestamp}"];
 
+// ── Per-platform parameter definitions (mirrors Campaigns.tsx) ─────────────
+const PLATFORM_PARAMS: Record<string, { key: string; macro: string }[]> = {
+  tiktok: [
+    { key: "click_id", macro: "__CALLBACK_PARAM__" },
+    { key: "campaign", macro: "__CID_NAME__" },
+    { key: "adset", macro: "__AID_NAME__" },
+    { key: "cost", macro: "__VALUE__" },
+  ],
+  facebook: [
+    { key: "click_id", macro: "{{fbclid}}" },
+    { key: "campaign", macro: "{{campaign.name}}" },
+    { key: "adset", macro: "{{adset.name}}" },
+    { key: "cost", macro: "{{cost_per_result}}" },
+  ],
+  instagram: [
+    { key: "click_id", macro: "{{fbclid}}" },
+    { key: "campaign", macro: "{{campaign.name}}" },
+    { key: "adset", macro: "{{adset.name}}" },
+    { key: "cost", macro: "{{cost_per_result}}" },
+  ],
+  google: [
+    { key: "click_id", macro: "{gclid}" },
+    { key: "campaign", macro: "{campaign}" },
+    { key: "adset", macro: "{adgroup}" },
+    { key: "cost", macro: "{cost_per_conversion}" },
+  ],
+  youtube: [
+    { key: "click_id", macro: "{gclid}" },
+    { key: "campaign", macro: "{campaign}" },
+    { key: "cost", macro: "{cost_per_conversion}" },
+  ],
+};
+
+function buildTrackingUrl(domain: string, hash: string, source: string): string {
+  const base = domain.trim().replace(/\/+$/, "");
+  const dm = base.startsWith("http") ? base : `https://${base}`;
+  const root = `${dm}/c/${hash}`;
+  const params = PLATFORM_PARAMS[source];
+  if (!params || params.length === 0) return root;
+  const qs = params.map((p) => `${p.key}=${p.macro}`).join("&");
+  return `${root}?${qs}`;
+}
+
 function generateHash(len = 10) {
   const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   const randomBytes = crypto.getRandomValues(new Uint8Array(len));
@@ -241,8 +284,7 @@ export default function CampaignEdit() {
     onSuccess: (result) => {
       qc.invalidateQueries({ queryKey: ["campaigns"] });
       const selectedDomain = result.domain || domain || "yourdomain.com";
-      const cleanDomain = selectedDomain.replace(/^(https?:\/\/)/, "").replace(/\/+$/, "");
-      const finalLink = `https://${cleanDomain}/c/${result.hash}`;
+      const finalLink = buildTrackingUrl(selectedDomain, result.hash, trafficSource);
       setSuccessModal({
         link: finalLink,
         offerUrl: ensureAbsoluteUrl(offerUrl),
@@ -635,19 +677,19 @@ export default function CampaignEdit() {
        <section className="rounded-xl border border-primary/20 bg-[hsl(var(--card))] p-6 space-y-4">
         <div>
           <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-            Webhook Postback
+            {t("campaignEdit.webhookTitle")}
             <Badge variant="secondary" className="ml-2 text-[10px] bg-primary/10 text-primary border-primary/20 uppercase tracking-wider">
               {t("common.advanced")}
             </Badge>
           </h2>
           <p className="text-xs text-muted-foreground mt-1">
-            Fired when a lead is approved. Build your tracker URL visually using macros.
+            {t("campaignEdit.webhookDesc")}
           </p>
         </div>
 
         {/* Base URL */}
         <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">Base URL</Label>
+          <Label className="text-xs text-muted-foreground">{t("campaignEdit.webhookBaseUrl")}</Label>
           <Input
             placeholder="https://tracker.com/postback"
             className="bg-secondary border-border font-mono text-xs"
@@ -658,12 +700,12 @@ export default function CampaignEdit() {
 
         {/* Query Parameters */}
         <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">Query Parameters</Label>
+          <Label className="text-xs text-muted-foreground">{t("campaignEdit.webhookParams")}</Label>
           <div className="space-y-2">
             {postbackParams.map((param, index) => (
               <div key={index} className="flex gap-2 items-center">
                 <Input
-                  placeholder="key"
+                  placeholder={t("campaignEdit.paramKey")}
                   className="bg-secondary border-border font-mono text-xs w-28 shrink-0"
                   value={param.key}
                   onChange={(e) => {
@@ -674,7 +716,7 @@ export default function CampaignEdit() {
                 />
                 {param.isCustom ? (
                   <Input
-                    placeholder="custom value"
+                    placeholder={t("campaignEdit.paramValue")}
                     className="bg-secondary border-border font-mono text-xs flex-1"
                     value={param.value}
                     onChange={(e) => {
@@ -697,7 +739,7 @@ export default function CampaignEdit() {
                     }}
                   >
                     <SelectTrigger className="bg-secondary border-border font-mono text-xs flex-1">
-                      <SelectValue placeholder="select macro" />
+                      <SelectValue placeholder={t("campaignEdit.selectMacro")} />
                     </SelectTrigger>
                     <SelectContent>
                       {POSTBACK_MACROS.map((m) => (
@@ -706,7 +748,7 @@ export default function CampaignEdit() {
                         </SelectItem>
                       ))}
                       <SelectItem value="__custom__" className="text-xs italic text-muted-foreground">
-                        ✏ Custom value
+                        ✏ {t("campaignEdit.customValue")}
                       </SelectItem>
                     </SelectContent>
                   </Select>
@@ -731,7 +773,7 @@ export default function CampaignEdit() {
             className="gap-1.5 text-xs mt-1"
             onClick={() => setPostbackParams([...postbackParams, { key: "", value: "", isCustom: false }])}
           >
-            <Plus className="h-3.5 w-3.5" /> Add Parameter
+            <Plus className="h-3.5 w-3.5" /> {t("campaignEdit.addParam")}
           </Button>
         </div>
 
@@ -745,7 +787,7 @@ export default function CampaignEdit() {
 
         {/* Method */}
         <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">Method</Label>
+          <Label className="text-xs text-muted-foreground">{t("campaignEdit.webhookMethod")}</Label>
           <div className="flex gap-2">
             {(["GET", "POST"] as const).map((m) => (
               <button
@@ -763,11 +805,12 @@ export default function CampaignEdit() {
             ))}
           </div>
           <p className="text-xs text-muted-foreground">
-            Use <span className="text-primary font-medium">GET</span> for trackers (RedTrack, UTMify, BeMob). Use{" "}
-            <span className="text-primary font-medium">POST</span> for Facebook CAPI or TikTok Events API.
+            {t("campaignEdit.webhookMethodDesc")}
           </p>
         </div>
       </section>
+
+
 
       {/* BLOCK 4: Target */}
       <section className="rounded-xl bg-[hsl(var(--card))] p-6 space-y-4">
