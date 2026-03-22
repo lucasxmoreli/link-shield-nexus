@@ -143,6 +143,7 @@ export default function Requests() {
                 <TableHead className="text-muted-foreground">{t("requests.campaign")}</TableHead>
                 <TableHead className="text-muted-foreground">Hash</TableHead>
                 <TableHead className="text-muted-foreground">{t("dashboard.country")}</TableHead>
+                <TableHead className="text-muted-foreground">{t("requests.score")}</TableHead>
                 <TableHead className="text-muted-foreground">{t("requests.ip")}</TableHead>
                 <TableHead className="text-muted-foreground">{t("dashboard.device")}</TableHead>
                 <TableHead className="text-muted-foreground">{t("dashboard.action")}</TableHead>
@@ -153,12 +154,12 @@ export default function Requests() {
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i} className="border-border">
-                    {Array.from({ length: 8 }).map((_, j) => <TableCell key={j}><Skeleton className="h-5 w-20" /></TableCell>)}
+                    {Array.from({ length: 9 }).map((_, j) => <TableCell key={j}><Skeleton className="h-5 w-20" /></TableCell>)}
                   </TableRow>
                 ))
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-12">
+                  <TableCell colSpan={9} className="text-center py-12">
                     <p className="text-muted-foreground font-medium">{t("requests.noRequests")}</p>
                     {hasActiveFilters && <Button variant="link" size="sm" className="mt-2 text-primary text-xs" onClick={clearFilters}>{t("requests.clearAllFilters")}</Button>}
                   </TableCell>
@@ -170,6 +171,14 @@ export default function Requests() {
                     <TableCell>{r.campaigns?.name ?? "—"}</TableCell>
                     <TableCell className="font-mono text-sm text-primary">{r.campaigns?.hash ?? "—"}</TableCell>
                     <TableCell>{r.country_code ?? "—"}</TableCell>
+                    <TableCell>
+                      {(r as any).risk_score != null ? (() => {
+                        const s = (r as any).risk_score as number;
+                        if (s <= 25) return <Badge variant="outline" className="bg-success/20 text-success border-0">{t("requests.scoreLow")}</Badge>;
+                        if (s <= 65) return <Badge variant="outline" className="bg-[hsl(45_93%_47%)]/20 text-[hsl(45_93%_47%)] border-0">{t("requests.scoreMedium")}</Badge>;
+                        return <Badge variant="outline" className="bg-destructive/20 text-destructive border-0">{t("requests.scoreHigh")}</Badge>;
+                      })() : <span className="text-muted-foreground">—</span>}
+                    </TableCell>
                     <TableCell className="font-mono text-sm">{r.ip_address ?? "—"}</TableCell>
                     <TableCell><Badge variant="outline" className="border-border text-muted-foreground">{r.device_type ?? "—"}</Badge></TableCell>
                     <TableCell><Badge variant="outline" className={actionStyles[r.action_taken] ?? ""}>{actionLabel[r.action_taken] ?? r.action_taken.replace("_", " ")}</Badge></TableCell>

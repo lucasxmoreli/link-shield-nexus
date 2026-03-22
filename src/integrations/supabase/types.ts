@@ -280,6 +280,7 @@ export type Database = {
           id: string
           ip_address: string | null
           is_unique: boolean | null
+          risk_score: number | null
           source_platform: string | null
           user_agent: string | null
           user_id: string
@@ -297,6 +298,7 @@ export type Database = {
           id?: string
           ip_address?: string | null
           is_unique?: boolean | null
+          risk_score?: number | null
           source_platform?: string | null
           user_agent?: string | null
           user_id: string
@@ -314,6 +316,7 @@ export type Database = {
           id?: string
           ip_address?: string | null
           is_unique?: boolean | null
+          risk_score?: number | null
           source_platform?: string | null
           user_agent?: string | null
           user_id?: string

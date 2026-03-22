@@ -288,6 +288,10 @@ const en = {
     noRequests: "No requests found matching these filters.",
     clearAllFilters: "Clear all filters",
     safePage: "Safe Page",
+    score: "Score",
+    scoreLow: "Low",
+    scoreMedium: "Medium",
+    scoreHigh: "High",
   },
 
   // Cloak Test
@@ -560,6 +564,7 @@ const en = {
     avgCpc: "Avg CPC",
     country: "Country",
     device: "Device",
+    avgScore: "Avg Score",
   },
 
   // Languages

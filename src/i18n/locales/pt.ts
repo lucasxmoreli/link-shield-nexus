@@ -276,6 +276,10 @@ const pt = {
     noRequests: "Nenhuma requisição encontrada com esses filtros.",
     clearAllFilters: "Limpar todos os filtros",
     safePage: "Página Segura",
+    score: "Pontuação",
+    scoreLow: "Baixo",
+    scoreMedium: "Médio",
+    scoreHigh: "Alto",
   },
 
   cloakTest: {
@@ -540,6 +544,7 @@ const pt = {
     avgCpc: "CPC Médio",
     country: "País",
     device: "Dispositivo",
+    avgScore: "Score Médio",
   },
 
   languages: {
