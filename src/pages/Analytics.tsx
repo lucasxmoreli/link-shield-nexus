@@ -224,13 +224,14 @@ export default function Analytics() {
       {selectedCampaign && metrics && (
         <>
           {/* Metrics cards */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
             <StatCard title={t("analytics.totalClicks")} value={metrics.total.toLocaleString()} icon={MousePointerClick} variant="default" />
             <StatCard title={t("analytics.uniqueClicks")} value={metrics.unique.toLocaleString()} icon={Users} variant="primary" />
             <StatCard title={t("analytics.approvedLeads")} value={metrics.approved.toLocaleString()} icon={CheckCircle} variant="success" />
             <StatCard title={t("analytics.approvalRate")} value={`${metrics.approvalRate}%`} icon={Percent} variant="default" />
             <StatCard title={t("analytics.totalCost")} value={`$${metrics.totalCost.toFixed(2)}`} icon={DollarSign} variant="destructive" />
             <StatCard title={t("analytics.cpl")} value={`$${metrics.cpl.toFixed(2)}`} icon={TrendingUp} variant="primary" />
+            <StatCard title={t("analytics.avgScore")} value={metrics.avgScore != null ? metrics.avgScore : "—"} icon={Shield} variant={metrics.avgScore != null && metrics.avgScore > 65 ? "destructive" : metrics.avgScore != null && metrics.avgScore > 25 ? "default" : "success"} />
           </div>
 
           {/* Chart */}
