@@ -130,7 +130,26 @@ export default function CampaignEdit() {
       setTargetDevices((campaign as any).target_devices ?? []);
       setTags((campaign as any).tags ?? []);
       setStrictMode((campaign as any).strict_mode ?? false);
-      setPostbackUrl((campaign as any).postback_url ?? "");
+      const rawPostbackUrl: string = (campaign as any).postback_url ?? "";
+      if (rawPostbackUrl) {
+        const qIndex = rawPostbackUrl.indexOf("?");
+        if (qIndex !== -1) {
+          setPostbackBaseUrl(rawPostbackUrl.substring(0, qIndex));
+          const qs = rawPostbackUrl.substring(qIndex + 1);
+          const pairs = qs.split("&").filter(Boolean).map((pair) => {
+            const eqIndex = pair.indexOf("=");
+            if (eqIndex === -1) return { key: pair, value: "" };
+            return { key: pair.substring(0, eqIndex), value: pair.substring(eqIndex + 1) };
+          });
+          setPostbackParams(pairs.length > 0 ? pairs : [{ key: "", value: "" }]);
+        } else {
+          setPostbackBaseUrl(rawPostbackUrl);
+          setPostbackParams([{ key: "", value: "" }]);
+        }
+      } else {
+        setPostbackBaseUrl("");
+        setPostbackParams([{ key: "", value: "" }]);
+      }
       setPostbackMethod(((campaign as any).postback_method as "GET" | "POST") ?? "GET");
     }
   }, [campaign]);
