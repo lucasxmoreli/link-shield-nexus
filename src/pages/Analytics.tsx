@@ -249,7 +249,14 @@ export default function Analytics() {
                 </ChartContainer>
               </CardContent>
             </Card>
-          )}
+          ) : chartData.length === 1 ? (
+            <Card className="flex flex-col items-center justify-center py-12">
+              <BarChart2 className="h-12 w-12 text-muted-foreground/40 mb-3" />
+              <p className="text-muted-foreground text-sm text-center max-w-md">
+                📈 {t("analytics.insufficientChartData")}
+              </p>
+            </Card>
+          ) : null}
 
           {/* Platform breakdown */}
           {platformBreakdown.length > 0 && (
