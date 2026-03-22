@@ -280,6 +280,9 @@ const pt = {
     scoreLow: "Baixo",
     scoreMedium: "Médio",
     scoreHigh: "Alto",
+    globalBlacklist: "🌐 Global",
+    userBlocked: "Bloqueado",
+    globalBlacklistCount: "{{count}} IPs na blacklist global",
   },
 
   cloakTest: {

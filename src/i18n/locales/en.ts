@@ -292,6 +292,9 @@ const en = {
     scoreLow: "Low",
     scoreMedium: "Medium",
     scoreHigh: "High",
+    globalBlacklist: "🌐 Global",
+    userBlocked: "Blocked",
+    globalBlacklistCount: "{{count}} IPs on global blacklist",
   },
 
   // Cloak Test
