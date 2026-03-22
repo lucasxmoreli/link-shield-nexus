@@ -45,6 +45,7 @@ const en = {
     domains: "Domains",
     campaigns: "Campaigns",
     requests: "Requests",
+    analytics: "Analytics",
     cloakTest: "Cloak Test",
     billing: "Billing & Plans",
     settings: "Settings",
