@@ -571,6 +571,13 @@ const pt = {
     pt: "Português",
     es: "Español",
   },
+  overage: {
+    modalTitle: "🚀 Sua campanha está voando!",
+    modalDesc: "Você atingiu o limite de cliques do seu plano atual. Mas fique tranquilo: não pausamos o seu tráfego e você continua recebendo leads e fazendo vendas! Estamos cobrando apenas uma taxa mínima pelo tráfego excedente para não interromper sua escala.",
+    modalBtn: "Regularizar Fatura / Fazer Upgrade",
+    bannerText: "⚠️ Você atingiu o limite do plano. Seu tráfego continua ativo e sendo cobrado como excedente.",
+    bannerBtn: "Ver Planos",
+  },
 };
 
 export default pt;
