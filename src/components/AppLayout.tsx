@@ -1,6 +1,7 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { LanguageSelector } from "@/components/LanguageSelector";
+import { OverageWarning } from "@/components/OverageWarning";
 import { Outlet } from "react-router-dom";
 
 export function AppLayout() {
@@ -13,6 +14,7 @@ export function AppLayout() {
             <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
             <LanguageSelector />
           </header>
+          <OverageWarning />
           <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-auto">
             <Outlet />
           </main>
