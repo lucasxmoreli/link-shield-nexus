@@ -571,6 +571,13 @@ const es = {
     pt: "Português",
     es: "Español",
   },
+  overage: {
+    modalTitle: "🚀 ¡Tu campaña está despegando!",
+    modalDesc: "Has alcanzado el límite de clics de tu plan actual. Pero tranquilo: no pausamos tu tráfico. ¡Sigues recibiendo leads y generando ventas! Solo estamos cobrando una tarifa mínima por el tráfico excedente para no interrumpir tu escala.",
+    modalBtn: "Regularizar Factura / Hacer Upgrade",
+    bannerText: "⚠️ Has alcanzado el límite de tu plan. Tu tráfico sigue activo y se cobra como excedente.",
+    bannerBtn: "Ver Planes",
+  },
 };
 
 export default es;

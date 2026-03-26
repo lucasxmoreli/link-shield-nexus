@@ -592,6 +592,13 @@ const en = {
     pt: "Português",
     es: "Español",
   },
+  overage: {
+    modalTitle: "🚀 Your campaign is taking off!",
+    modalDesc: "You've reached the click limit on your current plan. But don't worry — we haven't paused your traffic. You're still receiving leads and making sales! We're only charging a small overage fee to keep your scale running.",
+    modalBtn: "Settle Invoice / Upgrade Plan",
+    bannerText: "⚠️ You've reached your plan limit. Your traffic is still active and being billed as overage.",
+    bannerBtn: "View Plans",
+  },
 };
 
 export default en;
