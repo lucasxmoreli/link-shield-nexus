@@ -41,7 +41,7 @@ export default function Dashboard() {
         .select("action_taken, status_final, motivo_limpo, created_at, device_type, ip_address, country_code")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as Array<{
+      return data as unknown as Array<{
         action_taken: string;
         status_final: string;
         motivo_limpo: string | null;

@@ -28,7 +28,7 @@ export function LiveThreatInterceptions() {
         .order("created_at", { ascending: false })
         .limit(6);
       if (error) throw error;
-      return data as Array<{
+      return data as unknown as Array<{
         id: string;
         status_final: string;
         motivo_limpo: string | null;
