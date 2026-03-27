@@ -18,22 +18,25 @@ export function LiveThreatInterceptions() {
   const { user } = useAuth();
   const { t } = useTranslation();
 
-  const ACTION_META: Record<string, { icon: typeof ShieldAlert; label: string; color: string }> = {
-    bot_blocked: { icon: ShieldAlert, label: t("threats.botBlocked"), color: "text-destructive" },
-    safe_page: { icon: Globe, label: t("threats.safePageRedirect"), color: "text-amber-500" },
-  };
-
   const { data: threats = [], isLoading } = useQuery({
-    queryKey: ["threat_interceptions", user?.id],
+    queryKey: ["threat_interceptions_view", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("requests_log")
-        .select("id, action_taken, created_at, ip_address, country_code, campaign_id, campaigns(name)")
-        .in("action_taken", ["bot_blocked", "safe_page"])
+        .from("dashboard_analytics_view" as any)
+        .select("id, status_final, motivo_limpo, created_at, ip_address, country_code, campaign_name")
+        .eq("status_final", "Bloqueado")
         .order("created_at", { ascending: false })
         .limit(6);
       if (error) throw error;
-      return data;
+      return data as Array<{
+        id: string;
+        status_final: string;
+        motivo_limpo: string | null;
+        created_at: string;
+        ip_address: string | null;
+        country_code: string | null;
+        campaign_name: string | null;
+      }>;
     },
     enabled: !!user,
     refetchInterval: 15000,
@@ -67,9 +70,8 @@ export function LiveThreatInterceptions() {
           </div>
         ) : (
           threats.map((thr) => {
-            const meta = ACTION_META[thr.action_taken] ?? ACTION_META.bot_blocked;
-            const Icon = meta.icon;
-            const campaignName = (thr.campaigns as any)?.name ?? "Unknown Campaign";
+            const campaignName = thr.campaign_name ?? "Unknown Campaign";
+            const reason = thr.motivo_limpo ?? t("threats.botBlocked");
             const timeAgo = formatDistanceToNow(new Date(thr.created_at), { addSuffix: false });
             const shortTime = timeAgo
               .replace("less than a minute", t("threats.justNow"))
@@ -81,16 +83,17 @@ export function LiveThreatInterceptions() {
             return (
               <div key={thr.id} className="flex items-start gap-3 rounded-lg border border-border/50 bg-secondary/30 px-3 py-2.5 transition-colors hover:bg-secondary/50">
                 <div className="mt-0.5 shrink-0">
-                  <div className={`rounded-md bg-destructive/10 p-1.5 ${meta.color}`}><Icon className="h-3.5 w-3.5" /></div>
+                  <div className="rounded-md bg-destructive/10 p-1.5 text-destructive"><ShieldAlert className="h-3.5 w-3.5" /></div>
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-[13px] leading-snug text-foreground">
-                    <span className="font-medium">{meta.label}</span>{" "}{t("threats.on")}{" "}
-                    <span className="font-mono text-primary">{campaignName}</span>
+                    <span className="font-medium">{t("threats.intercepted")}:</span>{" "}
+                    <span className="text-destructive font-mono text-xs">{reason}</span>
                   </p>
-                  <p className="text-xs text-muted-foreground font-mono mt-0.5">
-                    IP {maskIp(thr.ip_address)}
-                    {thr.country_code && <span className="ml-2">· {thr.country_code}</span>}
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {t("threats.on")} <span className="font-mono text-primary">{campaignName}</span>
+                    {" · "}IP {maskIp(thr.ip_address)}
+                    {thr.country_code && <span className="ml-1">· {thr.country_code}</span>}
                   </p>
                 </div>
                 <span className="shrink-0 text-[11px] text-muted-foreground font-mono mt-0.5">
