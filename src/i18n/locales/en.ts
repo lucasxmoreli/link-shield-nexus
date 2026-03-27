@@ -107,6 +107,7 @@ const en = {
   dopamine: {
     title: "🛡️ Shield Active",
     description: "CloakGuard successfully intercepted {{count}} threats in the last 24 hours.",
+    topThreat: "Top threat: {{reason}}",
   },
 
   // Campaigns
@@ -587,6 +588,16 @@ const en = {
     avgScore: "Avg Score",
     threatAnatomy: "Threat Anatomy",
     noBlockData: "No blocked traffic to analyze.",
+    roiSaved: "Protected ROI",
+    roiSavedTooltip: "Estimated savings based on blocked clicks × average cost per click.",
+  },
+
+  dashboard2: {
+    healthScore: "Campaign Health",
+    healthGood: "Excellent",
+    healthWarning: "Warning",
+    healthDanger: "Critical",
+    healthTooltip: "Average risk score of approved clicks. Lower is cleaner traffic.",
   },
 
   // Languages
