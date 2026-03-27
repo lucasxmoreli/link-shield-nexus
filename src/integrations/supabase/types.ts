@@ -363,7 +363,38 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      dashboard_analytics_view: {
+        Row: {
+          action_taken: Database["public"]["Enums"]["action_taken"] | null
+          block_reason: string | null
+          campaign_id: string | null
+          campaign_name: string | null
+          campaign_name_platform: string | null
+          click_id: string | null
+          cost: number | null
+          country_code: string | null
+          created_at: string | null
+          device_type: Database["public"]["Enums"]["device_type"] | null
+          id: string | null
+          ip_address: string | null
+          is_unique: boolean | null
+          motivo_limpo: string | null
+          risk_score: number | null
+          source_platform: string | null
+          status_final: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "requests_log_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       admin_change_plan: {
@@ -395,6 +426,13 @@ export type Database = {
       admin_toggle_suspend: {
         Args: { p_suspend: boolean; p_user_id: string }
         Returns: undefined
+      }
+      get_block_reasons_summary: {
+        Args: { p_campaign_id?: string }
+        Returns: {
+          motivo: string
+          total: number
+        }[]
       }
       get_campaign_redirect: { Args: { p_hash: string }; Returns: Json }
       has_role: {
