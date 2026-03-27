@@ -11,11 +11,7 @@ import {
   Zap,
   ShieldAlert,
   Info,
-  Copy,
-  Check,
   ExternalLink,
-  Shield,
-  Globe,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +35,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { TRAFFIC_SOURCES, getPlanByName, getAllowedSources } from "@/lib/plan-config";
+import CampaignLinkGenerator from "@/components/campaigns/CampaignLinkGenerator";
 
 const COUNTRIES = [
   { code: "US", name: "United States" },
@@ -67,48 +64,6 @@ const DEVICES = ["desktop", "mobile", "tablet"] as const;
 
 const POSTBACK_MACROS = ["{click_id}", "{campaign_id}", "{ip}", "{country}", "{device}", "{cost}", "{timestamp}"];
 
-// ── Per-platform parameter definitions (mirrors Campaigns.tsx) ─────────────
-const PLATFORM_PARAMS: Record<string, { key: string; macro: string }[]> = {
-  tiktok: [
-    { key: "click_id", macro: "__CALLBACK_PARAM__" },
-    { key: "campaign", macro: "__CID_NAME__" },
-    { key: "adset", macro: "__AID_NAME__" },
-    { key: "cost", macro: "__VALUE__" },
-  ],
-  facebook: [
-    { key: "click_id", macro: "{{fbclid}}" },
-    { key: "campaign", macro: "{{campaign.name}}" },
-    { key: "adset", macro: "{{adset.name}}" },
-    { key: "cost", macro: "{{cost_per_result}}" },
-  ],
-  instagram: [
-    { key: "click_id", macro: "{{fbclid}}" },
-    { key: "campaign", macro: "{{campaign.name}}" },
-    { key: "adset", macro: "{{adset.name}}" },
-    { key: "cost", macro: "{{cost_per_result}}" },
-  ],
-  google: [
-    { key: "click_id", macro: "{gclid}" },
-    { key: "campaign", macro: "{campaign}" },
-    { key: "adset", macro: "{adgroup}" },
-    { key: "cost", macro: "{cost_per_conversion}" },
-  ],
-  youtube: [
-    { key: "click_id", macro: "{gclid}" },
-    { key: "campaign", macro: "{campaign}" },
-    { key: "cost", macro: "{cost_per_conversion}" },
-  ],
-};
-
-function buildTrackingUrl(domain: string, hash: string, source: string): string {
-  const base = domain.trim().replace(/\/+$/, "");
-  const dm = base.startsWith("http") ? base : `https://${base}`;
-  const root = `${dm}/c/${hash}`;
-  const params = PLATFORM_PARAMS[source];
-  if (!params || params.length === 0) return root;
-  const qs = params.map((p) => `${p.key}=${p.macro}`).join("&");
-  return `${root}?${qs}`;
-}
 
 function generateHash(len = 10) {
   const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -157,8 +112,13 @@ export default function CampaignEdit() {
   const [countrySearch, setCountrySearch] = useState("");
   const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
   const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
-  const [successModal, setSuccessModal] = useState<{ link: string; offerUrl: string; safeUrl: string } | null>(null);
-  const [linkCopied, setLinkCopied] = useState(false);
+  const [successModal, setSuccessModal] = useState<{
+    hash: string;
+    domain: string;
+    source: string;
+    offerUrl: string;
+    safeUrl: string;
+  } | null>(null);
 
   // ── Webhook Postback states (Visual Builder) ─────────────────────────
   const [postbackBaseUrl, setPostbackBaseUrl] = useState("");
@@ -283,10 +243,10 @@ export default function CampaignEdit() {
     },
     onSuccess: (result) => {
       qc.invalidateQueries({ queryKey: ["campaigns"] });
-      const selectedDomain = result.domain || domain || "yourdomain.com";
-      const finalLink = buildTrackingUrl(selectedDomain, result.hash, trafficSource);
       setSuccessModal({
-        link: finalLink,
+        hash: result.hash,
+        domain: result.domain || domain || "",
+        source: trafficSource,
         offerUrl: ensureAbsoluteUrl(offerUrl),
         safeUrl: ensureAbsoluteUrl(safeUrl),
       });
@@ -1025,86 +985,46 @@ export default function CampaignEdit() {
               {t("campaignEdit.successDesc", { name })}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 pt-2">
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">
-                {t("campaignEdit.trackingLink")}
-              </Label>
-              <div className="relative">
-                <Input
-                  readOnly
-                  value={successModal?.link || ""}
-                  className="bg-secondary border-border pr-20 font-mono text-sm"
-                />
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 gap-1.5 text-xs"
-                  onClick={() => {
-                    navigator.clipboard.writeText(successModal?.link || "");
-                    setLinkCopied(true);
-                    toast.success(t("campaignEdit.linkCopied"));
-                    setTimeout(() => setLinkCopied(false), 2000);
-                  }}
-                >
-                  {linkCopied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
-                  {linkCopied ? t("common.copied") : t("common.copy")}
-                </Button>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-lg border border-border bg-secondary/50 p-3 space-y-1.5">
-                <div className="flex items-center gap-1.5">
-                  <Globe className="h-3.5 w-3.5 text-primary" />
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    {t("campaignEdit.offerPageLabel")}
+
+          {successModal && (
+            <CampaignLinkGenerator
+              campaignHash={successModal.hash}
+              initialSource={successModal.source}
+              initialDomain={successModal.domain}
+              offerUrl={successModal.offerUrl}
+              safeUrl={successModal.safeUrl}
+            />
+          )}
+
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-2.5">
+            <p className="text-xs font-semibold uppercase tracking-wider text-primary">
+              {t("campaignEdit.quickSetup")}
+            </p>
+            <div className="space-y-2">
+              {["step1", "step2", "step3"].map((stepKey, i) => (
+                <div key={stepKey} className="flex items-start gap-2.5">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold text-primary">
+                    {i + 1}
                   </span>
+                  <p className="text-sm text-muted-foreground">
+                    {t(`campaignEdit.${stepKey}`)
+                      .split("<bold>")
+                      .map((part: string, j: number) => {
+                        if (j === 0) return part;
+                        const [bold, rest] = part.split("</bold>");
+                        return (
+                          <span key={j}>
+                            <span className="font-medium text-foreground">{bold}</span>
+                            {rest}
+                          </span>
+                        );
+                      })}
+                  </p>
                 </div>
-                <p className="text-xs font-mono text-foreground truncate" title={successModal?.offerUrl}>
-                  {successModal?.offerUrl || "—"}
-                </p>
-              </div>
-              <div className="rounded-lg border border-border bg-secondary/50 p-3 space-y-1.5">
-                <div className="flex items-center gap-1.5">
-                  <Shield className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    {t("campaignEdit.safePageLabel")}
-                  </span>
-                </div>
-                <p className="text-xs font-mono text-foreground truncate" title={successModal?.safeUrl}>
-                  {successModal?.safeUrl || "—"}
-                </p>
-              </div>
-            </div>
-            <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-2.5">
-              <p className="text-xs font-semibold uppercase tracking-wider text-primary">
-                {t("campaignEdit.quickSetup")}
-              </p>
-              <div className="space-y-2">
-                {["step1", "step2", "step3"].map((stepKey, i) => (
-                  <div key={stepKey} className="flex items-start gap-2.5">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold text-primary">
-                      {i + 1}
-                    </span>
-                    <p className="text-sm text-muted-foreground">
-                      {t(`campaignEdit.${stepKey}`)
-                        .split("<bold>")
-                        .map((part: string, j: number) => {
-                          if (j === 0) return part;
-                          const [bold, rest] = part.split("</bold>");
-                          return (
-                            <span key={j}>
-                              <span className="font-medium text-foreground">{bold}</span>
-                              {rest}
-                            </span>
-                          );
-                        })}
-                    </p>
-                  </div>
-                ))}
-              </div>
+              ))}
             </div>
           </div>
+
           <DialogFooter>
             <Button
               onClick={() => {
