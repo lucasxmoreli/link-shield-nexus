@@ -39,6 +39,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { TRAFFIC_SOURCES, getPlanByName, getAllowedSources } from "@/lib/plan-config";
+import CampaignLinkGenerator from "@/components/campaigns/CampaignLinkGenerator";
 
 const COUNTRIES = [
   { code: "US", name: "United States" },
