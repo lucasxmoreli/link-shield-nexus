@@ -79,6 +79,11 @@ const en = {
     tablet: "Tablet",
     realTrafficRatio: "Real traffic ratio",
     allRejected: "All rejected traffic",
+    thisMonth: "This Month",
+    topAttackOrigins: "Top Attack Origins",
+    globalShield: "Global Shield",
+    noAttackData: "No attacks recorded yet.",
+    healthCalculating: "Calculating...",
   },
 
   // Volatility Radar

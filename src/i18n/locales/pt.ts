@@ -76,6 +76,11 @@ const pt = {
     tablet: "Tablet",
     realTrafficRatio: "Proporção de tráfego real",
     allRejected: "Todo tráfego rejeitado",
+    thisMonth: "Este Mês",
+    topAttackOrigins: "Top Origens de Ataque",
+    globalShield: "Escudo Global",
+    noAttackData: "Nenhum ataque registrado ainda.",
+    healthCalculating: "Calculando...",
   },
 
   volatility: {
