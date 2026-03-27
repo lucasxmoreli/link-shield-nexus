@@ -96,6 +96,7 @@ const en = {
     title: "Live Threat Interceptions",
     botBlocked: "Bot blocked",
     safePageRedirect: "Redirected to safe page",
+    intercepted: "Threat Intercepted",
     noThreats: "No threats intercepted yet.",
     noThreatsHelper: "Threats will appear here in real-time.",
     on: "on",
@@ -584,6 +585,8 @@ const en = {
     country: "Country",
     device: "Device",
     avgScore: "Avg Score",
+    threatAnatomy: "Threat Anatomy",
+    noBlockData: "No blocked traffic to analyze.",
   },
 
   // Languages

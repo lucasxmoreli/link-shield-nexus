@@ -91,6 +91,7 @@ const es = {
     title: "Interceptaciones de Amenazas en Vivo",
     botBlocked: "Bot bloqueado",
     safePageRedirect: "Redirigido a página segura",
+    intercepted: "Amenaza Interceptada",
     noThreats: "Ninguna amenaza interceptada aún.",
     noThreatsHelper: "Las amenazas aparecerán aquí en tiempo real.",
     on: "en",
@@ -564,6 +565,8 @@ const es = {
     country: "País",
     device: "Dispositivo",
     avgScore: "Puntuación Prom.",
+    threatAnatomy: "Anatomía de las Amenazas",
+    noBlockData: "Sin tráfico bloqueado para analizar.",
   },
 
   languages: {

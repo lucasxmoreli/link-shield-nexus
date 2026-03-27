@@ -32,25 +32,34 @@ export default function Dashboard() {
   const { t } = useTranslation();
   useDopamineToast();
 
+  // Fetch from the new View instead of requests_log directly
   const { data: logs = [], isLoading } = useQuery({
-    queryKey: ["requests_log", user?.id],
+    queryKey: ["dashboard_analytics_view", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("requests_log")
-        .select("action_taken, created_at, device_type, ip_address, country_code")
+        .from("dashboard_analytics_view" as any)
+        .select("action_taken, status_final, motivo_limpo, created_at, device_type, ip_address, country_code")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data;
+      return data as unknown as Array<{
+        action_taken: string;
+        status_final: string;
+        motivo_limpo: string | null;
+        created_at: string;
+        device_type: string | null;
+        ip_address: string | null;
+        country_code: string | null;
+      }>;
     },
     enabled: !!user,
   });
 
   const stats = {
     total_requests: logs.length,
-    offer_page: logs.filter((l) => l.action_taken === "offer_page").length,
-    bots_blocked: logs.filter((l) => l.action_taken === "bot_blocked" || l.action_taken === "safe_page").length,
+    offer_page: logs.filter((l) => l.status_final === "Aprovado").length,
+    bots_blocked: logs.filter((l) => l.status_final === "Bloqueado").length,
     pass_rate: logs.length > 0
-      ? ((logs.filter((l) => l.action_taken === "offer_page").length / logs.length) * 100).toFixed(1)
+      ? ((logs.filter((l) => l.status_final === "Aprovado").length / logs.length) * 100).toFixed(1)
       : "0.0",
   };
 
@@ -62,8 +71,8 @@ export default function Dashboard() {
     const dayLogs = logs.filter((l) => l.created_at.startsWith(dayStr));
     return {
       day: dayLabel,
-      offer_page: dayLogs.filter((l) => l.action_taken === "offer_page").length,
-      bot_blocked: dayLogs.filter((l) => l.action_taken === "bot_blocked" || l.action_taken === "safe_page").length,
+      offer_page: dayLogs.filter((l) => l.status_final === "Aprovado").length,
+      bot_blocked: dayLogs.filter((l) => l.status_final === "Bloqueado").length,
     };
   });
 
@@ -99,7 +108,7 @@ export default function Dashboard() {
     ip: l.ip_address ?? "—",
     country: l.country_code ?? "—",
     device: l.device_type === "mobile" ? t("dashboard.mobile") : t("dashboard.desktop"),
-    action: l.action_taken === "bot_blocked" ? t("dashboard.blocked") : t("dashboard.passed"),
+    action: l.status_final === "Bloqueado" ? t("dashboard.blocked") : t("dashboard.passed"),
   }));
   const feedData = recentLogs.length > 0 ? recentLogs : MOCK_FEED;
 
