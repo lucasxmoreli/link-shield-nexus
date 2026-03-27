@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Activity, ShieldCheck, Target, Percent, Globe, Monitor, Smartphone, Tablet, Clock, MapPin, HeartPulse } from "lucide-react";
-import { LiveThreatInterceptions } from "@/components/dashboard/LiveThreatInterceptions";
+import { TopAttackOrigins } from "@/components/dashboard/TopAttackOrigins";
 import { VolatilityRadar } from "@/components/dashboard/VolatilityRadar";
 import { OnboardingWizard } from "@/components/dashboard/OnboardingWizard";
 import { useDopamineToast } from "@/components/dashboard/useDopamineToast";
@@ -18,7 +18,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
   PieChart, Pie, Cell,
 } from "recharts";
-import { format, subDays, formatDistanceToNow } from "date-fns";
+import { format, subDays, startOfMonth, formatDistanceToNow, getHours } from "date-fns";
 
 const DEVICE_COLORS = [
   "hsl(271, 81%, 56%)",
@@ -32,7 +32,6 @@ export default function Dashboard() {
   const { t } = useTranslation();
   useDopamineToast();
 
-  // Fetch from the new View instead of requests_log directly
   const { data: logs = [], isLoading } = useQuery({
     queryKey: ["dashboard_analytics_view", user?.id],
     queryFn: async () => {
@@ -64,26 +63,59 @@ export default function Dashboard() {
       : "0.0",
   };
 
-  // Health Score: average risk_score of approved traffic
+  // Health Score
   const approvedWithScore = logs.filter(l => l.status_final === "Aprovado" && l.risk_score != null);
   const healthScore = approvedWithScore.length > 0
     ? Math.round(approvedWithScore.reduce((a, l) => a + (l.risk_score as number), 0) / approvedWithScore.length)
     : null;
-  const healthLabel = healthScore == null ? "—" : healthScore < 10 ? t("dashboard2.healthGood") : healthScore <= 30 ? t("dashboard2.healthWarning") : t("dashboard2.healthDanger");
-  const healthVariant = healthScore == null ? "default" as const : healthScore < 10 ? "success" as const : healthScore <= 30 ? "default" as const : "destructive" as const;
+  const healthLabel = healthScore == null
+    ? t("dashboard.healthCalculating")
+    : healthScore < 10 ? t("dashboard2.healthGood")
+    : healthScore <= 30 ? t("dashboard2.healthWarning")
+    : t("dashboard2.healthDanger");
+  const healthVariant = healthScore == null
+    ? "default" as const
+    : healthScore < 10 ? "success" as const
+    : healthScore <= 30 ? "default" as const
+    : "destructive" as const;
+  const healthDisplay = healthScore != null ? `${healthScore} — ${healthLabel}` : healthLabel;
 
-  const days = parseInt(dateRange);
-  const chartData = Array.from({ length: days }, (_, i) => {
-    const date = subDays(new Date(), days - 1 - i);
-    const dayStr = format(date, "yyyy-MM-dd");
-    const dayLabel = days <= 7 ? format(date, "EEE") : format(date, "MMM d");
-    const dayLogs = logs.filter((l) => l.created_at.startsWith(dayStr));
-    return {
-      day: dayLabel,
-      offer_page: dayLogs.filter((l) => l.status_final === "Aprovado").length,
-      bot_blocked: dayLogs.filter((l) => l.status_final === "Bloqueado").length,
-    };
-  });
+  // Chart data logic: hourly for "today", daily otherwise
+  const isToday = dateRange === "1";
+  const isThisMonth = dateRange === "month";
+
+  const chartData = (() => {
+    if (isToday) {
+      const todayStr = format(new Date(), "yyyy-MM-dd");
+      const todayLogs = logs.filter((l) => l.created_at.startsWith(todayStr));
+      return Array.from({ length: 24 }, (_, hour) => {
+        const hourLogs = todayLogs.filter((l) => getHours(new Date(l.created_at)) === hour);
+        return {
+          day: `${String(hour).padStart(2, "0")}:00`,
+          offer_page: hourLogs.filter((l) => l.status_final === "Aprovado").length,
+          bot_blocked: hourLogs.filter((l) => l.status_final === "Bloqueado").length,
+        };
+      });
+    }
+
+    const days = isThisMonth
+      ? Math.ceil((new Date().getTime() - startOfMonth(new Date()).getTime()) / (1000 * 60 * 60 * 24)) + 1
+      : parseInt(dateRange);
+    const startDate = isThisMonth ? startOfMonth(new Date()) : subDays(new Date(), days - 1);
+
+    return Array.from({ length: days }, (_, i) => {
+      const date = new Date(startDate);
+      date.setDate(date.getDate() + i);
+      const dayStr = format(date, "yyyy-MM-dd");
+      const dayLabel = days <= 7 ? format(date, "EEE") : format(date, "MMM d");
+      const dayLogs = logs.filter((l) => l.created_at.startsWith(dayStr));
+      return {
+        day: dayLabel,
+        offer_page: dayLogs.filter((l) => l.status_final === "Aprovado").length,
+        bot_blocked: dayLogs.filter((l) => l.status_final === "Bloqueado").length,
+      };
+    });
+  })();
 
   const deviceCounts = {
     desktop: logs.filter((l) => l.device_type === "desktop").length || 0,
@@ -150,7 +182,7 @@ export default function Dashboard() {
             <StatCard title={t("dashboard.passRate")} value={`${stats.pass_rate}%`} icon={Percent} variant="primary" trend={{ value: t("dashboard.realTrafficRatio"), positive: true }} />
             <StatCard title={t("dashboard.offerPage")} value={stats.offer_page} icon={Target} variant="success" />
             <StatCard title={t("dashboard.botsBlocked")} value={stats.bots_blocked} icon={ShieldCheck} variant="destructive" trend={{ value: t("dashboard.allRejected"), positive: false }} />
-            <StatCard title={t("dashboard2.healthScore")} value={healthScore != null ? `${healthScore} — ${healthLabel}` : "—"} icon={HeartPulse} variant={healthVariant} />
+            <StatCard title={t("dashboard2.healthScore")} value={healthDisplay} icon={HeartPulse} variant={healthVariant} />
           </>
         )}
       </div>
@@ -160,13 +192,14 @@ export default function Dashboard() {
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-base font-semibold">{t("dashboard.trafficOverview")}</CardTitle>
             <Select value={dateRange} onValueChange={setDateRange}>
-              <SelectTrigger className="w-[140px] h-8 text-xs border-border bg-secondary/50">
+              <SelectTrigger className="w-[160px] h-8 text-xs border-border bg-secondary/50">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="1">{t("dashboard.today")}</SelectItem>
                 <SelectItem value="7">{t("dashboard.last7Days")}</SelectItem>
                 <SelectItem value="30">{t("dashboard.last30Days")}</SelectItem>
+                <SelectItem value="month">{t("dashboard.thisMonth")}</SelectItem>
               </SelectContent>
             </Select>
           </CardHeader>
@@ -188,7 +221,7 @@ export default function Dashboard() {
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(0 0% 15%)" vertical={false} />
-                    <XAxis dataKey="day" stroke="hsl(0 0% 40%)" fontSize={11} tickLine={false} axisLine={false} />
+                    <XAxis dataKey="day" stroke="hsl(0 0% 40%)" fontSize={11} tickLine={false} axisLine={false} interval={isToday ? 3 : "preserveStartEnd"} />
                     <YAxis stroke="hsl(0 0% 40%)" fontSize={11} tickLine={false} axisLine={false} />
                     <Tooltip
                       contentStyle={{
@@ -249,7 +282,7 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
-        <LiveThreatInterceptions />
+        <TopAttackOrigins />
 
         <Card className="border-border bg-card">
           <CardHeader className="pb-2">
