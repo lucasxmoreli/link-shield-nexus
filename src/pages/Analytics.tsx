@@ -189,12 +189,41 @@ export default function Analytics() {
     blocked: { label: t("analytics.blocked"), color: "hsl(var(--destructive))" },
   };
 
-  // Block reasons donut data
-  const reasonsTotal = blockReasons.reduce((acc, r) => acc + Number(r.total), 0);
-  const donutData = blockReasons.map(r => ({
-    name: r.motivo,
-    value: Number(r.total),
-  }));
+  // Block reasons donut data — group similar reasons + top 4 + "Outros"
+  const donutData = useMemo(() => {
+    if (!blockReasons || blockReasons.length === 0) return [];
+
+    // 1. Normalize reason keys
+    const normalize = (motivo: string): string => {
+      const lower = motivo.toLowerCase();
+      if (["datacenter", "proxy", "blacklist", "vpn"].some(k => lower.includes(k))) {
+        return "Datacenter / VPN (Trava 1)";
+      }
+      return motivo;
+    };
+
+    // 2. Aggregate
+    const grouped: Record<string, number> = {};
+    blockReasons.forEach(r => {
+      const key = normalize(r.motivo);
+      const val = Number(r.total) || 0;
+      grouped[key] = (grouped[key] || 0) + val;
+    });
+
+    // 3. Sort desc
+    const sorted = Object.entries(grouped)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+
+    // 4. Top 4 + "Outros"
+    if (sorted.length <= 5) return sorted;
+    const top4 = sorted.slice(0, 4);
+    const othersValue = sorted.slice(4).reduce((acc, d) => acc + d.value, 0);
+    if (othersValue > 0) top4.push({ name: t("common.other", "Outros"), value: othersValue });
+    return top4;
+  }, [blockReasons, t]);
+
+  const reasonsTotal = donutData.reduce((acc, d) => acc + d.value, 0);
 
   return (
     <div className="p-4 md:p-8 space-y-6">
@@ -265,7 +294,7 @@ export default function Analytics() {
            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
             <StatCard title={t("analytics.totalClicks")} value={metrics.total.toLocaleString()} icon={MousePointerClick} variant="default" />
             <StatCard title={t("analytics.uniqueClicks")} value={metrics.unique.toLocaleString()} icon={Users} variant="primary" />
-            <StatCard title={t("analytics.approvedLeads")} value={metrics.approved.toLocaleString()} icon={CheckCircle} variant="success" />
+            <StatCard title={t("analytics.realTraffic")} value={metrics.approved.toLocaleString()} icon={CheckCircle} variant="success" />
             <StatCard title={t("analytics.approvalRate")} value={`${metrics.approvalRate}%`} icon={Percent} variant="default" />
             <StatCard title={t("analytics.totalCost")} value={`$${metrics.totalCost.toFixed(2)}`} icon={DollarSign} variant="destructive" />
             <StatCard title={t("analytics.cpl")} value={`$${metrics.cpl.toFixed(2)}`} icon={TrendingUp} variant="primary" />
