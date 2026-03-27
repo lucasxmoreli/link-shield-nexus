@@ -116,8 +116,13 @@ export default function CampaignEdit() {
   const [countrySearch, setCountrySearch] = useState("");
   const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
   const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
-  const [successModal, setSuccessModal] = useState<{ link: string; offerUrl: string; safeUrl: string } | null>(null);
-  const [linkCopied, setLinkCopied] = useState(false);
+  const [successModal, setSuccessModal] = useState<{
+    hash: string;
+    domain: string;
+    source: string;
+    offerUrl: string;
+    safeUrl: string;
+  } | null>(null);
 
   // ── Webhook Postback states (Visual Builder) ─────────────────────────
   const [postbackBaseUrl, setPostbackBaseUrl] = useState("");
@@ -242,10 +247,10 @@ export default function CampaignEdit() {
     },
     onSuccess: (result) => {
       qc.invalidateQueries({ queryKey: ["campaigns"] });
-      const selectedDomain = result.domain || domain || "yourdomain.com";
-      const finalLink = buildTrackingUrl(selectedDomain, result.hash, trafficSource);
       setSuccessModal({
-        link: finalLink,
+        hash: result.hash,
+        domain: result.domain || domain || "",
+        source: trafficSource,
         offerUrl: ensureAbsoluteUrl(offerUrl),
         safeUrl: ensureAbsoluteUrl(safeUrl),
       });
