@@ -554,6 +554,7 @@ const pt = {
     totalClicks: "Cliques Totais",
     uniqueClicks: "Cliques Únicos",
     approvedLeads: "Leads Aprovados",
+    realTraffic: "Tráfego Real (Aprovado)",
     approvalRate: "Taxa de Aprovação",
     totalCost: "Custo Total",
     cpl: "CPL",

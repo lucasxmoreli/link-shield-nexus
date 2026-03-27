@@ -574,6 +574,7 @@ const en = {
     totalClicks: "Total Clicks",
     uniqueClicks: "Unique Clicks",
     approvedLeads: "Approved Leads",
+    realTraffic: "Real Traffic (Approved)",
     approvalRate: "Approval Rate",
     totalCost: "Total Cost",
     cpl: "CPL",
