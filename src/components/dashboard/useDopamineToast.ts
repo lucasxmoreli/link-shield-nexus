@@ -33,33 +33,49 @@ export function useDopamineToast() {
     enabled: !!user,
   });
 
-  const { data: blockedCount } = useQuery({
-    queryKey: ["blocked_24h", user?.id],
+  const since = subHours(new Date(), 24).toISOString();
+
+  // Fetch from the View instead of requests_log
+  const { data: blockedData } = useQuery({
+    queryKey: ["blocked_24h_view", user?.id],
     queryFn: async () => {
-      const since = subHours(new Date(), 24).toISOString();
-      const { count, error } = await supabase
-        .from("requests_log")
-        .select("id", { count: "exact", head: true })
-        .in("action_taken", ["bot_blocked", "safe_page"])
+      const { data, error } = await supabase
+        .from("dashboard_analytics_view" as any)
+        .select("motivo_limpo")
+        .eq("status_final", "Bloqueado")
         .gte("created_at", since);
       if (error) throw error;
-      return count ?? 0;
+      return data as unknown as Array<{ motivo_limpo: string | null }>;
     },
     enabled: !!user,
   });
 
+  const blockedCount = blockedData?.length ?? 0;
+
+  // Find the top threat reason
+  const topThreat = (() => {
+    if (!blockedData || blockedData.length === 0) return null;
+    const counts: Record<string, number> = {};
+    blockedData.forEach(d => {
+      const reason = d.motivo_limpo || "Desconhecido";
+      counts[reason] = (counts[reason] || 0) + 1;
+    });
+    return Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+  })();
+
   useEffect(() => {
-    if (firedRef.current || blockedCount == null || !profile) return;
+    if (firedRef.current || blockedCount === 0 || !profile) return;
     const threshold = getThreshold(profile.plan_name);
     if (blockedCount < threshold) return;
     firedRef.current = true;
     const timer = setTimeout(() => {
       const desc = t("dopamine.description", { count: blockedCount.toLocaleString() } as any);
+      const threatLine = topThreat ? `\n${t("dopamine.topThreat", { reason: topThreat } as any)}` : "";
       toast({
         title: String(t("dopamine.title")),
-        description: String(desc),
+        description: String(desc) + threatLine,
       });
     }, 2800);
     return () => clearTimeout(timer);
-  }, [blockedCount, profile, t]);
+  }, [blockedCount, profile, t, topThreat]);
 }

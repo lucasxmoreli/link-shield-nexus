@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatCard } from "@/components/StatCard";
-import { BarChart2, MousePointerClick, Users, CheckCircle, Percent, DollarSign, TrendingUp, Shield, ShieldAlert } from "lucide-react";
+import { BarChart2, MousePointerClick, Users, CheckCircle, Percent, DollarSign, TrendingUp, Shield, ShieldAlert, ShieldCheck } from "lucide-react";
 import {
   ChartContainer,
   ChartTooltip,
@@ -109,12 +109,16 @@ export default function Analytics() {
     const total = logs.length;
     const unique = logs.filter(l => l.is_unique).length;
     const approved = logs.filter(l => l.status_final === "Aprovado").length;
+    const blocked = logs.filter(l => l.status_final === "Bloqueado").length;
     const approvalRate = total > 0 ? ((approved / total) * 100).toFixed(1) : "0";
     const totalCost = logs.reduce((acc, l) => acc + (Number(l.cost) || 0), 0);
     const cpl = approved > 0 ? (totalCost / approved) : 0;
     const approvedScores = logs.filter(l => l.status_final === "Aprovado" && l.risk_score != null).map(l => l.risk_score as number);
     const avgScore = approvedScores.length > 0 ? Math.round(approvedScores.reduce((a, b) => a + b, 0) / approvedScores.length) : null;
-    return { total, unique, approved, approvalRate, totalCost, cpl, avgScore };
+    // ROI Saved: blocked clicks × average CPC (or $1.00 fallback)
+    const avgCpc = approved > 0 && totalCost > 0 ? (totalCost / approved) : 1.0;
+    const roiSaved = blocked * avgCpc;
+    return { total, unique, approved, blocked, approvalRate, totalCost, cpl, avgScore, roiSaved };
   }, [logs]);
 
   // Chart data
@@ -258,7 +262,7 @@ export default function Analytics() {
       {selectedCampaign && metrics && (
         <>
           {/* Metrics cards */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
+           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
             <StatCard title={t("analytics.totalClicks")} value={metrics.total.toLocaleString()} icon={MousePointerClick} variant="default" />
             <StatCard title={t("analytics.uniqueClicks")} value={metrics.unique.toLocaleString()} icon={Users} variant="primary" />
             <StatCard title={t("analytics.approvedLeads")} value={metrics.approved.toLocaleString()} icon={CheckCircle} variant="success" />
@@ -266,6 +270,7 @@ export default function Analytics() {
             <StatCard title={t("analytics.totalCost")} value={`$${metrics.totalCost.toFixed(2)}`} icon={DollarSign} variant="destructive" />
             <StatCard title={t("analytics.cpl")} value={`$${metrics.cpl.toFixed(2)}`} icon={TrendingUp} variant="primary" />
             <StatCard title={t("analytics.avgScore")} value={metrics.avgScore != null ? metrics.avgScore : "—"} icon={Shield} variant={metrics.avgScore != null && metrics.avgScore > 65 ? "destructive" : metrics.avgScore != null && metrics.avgScore > 25 ? "default" : "success"} />
+            <StatCard title={t("analytics.roiSaved")} value={`$${metrics.roiSaved.toFixed(2)}`} icon={ShieldCheck} variant="success" />
           </div>
 
           {/* Chart */}

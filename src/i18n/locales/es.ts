@@ -101,6 +101,7 @@ const es = {
   dopamine: {
     title: "🛡️ Escudo Activo",
     description: "CloakGuard interceptó exitosamente {{count}} amenazas en las últimas 24 horas.",
+    topThreat: "Amenaza principal: {{reason}}",
   },
 
   campaigns: {
@@ -567,6 +568,16 @@ const es = {
     avgScore: "Puntuación Prom.",
     threatAnatomy: "Anatomía de las Amenazas",
     noBlockData: "Sin tráfico bloqueado para analizar.",
+    roiSaved: "ROI Protegido",
+    roiSavedTooltip: "Ahorro estimado basado en clics bloqueados × costo promedio por clic.",
+  },
+
+  dashboard2: {
+    healthScore: "Salud de la Campaña",
+    healthGood: "Excelente",
+    healthWarning: "Atención",
+    healthDanger: "Crítico",
+    healthTooltip: "Puntuación de riesgo promedio de clics aprobados. Menor = tráfico más limpio.",
   },
 
   languages: {
