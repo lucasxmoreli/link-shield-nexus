@@ -104,6 +104,7 @@ export function TopAttackOrigins() {
                 <Progress
                   value={pct}
                   className="h-2 bg-secondary"
+                  indicatorClassName="bg-destructive"
                 />
               </div>
             );
