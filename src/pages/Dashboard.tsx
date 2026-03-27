@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Activity, ShieldCheck, Target, Percent, Globe, Monitor, Smartphone, Tablet, Clock, MapPin } from "lucide-react";
+import { Activity, ShieldCheck, Target, Percent, Globe, Monitor, Smartphone, Tablet, Clock, MapPin, HeartPulse } from "lucide-react";
 import { LiveThreatInterceptions } from "@/components/dashboard/LiveThreatInterceptions";
 import { VolatilityRadar } from "@/components/dashboard/VolatilityRadar";
 import { OnboardingWizard } from "@/components/dashboard/OnboardingWizard";
@@ -38,7 +38,7 @@ export default function Dashboard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("dashboard_analytics_view" as any)
-        .select("action_taken, status_final, motivo_limpo, created_at, device_type, ip_address, country_code")
+        .select("action_taken, status_final, motivo_limpo, created_at, device_type, ip_address, country_code, risk_score")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as unknown as Array<{
@@ -49,6 +49,7 @@ export default function Dashboard() {
         device_type: string | null;
         ip_address: string | null;
         country_code: string | null;
+        risk_score: number | null;
       }>;
     },
     enabled: !!user,
@@ -62,6 +63,14 @@ export default function Dashboard() {
       ? ((logs.filter((l) => l.status_final === "Aprovado").length / logs.length) * 100).toFixed(1)
       : "0.0",
   };
+
+  // Health Score: average risk_score of approved traffic
+  const approvedWithScore = logs.filter(l => l.status_final === "Aprovado" && l.risk_score != null);
+  const healthScore = approvedWithScore.length > 0
+    ? Math.round(approvedWithScore.reduce((a, l) => a + (l.risk_score as number), 0) / approvedWithScore.length)
+    : null;
+  const healthLabel = healthScore == null ? "—" : healthScore < 10 ? t("dashboard2.healthGood") : healthScore <= 30 ? t("dashboard2.healthWarning") : t("dashboard2.healthDanger");
+  const healthVariant = healthScore == null ? "default" as const : healthScore < 10 ? "success" as const : healthScore <= 30 ? "default" as const : "destructive" as const;
 
   const days = parseInt(dateRange);
   const chartData = Array.from({ length: days }, (_, i) => {
@@ -132,15 +141,16 @@ export default function Dashboard() {
 
       <VolatilityRadar />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
         {isLoading ? (
-          Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-[88px] rounded-lg" />)
+          Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-[88px] rounded-lg" />)
         ) : (
           <>
             <StatCard title={t("dashboard.totalRequests")} value={stats.total_requests} icon={Activity} />
             <StatCard title={t("dashboard.passRate")} value={`${stats.pass_rate}%`} icon={Percent} variant="primary" trend={{ value: t("dashboard.realTrafficRatio"), positive: true }} />
             <StatCard title={t("dashboard.offerPage")} value={stats.offer_page} icon={Target} variant="success" />
             <StatCard title={t("dashboard.botsBlocked")} value={stats.bots_blocked} icon={ShieldCheck} variant="destructive" trend={{ value: t("dashboard.allRejected"), positive: false }} />
+            <StatCard title={t("dashboard2.healthScore")} value={healthScore != null ? `${healthScore} — ${healthLabel}` : "—"} icon={HeartPulse} variant={healthVariant} />
           </>
         )}
       </div>
