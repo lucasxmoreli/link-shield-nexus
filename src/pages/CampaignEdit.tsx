@@ -68,48 +68,6 @@ const DEVICES = ["desktop", "mobile", "tablet"] as const;
 
 const POSTBACK_MACROS = ["{click_id}", "{campaign_id}", "{ip}", "{country}", "{device}", "{cost}", "{timestamp}"];
 
-// ── Per-platform parameter definitions (mirrors Campaigns.tsx) ─────────────
-const PLATFORM_PARAMS: Record<string, { key: string; macro: string }[]> = {
-  tiktok: [
-    { key: "click_id", macro: "__CALLBACK_PARAM__" },
-    { key: "campaign", macro: "__CID_NAME__" },
-    { key: "adset", macro: "__AID_NAME__" },
-    { key: "cost", macro: "__VALUE__" },
-  ],
-  facebook: [
-    { key: "click_id", macro: "{{fbclid}}" },
-    { key: "campaign", macro: "{{campaign.name}}" },
-    { key: "adset", macro: "{{adset.name}}" },
-    { key: "cost", macro: "{{cost_per_result}}" },
-  ],
-  instagram: [
-    { key: "click_id", macro: "{{fbclid}}" },
-    { key: "campaign", macro: "{{campaign.name}}" },
-    { key: "adset", macro: "{{adset.name}}" },
-    { key: "cost", macro: "{{cost_per_result}}" },
-  ],
-  google: [
-    { key: "click_id", macro: "{gclid}" },
-    { key: "campaign", macro: "{campaign}" },
-    { key: "adset", macro: "{adgroup}" },
-    { key: "cost", macro: "{cost_per_conversion}" },
-  ],
-  youtube: [
-    { key: "click_id", macro: "{gclid}" },
-    { key: "campaign", macro: "{campaign}" },
-    { key: "cost", macro: "{cost_per_conversion}" },
-  ],
-};
-
-function buildTrackingUrl(domain: string, hash: string, source: string): string {
-  const base = domain.trim().replace(/\/+$/, "");
-  const dm = base.startsWith("http") ? base : `https://${base}`;
-  const root = `${dm}/c/${hash}`;
-  const params = PLATFORM_PARAMS[source];
-  if (!params || params.length === 0) return root;
-  const qs = params.map((p) => `${p.key}=${p.macro}`).join("&");
-  return `${root}?${qs}`;
-}
 
 function generateHash(len = 10) {
   const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
