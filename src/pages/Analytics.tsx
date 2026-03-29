@@ -65,7 +65,7 @@ export default function Analytics() {
     queryFn: async () => {
       let query = supabase
         .from("dashboard_analytics_view" as any)
-        .select("status_final, motivo_limpo, country_code, device_type, created_at, source_platform, cost, is_unique, risk_score")
+        .select("status_final, motivo_limpo, country_code, device_type, created_at, source_platform, cost, is_unique, risk_score, is_conversion, revenue")
         .eq("campaign_id", selectedCampaign)
         .order("created_at", { ascending: true });
 
@@ -85,6 +85,8 @@ export default function Analytics() {
         cost: number | null;
         is_unique: boolean | null;
         risk_score: number | null;
+        is_conversion: boolean | null;
+        revenue: number | null;
       }>;
     },
     enabled: !!selectedCampaign,
@@ -115,21 +117,25 @@ export default function Analytics() {
     const cpl = approved > 0 ? (totalCost / approved) : 0;
     const approvedScores = logs.filter(l => l.status_final === "Aprovado" && l.risk_score != null).map(l => l.risk_score as number);
     const avgScore = approvedScores.length > 0 ? Math.round(approvedScores.reduce((a, b) => a + b, 0) / approvedScores.length) : null;
-    // ROI Saved: blocked clicks × average CPC (or $1.00 fallback)
     const avgCpc = approved > 0 && totalCost > 0 ? (totalCost / approved) : 1.0;
     const roiSaved = blocked * avgCpc;
-    return { total, unique, approved, blocked, approvalRate, totalCost, cpl, avgScore, roiSaved };
+    // Financial metrics
+    const totalRevenue = logs.filter(l => l.is_conversion).reduce((acc, l) => acc + (Number(l.revenue) || 0), 0);
+    const conversions = logs.filter(l => l.is_conversion).length;
+    const realRoi = totalCost > 0 ? ((totalRevenue - totalCost) / totalCost) * 100 : (totalRevenue > 0 ? 100 : 0);
+    return { total, unique, approved, blocked, approvalRate, totalCost, cpl, avgScore, roiSaved, totalRevenue, conversions, realRoi };
   }, [logs]);
 
   // Chart data
   const chartData = useMemo(() => {
     if (!logs || logs.length === 0) return [];
-    const dayMap: Record<string, { approved: number; blocked: number }> = {};
+    const dayMap: Record<string, { approved: number; blocked: number; conversions: number }> = {};
     logs.forEach(l => {
       const day = format(new Date(l.created_at), "MM/dd");
-      if (!dayMap[day]) dayMap[day] = { approved: 0, blocked: 0 };
+      if (!dayMap[day]) dayMap[day] = { approved: 0, blocked: 0, conversions: 0 };
       if (l.status_final === "Aprovado") dayMap[day].approved++;
       else dayMap[day].blocked++;
+      if (l.is_conversion) dayMap[day].conversions++;
     });
     return Object.entries(dayMap).map(([day, v]) => ({ day, ...v }));
   }, [logs]);
@@ -187,6 +193,7 @@ export default function Analytics() {
   const chartConfig = {
     approved: { label: t("analytics.approved"), color: "hsl(142 71% 45%)" },
     blocked: { label: t("analytics.blocked"), color: "hsl(var(--destructive))" },
+    conversions: { label: t("analytics.conversions"), color: "hsl(45 100% 51%)" },
   };
 
   // Block reasons donut data — group similar reasons + top 4 + "Outros"
@@ -291,15 +298,22 @@ export default function Analytics() {
       {selectedCampaign && metrics && (
         <>
           {/* Metrics cards */}
-           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+           {/* Financial highlight row */}
+           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <StatCard title={t("analytics.totalRevenue")} value={`$${metrics.totalRevenue.toFixed(2)}`} icon={DollarSign} variant="success" />
+            <StatCard title={t("analytics.realRoi")} value={`${metrics.realRoi.toFixed(1)}%`} icon={TrendingUp} variant={metrics.realRoi >= 0 ? "success" : "destructive"} />
+            <StatCard title={t("analytics.totalCost")} value={`$${metrics.totalCost.toFixed(2)}`} icon={DollarSign} variant="destructive" />
+            <StatCard title={t("analytics.roiSaved")} value={`$${metrics.roiSaved.toFixed(2)}`} icon={ShieldCheck} variant="success" />
+           </div>
+
+           {/* Traffic metrics row */}
+           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             <StatCard title={t("analytics.totalClicks")} value={metrics.total.toLocaleString()} icon={MousePointerClick} variant="default" />
             <StatCard title={t("analytics.uniqueClicks")} value={metrics.unique.toLocaleString()} icon={Users} variant="primary" />
             <StatCard title={t("analytics.realTraffic")} value={metrics.approved.toLocaleString()} icon={CheckCircle} variant="success" />
             <StatCard title={t("analytics.approvalRate")} value={`${metrics.approvalRate}%`} icon={Percent} variant="default" />
-            <StatCard title={t("analytics.totalCost")} value={`$${metrics.totalCost.toFixed(2)}`} icon={DollarSign} variant="destructive" />
             <StatCard title={t("analytics.cpl")} value={`$${metrics.cpl.toFixed(2)}`} icon={TrendingUp} variant="primary" />
             <StatCard title={t("analytics.avgScore")} value={metrics.avgScore != null ? metrics.avgScore : "—"} icon={Shield} variant={metrics.avgScore != null && metrics.avgScore > 65 ? "destructive" : metrics.avgScore != null && metrics.avgScore > 25 ? "default" : "success"} />
-            <StatCard title={t("analytics.roiSaved")} value={`$${metrics.roiSaved.toFixed(2)}`} icon={ShieldCheck} variant="success" />
           </div>
 
           {/* Chart */}
@@ -317,6 +331,7 @@ export default function Analytics() {
                     <ChartTooltip content={<ChartTooltipContent />} />
                     <Area type="monotone" dataKey="approved" stroke="hsl(142 71% 45%)" fill="hsl(142 71% 45%)" fillOpacity={0.3} strokeWidth={2} dot={false} connectNulls />
                     <Area type="monotone" dataKey="blocked" stroke="hsl(var(--destructive))" fill="hsl(var(--destructive))" fillOpacity={0.2} strokeWidth={2} dot={false} connectNulls />
+                    <Area type="monotone" dataKey="conversions" stroke="hsl(45 100% 51%)" fill="hsl(45 100% 51%)" fillOpacity={0.15} strokeWidth={2} dot={false} connectNulls />
                   </AreaChart>
                 </ChartContainer>
               </CardContent>

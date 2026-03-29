@@ -600,6 +600,9 @@ const en = {
     noBlockData: "No blocked traffic to analyze.",
     roiSaved: "Protected ROI",
     roiSavedTooltip: "Estimated savings based on blocked clicks × average cost per click.",
+    totalRevenue: "Total Revenue",
+    realRoi: "Real ROI",
+    conversions: "Conversions",
   },
 
   dashboard2: {

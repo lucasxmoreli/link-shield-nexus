@@ -580,6 +580,9 @@ const pt = {
     noBlockData: "Nenhum tráfego bloqueado para analisar.",
     roiSaved: "ROI Protegido",
     roiSavedTooltip: "Estimativa de economia baseada nos cliques bloqueados × custo médio por clique.",
+    totalRevenue: "Receita Total",
+    realRoi: "ROI Real",
+    conversions: "Conversões",
   },
 
   dashboard2: {

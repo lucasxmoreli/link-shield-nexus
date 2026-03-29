@@ -383,8 +383,10 @@ export type Database = {
           device_type: Database["public"]["Enums"]["device_type"] | null
           id: string | null
           ip_address: string | null
+          is_conversion: boolean | null
           is_unique: boolean | null
           motivo_limpo: string | null
+          revenue: number | null
           risk_score: number | null
           source_platform: string | null
           status_final: string | null
