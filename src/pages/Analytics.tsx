@@ -34,7 +34,7 @@ export default function Analytics() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [selectedCampaign, setSelectedCampaign] = useState<string>("");
-  const [datePreset, setDatePreset] = useState<DatePreset>("7days");
+  const [datePreset, setDatePreset] = useState<DatePreset>("all");
 
   const { data: campaigns, isLoading: loadingCampaigns } = useQuery({
     queryKey: ["campaigns-list", user?.id],
