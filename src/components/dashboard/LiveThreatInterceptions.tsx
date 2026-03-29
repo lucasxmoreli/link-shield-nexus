@@ -24,7 +24,7 @@ export function LiveThreatInterceptions() {
       const { data, error } = await supabase
         .from("dashboard_analytics_view" as any)
         .select("id, status_final, motivo_limpo, created_at, ip_address, country_code, campaign_name")
-        .eq("status_final", "Bloqueado")
+        .eq("action_taken", "bot_blocked")
         .order("created_at", { ascending: false })
         .limit(6);
       if (error) throw error;

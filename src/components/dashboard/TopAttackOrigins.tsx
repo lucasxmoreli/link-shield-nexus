@@ -38,7 +38,7 @@ export function TopAttackOrigins() {
       const { data, error } = await supabase
         .from("dashboard_analytics_view")
         .select("country_code")
-        .eq("status_final", "Bloqueado");
+        .eq("action_taken", "bot_blocked");
       if (error) throw error;
 
       const counts: Record<string, number> = {};
