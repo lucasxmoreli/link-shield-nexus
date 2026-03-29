@@ -74,8 +74,7 @@ export default function Dashboard() {
   const stats = {
     total_requests: filteredLogs.length,
     offer_page: filteredLogs.filter((l) => l.status_final === "Aprovado").length,
-    safe_page: filteredLogs.filter((l) => l.status_final === "Página Segura").length,
-    bots_blocked: filteredLogs.filter((l) => l.status_final === "Bloqueado").length,
+    rejected: filteredLogs.filter((l) => l.status_final === "Bloqueado" || l.status_final === "Página Segura").length,
     pass_rate: filteredLogs.length > 0
       ? ((filteredLogs.filter((l) => l.status_final === "Aprovado").length / filteredLogs.length) * 100).toFixed(1)
       : "0.0",
@@ -108,11 +107,10 @@ export default function Dashboard() {
       const todayLogs = filteredLogs;
       return Array.from({ length: 24 }, (_, hour) => {
         const hourLogs = todayLogs.filter((l) => getHours(new Date(l.created_at)) === hour);
-        return {
+          return {
           day: `${String(hour).padStart(2, "0")}:00`,
           offer_page: hourLogs.filter((l) => l.status_final === "Aprovado").length,
-          safe_page: hourLogs.filter((l) => l.status_final === "Página Segura").length,
-          bot_blocked: hourLogs.filter((l) => l.status_final === "Bloqueado").length,
+          rejected: hourLogs.filter((l) => l.status_final === "Bloqueado" || l.status_final === "Página Segura").length,
         };
       });
     }
@@ -131,8 +129,7 @@ export default function Dashboard() {
       return {
         day: dayLabel,
         offer_page: dayLogs.filter((l) => l.status_final === "Aprovado").length,
-        safe_page: dayLogs.filter((l) => l.status_final === "Página Segura").length,
-        bot_blocked: dayLogs.filter((l) => l.status_final === "Bloqueado").length,
+        rejected: dayLogs.filter((l) => l.status_final === "Bloqueado" || l.status_final === "Página Segura").length,
       };
     });
   })();
@@ -202,7 +199,7 @@ export default function Dashboard() {
             <StatCard title={t("dashboard.totalRequests")} value={stats.total_requests} icon={Activity} />
             <StatCard title={t("dashboard.passRate")} value={`${stats.pass_rate}%`} icon={Percent} variant="primary" trend={{ value: t("dashboard.realTrafficRatio"), positive: true }} />
             <StatCard title={t("dashboard.offerPage")} value={stats.offer_page} icon={Target} variant="success" />
-            <StatCard title={t("dashboard.botsBlocked")} value={stats.bots_blocked} icon={ShieldCheck} variant="destructive" trend={{ value: t("dashboard.allRejected"), positive: false }} />
+            <StatCard title={t("dashboard.threatsBlocked")} value={stats.rejected} icon={ShieldCheck} variant="destructive" trend={{ value: t("dashboard.allRejected"), positive: false }} />
             <StatCard title={t("dashboard2.healthScore")} value={healthDisplay} icon={HeartPulse} variant={healthVariant} />
           </>
         )}
@@ -240,10 +237,6 @@ export default function Dashboard() {
                         <stop offset="0%" stopColor="hsl(0, 84%, 60%)" stopOpacity={0.3} />
                         <stop offset="100%" stopColor="hsl(0, 84%, 60%)" stopOpacity={0} />
                       </linearGradient>
-                      <linearGradient id="gradientSafe" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="hsl(271, 81%, 56%)" stopOpacity={0.3} />
-                        <stop offset="100%" stopColor="hsl(271, 81%, 56%)" stopOpacity={0} />
-                      </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(0 0% 15%)" vertical={false} />
                     <XAxis dataKey="day" stroke="hsl(0 0% 40%)" fontSize={11} tickLine={false} axisLine={false} interval={isToday ? 3 : "preserveStartEnd"} />
@@ -260,8 +253,7 @@ export default function Dashboard() {
                     />
                     <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
                     <Area type="monotone" dataKey="offer_page" stroke="hsl(142, 71%, 45%)" strokeWidth={2.5} fill="url(#gradientOffer)" name={t("dashboard.offerPage")} dot={false} activeDot={{ r: 5, strokeWidth: 2, stroke: "hsl(142, 71%, 45%)", fill: "hsl(0 0% 9%)" }} />
-                    <Area type="monotone" dataKey="safe_page" stroke="hsl(271, 81%, 56%)" strokeWidth={2} fill="url(#gradientSafe)" name="Página Segura" dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: "hsl(271, 81%, 56%)", fill: "hsl(0 0% 9%)" }} />
-                    <Area type="monotone" dataKey="bot_blocked" stroke="hsl(0, 84%, 60%)" strokeWidth={2.5} fill="url(#gradientBot)" name={t("dashboard.botsBlocked")} dot={false} activeDot={{ r: 5, strokeWidth: 2, stroke: "hsl(0, 84%, 60%)", fill: "hsl(0 0% 9%)" }} />
+                    <Area type="monotone" dataKey="rejected" stroke="hsl(0, 84%, 60%)" strokeWidth={2.5} fill="url(#gradientBot)" name={t("dashboard.threatsBlocked")} dot={false} activeDot={{ r: 5, strokeWidth: 2, stroke: "hsl(0, 84%, 60%)", fill: "hsl(0 0% 9%)" }} />
                   </AreaChart>
                 </ResponsiveContainer>
               )}
