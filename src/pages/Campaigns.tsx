@@ -8,14 +8,13 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { getSourceByKey, getPlanByName } from "@/lib/plan-config";
-import CampaignLinkGenerator from "@/components/campaigns/CampaignLinkGenerator";
+import CampaignFinalLinkModal, { type CampaignFinalLinkData } from "@/components/campaigns/CampaignFinalLinkModal";
 
 export default function Campaigns() {
   const { user } = useAuth();
@@ -23,12 +22,7 @@ export default function Campaigns() {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
-  const [linkModal, setLinkModal] = useState<{
-    open: boolean;
-    hash: string;
-    name: string;
-    source: string;
-  }>({ open: false, hash: "", name: "", source: "" });
+  const [linkModal, setLinkModal] = useState<CampaignFinalLinkData | null>(null);
 
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
@@ -171,7 +165,12 @@ export default function Campaigns() {
                           variant="ghost"
                           size="icon"
                           onClick={() =>
-                            setLinkModal({ open: true, hash: c.hash, name: c.name, source: c.traffic_source })
+                            setLinkModal({
+                              name: c.name,
+                              hash: c.hash,
+                              domain: c.domain || "",
+                              traffic_source: c.traffic_source,
+                            })
                           }
                         >
                           <Copy className="h-4 w-4" />
@@ -192,26 +191,12 @@ export default function Campaigns() {
         </CardContent>
       </Card>
 
-      {/* ── Campaign Link Modal ── */}
-      <Dialog open={linkModal.open} onOpenChange={(open) => setLinkModal((prev) => ({ ...prev, open }))}>
-        <DialogContent className="sm:max-w-lg border-border bg-card">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-lg">
-              <Link className="h-5 w-5 text-primary" />
-              {t("campaigns.campaignLink")}
-            </DialogTitle>
-            <DialogDescription className="text-muted-foreground">{linkModal.name}</DialogDescription>
-          </DialogHeader>
-
-          {linkModal.open && (
-            <CampaignLinkGenerator
-              campaignHash={linkModal.hash}
-              initialSource={linkModal.source}
-              onCopied={() => setLinkModal({ open: false, hash: "", name: "", source: "" })}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* ── Campaign Final Link Modal ── */}
+      <CampaignFinalLinkModal
+        campaign={linkModal}
+        onClose={() => setLinkModal(null)}
+        redirectTo=""
+      />
     </div>
   );
 }
