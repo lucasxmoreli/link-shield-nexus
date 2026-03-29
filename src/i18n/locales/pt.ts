@@ -77,7 +77,7 @@ const pt = {
     tablet: "Tablet",
     realTrafficRatio: "Proporção de tráfego real",
     allRejected: "Todo tráfego rejeitado",
-    thisMonth: "Este Mês",
+    allTime: "Todo o Período",
     topAttackOrigins: "Top Origens de Ataque",
     globalShield: "Escudo Global",
     noAttackData: "Nenhum ataque registrado ainda.",

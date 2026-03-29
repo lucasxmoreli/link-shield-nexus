@@ -80,7 +80,7 @@ const en = {
     tablet: "Tablet",
     realTrafficRatio: "Real traffic ratio",
     allRejected: "All rejected traffic",
-    thisMonth: "This Month",
+    allTime: "All Time",
     topAttackOrigins: "Top Attack Origins",
     globalShield: "Global Shield",
     noAttackData: "No attacks recorded yet.",
