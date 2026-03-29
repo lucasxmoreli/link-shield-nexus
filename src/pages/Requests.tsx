@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, X, Globe } from "lucide-react";
+import { Search, X, Globe, DollarSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
@@ -35,11 +35,12 @@ export default function Requests() {
   const [campaignFilter, setCampaignFilter] = useState("all");
   const [deviceFilter, setDeviceFilter] = useState("all");
   const [datePreset, setDatePreset] = useState<DatePreset>("all");
+  const [conversionFilter, setConversionFilter] = useState("all");
 
   const { data: logs = [], isLoading } = useQuery({
     queryKey: ["requests_log_full", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("requests_log").select("*, campaigns(name, hash)").order("created_at", { ascending: false }).limit(200);
+      const { data, error } = await supabase.from("requests_log").select("*, is_conversion, revenue, campaigns(name, hash)").order("created_at", { ascending: false }).limit(200);
       if (error) throw error;
       return data;
     },
@@ -93,6 +94,7 @@ export default function Requests() {
       if (statusFilter === "blocked" && r.action_taken !== "bot_blocked" && r.action_taken !== "safe_page") return false;
       if (campaignFilter !== "all" && r.campaign_id !== campaignFilter) return false;
       if (deviceFilter !== "all" && r.device_type !== deviceFilter) return false;
+      if (conversionFilter === "sales" && !r.is_conversion) return false;
       if (datePreset !== "all") {
         const created = new Date(r.created_at);
         if (datePreset === "today") { if (created.toDateString() !== now.toDateString()) return false; }
@@ -101,10 +103,10 @@ export default function Requests() {
       }
       return true;
     });
-  }, [logs, search, statusFilter, campaignFilter, deviceFilter, datePreset]);
+  }, [logs, search, statusFilter, campaignFilter, deviceFilter, datePreset, conversionFilter]);
 
-  const hasActiveFilters = search || statusFilter !== "all" || campaignFilter !== "all" || deviceFilter !== "all" || datePreset !== "all";
-  const clearFilters = () => { setSearch(""); setStatusFilter("all"); setCampaignFilter("all"); setDeviceFilter("all"); setDatePreset("all"); };
+  const hasActiveFilters = search || statusFilter !== "all" || campaignFilter !== "all" || deviceFilter !== "all" || datePreset !== "all" || conversionFilter !== "all";
+  const clearFilters = () => { setSearch(""); setStatusFilter("all"); setCampaignFilter("all"); setDeviceFilter("all"); setDatePreset("all"); setConversionFilter("all"); };
 
   const renderBlockReason = (reason: string | null, ipAddress: string | null) => {
     if (!reason) return <span className="text-muted-foreground">—</span>;
@@ -174,6 +176,14 @@ export default function Requests() {
               </SelectContent>
             </Select>
 
+            <Select value={conversionFilter} onValueChange={setConversionFilter}>
+              <SelectTrigger className="w-[160px] bg-background/50 border-border h-9 text-sm"><SelectValue placeholder={t("requests.allClicks")} /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("requests.allClicks")}</SelectItem>
+                <SelectItem value="sales">{t("requests.salesOnly")}</SelectItem>
+              </SelectContent>
+            </Select>
+
             <div className="flex items-center gap-1.5">
               {([["all", t("requests.allTime")], ["today", t("dashboard.today")], ["7d", t("requests.days7")], ["30d", t("requests.days30")]] as [DatePreset, string][]).map(([key, label]) => (
                 <Button key={key} variant={datePreset === key ? "default" : "outline"} size="sm" className={`h-9 text-xs px-3 ${datePreset === key ? "" : "bg-background/50 border-border text-muted-foreground hover:text-foreground"}`} onClick={() => setDatePreset(key)}>
@@ -205,6 +215,7 @@ export default function Requests() {
                 <TableHead className="text-muted-foreground">{t("requests.ip")}</TableHead>
                 <TableHead className="text-muted-foreground">{t("dashboard.device")}</TableHead>
                 <TableHead className="text-muted-foreground">{t("dashboard.action")}</TableHead>
+                <TableHead className="text-muted-foreground">{t("requests.conversion")}</TableHead>
                 <TableHead className="text-muted-foreground">{t("requests.reason")}</TableHead>
               </TableRow>
             </TableHeader>
@@ -212,12 +223,12 @@ export default function Requests() {
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i} className="border-border">
-                    {Array.from({ length: 9 }).map((_, j) => <TableCell key={j}><Skeleton className="h-5 w-20" /></TableCell>)}
+                    {Array.from({ length: 10 }).map((_, j) => <TableCell key={j}><Skeleton className="h-5 w-20" /></TableCell>)}
                   </TableRow>
                 ))
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-12">
+                  <TableCell colSpan={10} className="text-center py-12">
                     <p className="text-muted-foreground font-medium">{t("requests.noRequests")}</p>
                     {hasActiveFilters && <Button variant="link" size="sm" className="mt-2 text-primary text-xs" onClick={clearFilters}>{t("requests.clearAllFilters")}</Button>}
                   </TableCell>
@@ -240,6 +251,16 @@ export default function Requests() {
                     <TableCell className="font-mono text-sm">{r.ip_address ?? "—"}</TableCell>
                     <TableCell><Badge variant="outline" className="border-border text-muted-foreground">{r.device_type ?? "—"}</Badge></TableCell>
                     <TableCell><Badge variant="outline" className={actionStyles[r.action_taken] ?? ""}>{actionLabel[r.action_taken] ?? r.action_taken.replace("_", " ")}</Badge></TableCell>
+                    <TableCell>
+                      {r.is_conversion ? (
+                        <Badge variant="outline" className="bg-success/20 text-success border-0 gap-1">
+                          <DollarSign className="h-3 w-3" />
+                          {t("requests.sale")} {r.revenue != null ? `(R$ ${Number(r.revenue).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })})` : ""}
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
                     <TableCell>{renderBlockReason(r.block_reason, r.ip_address)}</TableCell>
                   </TableRow>
                 ))

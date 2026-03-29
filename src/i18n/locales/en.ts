@@ -318,6 +318,10 @@ const en = {
     globalBlacklist: "🌐 Global",
     userBlocked: "Blocked",
     globalBlacklistCount: "{{count}} IPs on global blacklist",
+    conversion: "Conversion",
+    allClicks: "All Clicks",
+    salesOnly: "Sales Only",
+    sale: "Sale",
   },
 
   // Cloak Test
