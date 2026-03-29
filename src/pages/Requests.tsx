@@ -11,6 +11,7 @@ import { Search, X, Globe, DollarSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
+import { actionToStatusFinal, getStatusBadgeConfig } from "@/lib/status-utils";
 
 type DatePreset = "all" | "today" | "7d" | "30d";
 
@@ -18,17 +19,6 @@ export default function Requests() {
   const { user } = useAuth();
   const { t } = useTranslation();
 
-  const actionStyles: Record<string, string> = {
-    offer_page: "bg-success/20 text-success border-0",
-    safe_page: "bg-primary/20 text-primary border-0",
-    bot_blocked: "bg-destructive/20 text-destructive border-0",
-  };
-
-  const actionLabel: Record<string, string> = {
-    offer_page: t("dashboard.passed"),
-    safe_page: t("requests.safePage"),
-    bot_blocked: t("dashboard.blocked"),
-  };
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -250,7 +240,7 @@ export default function Requests() {
                     </TableCell>
                     <TableCell className="font-mono text-sm">{r.ip_address ?? "—"}</TableCell>
                     <TableCell><Badge variant="outline" className="border-border text-muted-foreground">{r.device_type ?? "—"}</Badge></TableCell>
-                    <TableCell><Badge variant="outline" className={actionStyles[r.action_taken] ?? ""}>{actionLabel[r.action_taken] ?? r.action_taken.replace("_", " ")}</Badge></TableCell>
+                    <TableCell>{(() => { const cfg = getStatusBadgeConfig(actionToStatusFinal(r.action_taken)); return <Badge variant="outline" className={`${cfg.className} text-[11px] font-mono`}>{cfg.label}</Badge>; })()}</TableCell>
                     <TableCell>
                       {r.is_conversion ? (
                         <Badge variant="outline" className="bg-success/20 text-success border-0 gap-1">

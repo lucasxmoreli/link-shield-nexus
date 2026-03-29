@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Activity, ShieldCheck, Target, Percent, Globe, Monitor, Smartphone, Tablet, Clock, MapPin, HeartPulse } from "lucide-react";
+import { Activity, ShieldCheck, Target, Percent, Globe, Monitor, Smartphone, Tablet, Clock, MapPin, HeartPulse, Eye } from "lucide-react";
 import { TopAttackOrigins } from "@/components/dashboard/TopAttackOrigins";
 import { VolatilityRadar } from "@/components/dashboard/VolatilityRadar";
 import { OnboardingWizard } from "@/components/dashboard/OnboardingWizard";
@@ -14,11 +14,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslation } from "react-i18next";
+import { getStatusBadgeConfig } from "@/lib/status-utils";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
   PieChart, Pie, Cell,
 } from "recharts";
-import { format, subDays, startOfMonth, formatDistanceToNow, getHours } from "date-fns";
+import { format, subDays, startOfMonth, startOfDay, formatDistanceToNow, getHours } from "date-fns";
 
 const DEVICE_COLORS = [
   "hsl(271, 81%, 56%)",
@@ -54,17 +55,34 @@ export default function Dashboard() {
     enabled: !!user,
   });
 
+  // Apply date filtering consistently using startOfDay for "today"
+  const filteredLogs = (() => {
+    const now = new Date();
+    if (dateRange === "1") {
+      const todayStart = startOfDay(now);
+      return logs.filter(l => new Date(l.created_at) >= todayStart);
+    }
+    if (dateRange === "month") {
+      const monthStart = startOfMonth(now);
+      return logs.filter(l => new Date(l.created_at) >= monthStart);
+    }
+    const days = parseInt(dateRange);
+    const startDate = subDays(startOfDay(now), days - 1);
+    return logs.filter(l => new Date(l.created_at) >= startDate);
+  })();
+
   const stats = {
-    total_requests: logs.length,
-    offer_page: logs.filter((l) => l.status_final === "Aprovado").length,
-    bots_blocked: logs.filter((l) => l.status_final === "Bloqueado").length,
-    pass_rate: logs.length > 0
-      ? ((logs.filter((l) => l.status_final === "Aprovado").length / logs.length) * 100).toFixed(1)
+    total_requests: filteredLogs.length,
+    offer_page: filteredLogs.filter((l) => l.status_final === "Aprovado").length,
+    safe_page: filteredLogs.filter((l) => l.status_final === "Página Segura").length,
+    bots_blocked: filteredLogs.filter((l) => l.status_final === "Bloqueado").length,
+    pass_rate: filteredLogs.length > 0
+      ? ((filteredLogs.filter((l) => l.status_final === "Aprovado").length / filteredLogs.length) * 100).toFixed(1)
       : "0.0",
   };
 
-  // Health Score
-  const approvedWithScore = logs.filter(l => l.status_final === "Aprovado" && l.risk_score != null);
+  // Health Score — based on approved traffic risk scores
+  const approvedWithScore = filteredLogs.filter(l => l.status_final === "Aprovado" && l.risk_score != null);
   const healthScore = approvedWithScore.length > 0
     ? Math.round(approvedWithScore.reduce((a, l) => a + (l.risk_score as number), 0) / approvedWithScore.length)
     : null;
@@ -86,13 +104,14 @@ export default function Dashboard() {
 
   const chartData = (() => {
     if (isToday) {
-      const todayStr = format(new Date(), "yyyy-MM-dd");
-      const todayLogs = logs.filter((l) => l.created_at.startsWith(todayStr));
+      const todayStart = startOfDay(new Date());
+      const todayLogs = filteredLogs;
       return Array.from({ length: 24 }, (_, hour) => {
         const hourLogs = todayLogs.filter((l) => getHours(new Date(l.created_at)) === hour);
         return {
           day: `${String(hour).padStart(2, "0")}:00`,
           offer_page: hourLogs.filter((l) => l.status_final === "Aprovado").length,
+          safe_page: hourLogs.filter((l) => l.status_final === "Página Segura").length,
           bot_blocked: hourLogs.filter((l) => l.status_final === "Bloqueado").length,
         };
       });
@@ -101,25 +120,26 @@ export default function Dashboard() {
     const days = isThisMonth
       ? Math.ceil((new Date().getTime() - startOfMonth(new Date()).getTime()) / (1000 * 60 * 60 * 24)) + 1
       : parseInt(dateRange);
-    const startDate = isThisMonth ? startOfMonth(new Date()) : subDays(new Date(), days - 1);
+    const startDate = isThisMonth ? startOfMonth(new Date()) : subDays(startOfDay(new Date()), days - 1);
 
     return Array.from({ length: days }, (_, i) => {
       const date = new Date(startDate);
       date.setDate(date.getDate() + i);
       const dayStr = format(date, "yyyy-MM-dd");
       const dayLabel = days <= 7 ? format(date, "EEE") : format(date, "MMM d");
-      const dayLogs = logs.filter((l) => l.created_at.startsWith(dayStr));
+      const dayLogs = filteredLogs.filter((l) => l.created_at.startsWith(dayStr));
       return {
         day: dayLabel,
         offer_page: dayLogs.filter((l) => l.status_final === "Aprovado").length,
+        safe_page: dayLogs.filter((l) => l.status_final === "Página Segura").length,
         bot_blocked: dayLogs.filter((l) => l.status_final === "Bloqueado").length,
       };
     });
   })();
 
   const deviceCounts = {
-    desktop: logs.filter((l) => l.device_type === "desktop").length || 0,
-    mobile: logs.filter((l) => l.device_type === "mobile").length || 0,
+    desktop: filteredLogs.filter((l) => l.device_type === "desktop").length || 0,
+    mobile: filteredLogs.filter((l) => l.device_type === "mobile").length || 0,
     tablet: 0,
   };
   const totalDevices = deviceCounts.desktop + deviceCounts.mobile + deviceCounts.tablet;
@@ -136,21 +156,22 @@ export default function Dashboard() {
       ];
   const deviceTotal = deviceData.reduce((a, b) => a + b.value, 0);
 
-  const MOCK_FEED = [
-    { time: "2 mins ago", ip: "191.193.70.18", country: "BR", device: t("dashboard.desktop"), action: t("dashboard.passed") },
-    { time: "5 mins ago", ip: "73.162.214.101", country: "US", device: t("dashboard.mobile"), action: t("dashboard.blocked") },
-    { time: "8 mins ago", ip: "177.79.99.151", country: "BR", device: t("dashboard.mobile"), action: t("dashboard.passed") },
-    { time: "12 mins ago", ip: "8.8.8.8", country: "US", device: t("dashboard.desktop"), action: t("dashboard.blocked") },
-    { time: "15 mins ago", ip: "189.29.108.45", country: "DE", device: t("dashboard.desktop"), action: t("dashboard.passed") },
-  ];
-
-  const recentLogs = logs.slice(0, 5).map((l) => ({
+  const recentLogs = filteredLogs.slice(0, 5).map((l) => ({
     time: formatDistanceToNow(new Date(l.created_at), { addSuffix: true }),
     ip: l.ip_address ?? "—",
     country: l.country_code ?? "—",
     device: l.device_type === "mobile" ? t("dashboard.mobile") : t("dashboard.desktop"),
-    action: l.status_final === "Bloqueado" ? t("dashboard.blocked") : t("dashboard.passed"),
+    status_final: l.status_final,
   }));
+
+  const MOCK_FEED = [
+    { time: "2 mins ago", ip: "191.193.70.18", country: "BR", device: t("dashboard.desktop"), status_final: "Aprovado" },
+    { time: "5 mins ago", ip: "73.162.214.101", country: "US", device: t("dashboard.mobile"), status_final: "Bloqueado" },
+    { time: "8 mins ago", ip: "177.79.99.151", country: "BR", device: t("dashboard.mobile"), status_final: "Aprovado" },
+    { time: "12 mins ago", ip: "8.8.8.8", country: "US", device: t("dashboard.desktop"), status_final: "Página Segura" },
+    { time: "15 mins ago", ip: "189.29.108.45", country: "DE", device: t("dashboard.desktop"), status_final: "Aprovado" },
+  ];
+
   const feedData = recentLogs.length > 0 ? recentLogs : MOCK_FEED;
 
   return (
@@ -219,6 +240,10 @@ export default function Dashboard() {
                         <stop offset="0%" stopColor="hsl(0, 84%, 60%)" stopOpacity={0.3} />
                         <stop offset="100%" stopColor="hsl(0, 84%, 60%)" stopOpacity={0} />
                       </linearGradient>
+                      <linearGradient id="gradientSafe" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="hsl(271, 81%, 56%)" stopOpacity={0.3} />
+                        <stop offset="100%" stopColor="hsl(271, 81%, 56%)" stopOpacity={0} />
+                      </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(0 0% 15%)" vertical={false} />
                     <XAxis dataKey="day" stroke="hsl(0 0% 40%)" fontSize={11} tickLine={false} axisLine={false} interval={isToday ? 3 : "preserveStartEnd"} />
@@ -235,6 +260,7 @@ export default function Dashboard() {
                     />
                     <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
                     <Area type="monotone" dataKey="offer_page" stroke="hsl(142, 71%, 45%)" strokeWidth={2.5} fill="url(#gradientOffer)" name={t("dashboard.offerPage")} dot={false} activeDot={{ r: 5, strokeWidth: 2, stroke: "hsl(142, 71%, 45%)", fill: "hsl(0 0% 9%)" }} />
+                    <Area type="monotone" dataKey="safe_page" stroke="hsl(271, 81%, 56%)" strokeWidth={2} fill="url(#gradientSafe)" name="Página Segura" dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: "hsl(271, 81%, 56%)", fill: "hsl(0 0% 9%)" }} />
                     <Area type="monotone" dataKey="bot_blocked" stroke="hsl(0, 84%, 60%)" strokeWidth={2.5} fill="url(#gradientBot)" name={t("dashboard.botsBlocked")} dot={false} activeDot={{ r: 5, strokeWidth: 2, stroke: "hsl(0, 84%, 60%)", fill: "hsl(0 0% 9%)" }} />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -312,30 +338,27 @@ export default function Dashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {feedData.map((row, i) => (
-                  <TableRow key={i} className="border-border">
-                    <TableCell className="text-sm text-muted-foreground font-mono">{row.time}</TableCell>
-                    <TableCell className="text-sm font-mono">{row.ip}</TableCell>
-                    <TableCell>
-                      <span className="flex items-center gap-1.5 text-sm">
-                        <MapPin className="h-3 w-3 text-muted-foreground" />
-                        {row.country}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{row.device}</TableCell>
-                    <TableCell className="text-right">
-                      {row.action === t("dashboard.blocked") ? (
-                        <Badge variant="outline" className="border-destructive/30 bg-destructive/10 text-destructive text-[11px] font-mono">
-                          {t("dashboard.blocked")}
+                {feedData.map((row, i) => {
+                  const badgeConfig = getStatusBadgeConfig(row.status_final);
+                  return (
+                    <TableRow key={i} className="border-border">
+                      <TableCell className="text-sm text-muted-foreground font-mono">{row.time}</TableCell>
+                      <TableCell className="text-sm font-mono">{row.ip}</TableCell>
+                      <TableCell>
+                        <span className="flex items-center gap-1.5 text-sm">
+                          <MapPin className="h-3 w-3 text-muted-foreground" />
+                          {row.country}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{row.device}</TableCell>
+                      <TableCell className="text-right">
+                        <Badge variant="outline" className={`${badgeConfig.className} text-[11px] font-mono`}>
+                          {badgeConfig.label}
                         </Badge>
-                      ) : (
-                        <Badge variant="outline" className="border-[hsl(var(--success))]/30 bg-[hsl(var(--success))]/10 text-[hsl(var(--success))] text-[11px] font-mono">
-                          {t("dashboard.passed")}
-                        </Badge>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </CardContent>

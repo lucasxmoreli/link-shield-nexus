@@ -42,7 +42,7 @@ export function useDopamineToast() {
       const { data, error } = await supabase
         .from("dashboard_analytics_view" as any)
         .select("motivo_limpo")
-        .eq("status_final", "Bloqueado")
+        .eq("action_taken", "bot_blocked")
         .gte("created_at", since);
       if (error) throw error;
       return data as unknown as Array<{ motivo_limpo: string | null }>;
