@@ -61,6 +61,7 @@ const en = {
     passRate: "Pass Rate",
     offerPage: "Offer Page",
     botsBlocked: "Bots Blocked",
+    threatsBlocked: "Threats Blocked",
     trafficOverview: "Traffic Overview",
     trafficByDevice: "Traffic by Device",
     liveTrafficLog: "Live Traffic Log",

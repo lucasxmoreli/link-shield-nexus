@@ -58,6 +58,7 @@ const pt = {
     passRate: "Taxa de Aprovação",
     offerPage: "Página de Oferta",
     botsBlocked: "Bots Bloqueados",
+    threatsBlocked: "Tráfego Rejeitado",
     trafficOverview: "Visão Geral do Tráfego",
     trafficByDevice: "Tráfego por Dispositivo",
     liveTrafficLog: "Log de Tráfego ao Vivo",

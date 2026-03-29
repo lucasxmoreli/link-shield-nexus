@@ -58,6 +58,7 @@ const es = {
     passRate: "Tasa de Aprobación",
     offerPage: "Página de Oferta",
     botsBlocked: "Bots Bloqueados",
+    threatsBlocked: "Tráfico Rechazado",
     trafficOverview: "Resumen de Tráfico",
     trafficByDevice: "Tráfico por Dispositivo",
     liveTrafficLog: "Log de Tráfico en Vivo",

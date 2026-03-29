@@ -118,13 +118,12 @@ export default function Analytics() {
   // Chart data — include all 3 statuses
   const chartData = useMemo(() => {
     if (!logs || logs.length === 0) return [];
-    const dayMap: Record<string, { approved: number; blocked: number; safe_page: number; conversions: number }> = {};
+    const dayMap: Record<string, { approved: number; rejected: number; conversions: number }> = {};
     logs.forEach(l => {
       const day = format(new Date(l.created_at), "MM/dd");
-      if (!dayMap[day]) dayMap[day] = { approved: 0, blocked: 0, safe_page: 0, conversions: 0 };
+      if (!dayMap[day]) dayMap[day] = { approved: 0, rejected: 0, conversions: 0 };
       if (l.status_final === "Aprovado") dayMap[day].approved++;
-      else if (l.status_final === "Bloqueado") dayMap[day].blocked++;
-      else if (l.status_final === "Página Segura") dayMap[day].safe_page++;
+      else dayMap[day].rejected++;
       if (l.is_conversion) dayMap[day].conversions++;
     });
     return Object.entries(dayMap).map(([day, v]) => ({ day, ...v }));
@@ -182,8 +181,7 @@ export default function Analytics() {
 
   const chartConfig = {
     approved: { label: t("analytics.approved"), color: "hsl(142 71% 45%)" },
-    blocked: { label: t("analytics.blocked"), color: "hsl(var(--destructive))" },
-    safe_page: { label: "Página Segura", color: "hsl(271 81% 56%)" },
+    rejected: { label: t("dashboard.threatsBlocked"), color: "hsl(var(--destructive))" },
     conversions: { label: t("analytics.conversions"), color: "hsl(45 100% 51%)" },
   };
 
@@ -325,8 +323,7 @@ export default function Analytics() {
                     <YAxis className="text-xs" />
                     <ChartTooltip content={<ChartTooltipContent />} />
                     <Area type="monotone" dataKey="approved" stroke="hsl(142 71% 45%)" fill="hsl(142 71% 45%)" fillOpacity={0.3} strokeWidth={2} dot={false} connectNulls />
-                    <Area type="monotone" dataKey="safe_page" stroke="hsl(271 81% 56%)" fill="hsl(271 81% 56%)" fillOpacity={0.15} strokeWidth={2} dot={false} connectNulls />
-                    <Area type="monotone" dataKey="blocked" stroke="hsl(var(--destructive))" fill="hsl(var(--destructive))" fillOpacity={0.2} strokeWidth={2} dot={false} connectNulls />
+                    <Area type="monotone" dataKey="rejected" stroke="hsl(var(--destructive))" fill="hsl(var(--destructive))" fillOpacity={0.2} strokeWidth={2} dot={false} connectNulls />
                     <Area type="monotone" dataKey="conversions" stroke="hsl(45 100% 51%)" fill="hsl(45 100% 51%)" fillOpacity={0.15} strokeWidth={2} dot={false} connectNulls />
                   </AreaChart>
                 </ChartContainer>
