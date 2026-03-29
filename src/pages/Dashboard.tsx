@@ -19,7 +19,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
   PieChart, Pie, Cell,
 } from "recharts";
-import { format, subDays, startOfMonth, startOfDay, formatDistanceToNow, getHours } from "date-fns";
+import { format, subDays, startOfDay, formatDistanceToNow, getHours } from "date-fns";
 
 const DEVICE_COLORS = [
   "hsl(271, 81%, 56%)",
