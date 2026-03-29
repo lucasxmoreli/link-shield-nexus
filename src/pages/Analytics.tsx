@@ -49,17 +49,18 @@ export default function Analytics() {
     enabled: !!user,
   });
 
+  // Consistent date filter using startOfDay
   const dateFilter = useMemo(() => {
     const now = new Date();
     switch (datePreset) {
       case "today": return startOfDay(now);
-      case "7days": return subDays(now, 7);
-      case "30days": return subDays(now, 30);
+      case "7days": return startOfDay(subDays(now, 6));
+      case "30days": return startOfDay(subDays(now, 29));
       default: return null;
     }
   }, [datePreset]);
 
-  // Fetch from the View instead of requests_log
+  // Fetch from the View
   const { data: logs, isLoading: loadingLogs } = useQuery({
     queryKey: ["analytics-view-logs", selectedCampaign, datePreset],
     queryFn: async () => {
@@ -92,26 +93,14 @@ export default function Analytics() {
     enabled: !!selectedCampaign,
   });
 
-  // Block reasons summary via RPC
-  const { data: blockReasons = [], isLoading: loadingReasons } = useQuery({
-    queryKey: ["block-reasons-summary", selectedCampaign],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_block_reasons_summary" as any, {
-        p_campaign_id: selectedCampaign || null,
-      });
-      if (error) throw error;
-      return (data as Array<{ motivo: string; total: number }>) ?? [];
-    },
-    enabled: !!selectedCampaign,
-  });
-
-  // Metrics
+  // Metrics — handle all 3 statuses
   const metrics = useMemo(() => {
     if (!logs || logs.length === 0) return null;
     const total = logs.length;
     const unique = logs.filter(l => l.is_unique).length;
     const approved = logs.filter(l => l.status_final === "Aprovado").length;
     const blocked = logs.filter(l => l.status_final === "Bloqueado").length;
+    const safePage = logs.filter(l => l.status_final === "Página Segura").length;
     const approvalRate = total > 0 ? ((approved / total) * 100).toFixed(1) : "0";
     const totalCost = logs.reduce((acc, l) => acc + (Number(l.cost) || 0), 0);
     const cpl = approved > 0 ? (totalCost / approved) : 0;
@@ -123,24 +112,25 @@ export default function Analytics() {
     const totalRevenue = logs.filter(l => l.is_conversion).reduce((acc, l) => acc + (Number(l.revenue) || 0), 0);
     const conversions = logs.filter(l => l.is_conversion).length;
     const realRoi = totalCost > 0 ? ((totalRevenue - totalCost) / totalCost) * 100 : (totalRevenue > 0 ? 100 : 0);
-    return { total, unique, approved, blocked, approvalRate, totalCost, cpl, avgScore, roiSaved, totalRevenue, conversions, realRoi };
+    return { total, unique, approved, blocked, safePage, approvalRate, totalCost, cpl, avgScore, roiSaved, totalRevenue, conversions, realRoi };
   }, [logs]);
 
-  // Chart data
+  // Chart data — include all 3 statuses
   const chartData = useMemo(() => {
     if (!logs || logs.length === 0) return [];
-    const dayMap: Record<string, { approved: number; blocked: number; conversions: number }> = {};
+    const dayMap: Record<string, { approved: number; blocked: number; safe_page: number; conversions: number }> = {};
     logs.forEach(l => {
       const day = format(new Date(l.created_at), "MM/dd");
-      if (!dayMap[day]) dayMap[day] = { approved: 0, blocked: 0, conversions: 0 };
+      if (!dayMap[day]) dayMap[day] = { approved: 0, blocked: 0, safe_page: 0, conversions: 0 };
       if (l.status_final === "Aprovado") dayMap[day].approved++;
-      else dayMap[day].blocked++;
+      else if (l.status_final === "Bloqueado") dayMap[day].blocked++;
+      else if (l.status_final === "Página Segura") dayMap[day].safe_page++;
       if (l.is_conversion) dayMap[day].conversions++;
     });
     return Object.entries(dayMap).map(([day, v]) => ({ day, ...v }));
   }, [logs]);
 
-  // Breakdown by platform
+  // Breakdown by platform — handle all 3 statuses
   const platformBreakdown = useMemo(() => {
     if (!logs) return [];
     const map: Record<string, { clicks: number; approved: number; blocked: number; cost: number }> = {};
@@ -149,7 +139,7 @@ export default function Analytics() {
       if (!map[p]) map[p] = { clicks: 0, approved: 0, blocked: 0, cost: 0 };
       map[p].clicks++;
       if (l.status_final === "Aprovado") map[p].approved++;
-      else map[p].blocked++;
+      else map[p].blocked++; // Bloqueado + Página Segura = not approved
       map[p].cost += Number(l.cost) || 0;
     });
     return Object.entries(map).map(([platform, v]) => ({
@@ -193,14 +183,19 @@ export default function Analytics() {
   const chartConfig = {
     approved: { label: t("analytics.approved"), color: "hsl(142 71% 45%)" },
     blocked: { label: t("analytics.blocked"), color: "hsl(var(--destructive))" },
+    safe_page: { label: "Página Segura", color: "hsl(271 81% 56%)" },
     conversions: { label: t("analytics.conversions"), color: "hsl(45 100% 51%)" },
   };
 
-  // Block reasons donut data — group similar reasons + top 4 + "Outros"
+  // Block reasons donut — use motivo_limpo from the view data directly (not RPC)
   const donutData = useMemo(() => {
-    if (!blockReasons || blockReasons.length === 0) return [];
+    if (!logs || logs.length === 0) return [];
 
-    // 1. Normalize reason keys
+    // Filter only blocked entries that have motivo_limpo
+    const blockedLogs = logs.filter(l => l.status_final === "Bloqueado" || l.status_final === "Página Segura");
+    if (blockedLogs.length === 0) return [];
+
+    // Normalize reason keys
     const normalize = (motivo: string): string => {
       const lower = motivo.toLowerCase();
       if (["datacenter", "proxy", "blacklist", "vpn"].some(k => lower.includes(k))) {
@@ -209,26 +204,26 @@ export default function Analytics() {
       return motivo;
     };
 
-    // 2. Aggregate
+    // Aggregate by motivo_limpo
     const grouped: Record<string, number> = {};
-    blockReasons.forEach(r => {
-      const key = normalize(r.motivo);
-      const val = Number(r.total) || 0;
-      grouped[key] = (grouped[key] || 0) + val;
+    blockedLogs.forEach(l => {
+      const motivo = l.motivo_limpo || "Desconhecido";
+      const key = normalize(motivo);
+      grouped[key] = (grouped[key] || 0) + 1;
     });
 
-    // 3. Sort desc
+    // Sort desc
     const sorted = Object.entries(grouped)
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value);
 
-    // 4. Top 4 + "Outros"
+    // Top 4 + "Outros"
     if (sorted.length <= 5) return sorted;
     const top4 = sorted.slice(0, 4);
     const othersValue = sorted.slice(4).reduce((acc, d) => acc + d.value, 0);
     if (othersValue > 0) top4.push({ name: t("common.other", "Outros"), value: othersValue });
     return top4;
-  }, [blockReasons, t]);
+  }, [logs, t]);
 
   const reasonsTotal = donutData.reduce((acc, d) => acc + d.value, 0);
 
@@ -330,6 +325,7 @@ export default function Analytics() {
                     <YAxis className="text-xs" />
                     <ChartTooltip content={<ChartTooltipContent />} />
                     <Area type="monotone" dataKey="approved" stroke="hsl(142 71% 45%)" fill="hsl(142 71% 45%)" fillOpacity={0.3} strokeWidth={2} dot={false} connectNulls />
+                    <Area type="monotone" dataKey="safe_page" stroke="hsl(271 81% 56%)" fill="hsl(271 81% 56%)" fillOpacity={0.15} strokeWidth={2} dot={false} connectNulls />
                     <Area type="monotone" dataKey="blocked" stroke="hsl(var(--destructive))" fill="hsl(var(--destructive))" fillOpacity={0.2} strokeWidth={2} dot={false} connectNulls />
                     <Area type="monotone" dataKey="conversions" stroke="hsl(45 100% 51%)" fill="hsl(45 100% 51%)" fillOpacity={0.15} strokeWidth={2} dot={false} connectNulls />
                   </AreaChart>
@@ -356,7 +352,7 @@ export default function Analytics() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col items-center justify-center">
-                {loadingReasons ? (
+                {loadingLogs ? (
                   <Skeleton className="h-[200px] w-[200px] rounded-full" />
                 ) : donutData.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-8 text-center">
