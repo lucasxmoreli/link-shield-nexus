@@ -213,8 +213,11 @@ const en = {
     conflictRecommend: "We strongly recommend using a different domain or an external link for your Offer Page and Safe Page.",
 
     // Success modal
-    successTitle: "🚀 Campaign is Live!",
-    successDesc: "Your campaign {{name}} is ready to receive traffic.",
+    successTitle: "🚀 Campaign Saved Successfully!",
+    successHelp: "Copy the Final URL below and paste it directly into your ad platform to ensure perfect tracking.",
+    finalUrl: "Campaign Final URL",
+    copyFinalUrl: "Copy Final URL",
+    closeCampaigns: "Close and go to Campaigns",
     trackingLink: "Your Tracking Link",
     offerPageLabel: "Offer Page",
     safePageLabel: "Safe Page",

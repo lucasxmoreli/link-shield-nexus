@@ -203,8 +203,11 @@ const pt = {
     conflictDesc: "Você está usando o mesmo domínio ({{domain}}) para o link de rastreamento e a página de destino. Isso causará um erro 404, a menos que você esteja usando um subdiretório específico.",
     conflictRecommend: "Recomendamos fortemente usar um domínio diferente ou um link externo para sua Página de Oferta e Página Segura.",
 
-    successTitle: "🚀 Campanha Ativa!",
-    successDesc: "Sua campanha {{name}} está pronta para receber tráfego.",
+    successTitle: "🚀 Campanha Salva com Sucesso!",
+    successHelp: "Copie a URL Final abaixo e cole diretamente na sua plataforma de anúncios para garantir o rastreio perfeito.",
+    finalUrl: "URL Final da Campanha",
+    copyFinalUrl: "Copiar URL Final",
+    closeCampaigns: "Fechar e voltar para Campanhas",
     trackingLink: "Seu Link de Rastreamento",
     offerPageLabel: "Página de Oferta",
     safePageLabel: "Página Segura",
