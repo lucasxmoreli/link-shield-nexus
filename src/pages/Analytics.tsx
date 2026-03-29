@@ -85,6 +85,8 @@ export default function Analytics() {
         cost: number | null;
         is_unique: boolean | null;
         risk_score: number | null;
+        is_conversion: boolean | null;
+        revenue: number | null;
       }>;
     },
     enabled: !!selectedCampaign,
