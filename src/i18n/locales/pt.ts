@@ -306,6 +306,10 @@ const pt = {
     globalBlacklist: "🌐 Global",
     userBlocked: "Bloqueado",
     globalBlacklistCount: "{{count}} IPs na blacklist global",
+    conversion: "Conversão",
+    allClicks: "Todos os Cliques",
+    salesOnly: "Apenas Vendas",
+    sale: "Venda",
   },
 
   cloakTest: {
