@@ -35,7 +35,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { TRAFFIC_SOURCES, getPlanByName, getAllowedSources } from "@/lib/plan-config";
-import CampaignLinkGenerator from "@/components/campaigns/CampaignLinkGenerator";
+import { buildDefaultTrackingUrl } from "@/components/campaigns/CampaignLinkGenerator";
 
 const COUNTRIES = [
   { code: "US", name: "United States" },
@@ -979,23 +979,50 @@ export default function CampaignEdit() {
         }}
       >
         <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
+          <DialogHeader className="text-center sm:text-center space-y-3">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+              <Zap className="h-7 w-7 text-primary" />
+            </div>
             <DialogTitle className="text-xl">{t("campaignEdit.successTitle")}</DialogTitle>
-            <DialogDescription className="text-sm text-muted-foreground pt-1">
-              {t("campaignEdit.successDesc", { name })}
+            <DialogDescription className="text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">{name}</span>
+              <br />
+              {t("campaignEdit.successHelp")}
             </DialogDescription>
           </DialogHeader>
 
-          {successModal && (
-            <CampaignLinkGenerator
-              campaignHash={successModal.hash}
-              initialSource={successModal.source}
-              initialDomain={successModal.domain}
-              offerUrl={successModal.offerUrl}
-              safeUrl={successModal.safeUrl}
-            />
-          )}
+          {successModal && (() => {
+            const finalUrl = buildDefaultTrackingUrl(
+              successModal.domain || "yourdomain.com",
+              successModal.hash,
+              successModal.source
+            );
+            const handleCopyUrl = () => {
+              navigator.clipboard.writeText(finalUrl);
+              toast.success(t("campaignEdit.linkCopied"));
+            };
+            return (
+              <div className="space-y-4">
+                {/* URL Box */}
+                <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    {t("campaignEdit.finalUrl")}
+                  </p>
+                  <div className="rounded-md border border-primary/30 bg-background p-3 break-all">
+                    <code className="text-xs sm:text-sm text-primary font-mono leading-relaxed">{finalUrl}</code>
+                  </div>
+                </div>
 
+                {/* Copy Button */}
+                <Button className="w-full gap-2" size="lg" onClick={handleCopyUrl}>
+                  <Copy className="h-4 w-4" />
+                  {t("campaignEdit.copyFinalUrl")}
+                </Button>
+              </div>
+            );
+          })()}
+
+          {/* Quick Setup */}
           <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-2.5">
             <p className="text-xs font-semibold uppercase tracking-wider text-primary">
               {t("campaignEdit.quickSetup")}
@@ -1027,13 +1054,14 @@ export default function CampaignEdit() {
 
           <DialogFooter>
             <Button
+              variant="outline"
               onClick={() => {
                 setSuccessModal(null);
                 navigate("/campaigns");
               }}
               className="w-full"
             >
-              {t("campaignEdit.goToCampaigns")}
+              {t("campaignEdit.closeCampaigns")}
             </Button>
           </DialogFooter>
         </DialogContent>
