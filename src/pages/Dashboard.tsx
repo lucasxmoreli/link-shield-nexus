@@ -19,7 +19,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
   PieChart, Pie, Cell,
 } from "recharts";
-import { format, subDays, startOfMonth, startOfDay, formatDistanceToNow, getHours } from "date-fns";
+import { format, subDays, startOfDay, formatDistanceToNow, getHours } from "date-fns";
 
 const DEVICE_COLORS = [
   "hsl(271, 81%, 56%)",
@@ -29,7 +29,7 @@ const DEVICE_COLORS = [
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const [dateRange, setDateRange] = useState("7");
+  const [dateRange, setDateRange] = useState("all");
   const { t } = useTranslation();
   useDopamineToast();
 
@@ -57,14 +57,11 @@ export default function Dashboard() {
 
   // Apply date filtering consistently using startOfDay for "today"
   const filteredLogs = (() => {
+    if (dateRange === "all") return logs;
     const now = new Date();
     if (dateRange === "1") {
       const todayStart = startOfDay(now);
       return logs.filter(l => new Date(l.created_at) >= todayStart);
-    }
-    if (dateRange === "month") {
-      const monthStart = startOfMonth(now);
-      return logs.filter(l => new Date(l.created_at) >= monthStart);
     }
     const days = parseInt(dateRange);
     const startDate = subDays(startOfDay(now), days - 1);
@@ -99,15 +96,12 @@ export default function Dashboard() {
 
   // Chart data logic: hourly for "today", daily otherwise
   const isToday = dateRange === "1";
-  const isThisMonth = dateRange === "month";
 
   const chartData = (() => {
     if (isToday) {
-      const todayStart = startOfDay(new Date());
-      const todayLogs = filteredLogs;
       return Array.from({ length: 24 }, (_, hour) => {
-        const hourLogs = todayLogs.filter((l) => getHours(new Date(l.created_at)) === hour);
-          return {
+        const hourLogs = filteredLogs.filter((l) => getHours(new Date(l.created_at)) === hour);
+        return {
           day: `${String(hour).padStart(2, "0")}:00`,
           offer_page: hourLogs.filter((l) => l.status_final === "Aprovado").length,
           rejected: hourLogs.filter((l) => l.status_final === "Bloqueado" || l.status_final === "Página Segura").length,
@@ -115,23 +109,25 @@ export default function Dashboard() {
       });
     }
 
-    const days = isThisMonth
-      ? Math.ceil((new Date().getTime() - startOfMonth(new Date()).getTime()) / (1000 * 60 * 60 * 24)) + 1
-      : parseInt(dateRange);
-    const startDate = isThisMonth ? startOfMonth(new Date()) : subDays(startOfDay(new Date()), days - 1);
-
-    return Array.from({ length: days }, (_, i) => {
-      const date = new Date(startDate);
-      date.setDate(date.getDate() + i);
-      const dayStr = format(date, "yyyy-MM-dd");
-      const dayLabel = days <= 7 ? format(date, "EEE") : format(date, "MMM d");
-      const dayLogs = filteredLogs.filter((l) => l.created_at.startsWith(dayStr));
-      return {
-        day: dayLabel,
-        offer_page: dayLogs.filter((l) => l.status_final === "Aprovado").length,
-        rejected: dayLogs.filter((l) => l.status_final === "Bloqueado" || l.status_final === "Página Segura").length,
-      };
+    // Group by day for all other ranges
+    const dayMap: Record<string, { offer_page: number; rejected: number }> = {};
+    filteredLogs.forEach((l) => {
+      const dayStr = l.created_at.substring(0, 10);
+      if (!dayMap[dayStr]) dayMap[dayStr] = { offer_page: 0, rejected: 0 };
+      if (l.status_final === "Aprovado") dayMap[dayStr].offer_page++;
+      else dayMap[dayStr].rejected++;
     });
+
+    return Object.entries(dayMap)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([dayStr]) => {
+        const date = new Date(dayStr + "T00:00:00");
+        return {
+          day: format(date, "MMM d"),
+          offer_page: dayMap[dayStr].offer_page,
+          rejected: dayMap[dayStr].rejected,
+        };
+      });
   })();
 
   const deviceCounts = {
@@ -217,7 +213,7 @@ export default function Dashboard() {
                 <SelectItem value="1">{t("dashboard.today")}</SelectItem>
                 <SelectItem value="7">{t("dashboard.last7Days")}</SelectItem>
                 <SelectItem value="30">{t("dashboard.last30Days")}</SelectItem>
-                <SelectItem value="month">{t("dashboard.thisMonth")}</SelectItem>
+                <SelectItem value="all">{t("dashboard.allTime")}</SelectItem>
               </SelectContent>
             </Select>
           </CardHeader>
