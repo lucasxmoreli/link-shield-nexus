@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Check, Copy, AlertTriangle, Globe, Shield } from "lucide-react";
+import { Check, Copy, AlertTriangle, Globe, Shield, Info, Webhook } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { Separator } from "@/components/ui/separator";
 import { useTranslation } from "react-i18next";
 import { getSourceByKey, TRAFFIC_SOURCES } from "@/lib/plan-config";
 
@@ -138,6 +139,7 @@ export default function CampaignLinkGenerator({
   const [trafficSource, setTrafficSource] = useState(initialSource);
   const [enabledParams, setEnabledParams] = useState<Record<string, boolean>>({});
   const [copied, setCopied] = useState(false);
+  const [copiedWebhook, setCopiedWebhook] = useState(false);
 
   // Initialize domain from props or first verified domain
   useEffect(() => {
@@ -171,6 +173,13 @@ export default function CampaignLinkGenerator({
     return buildTrackingUrl(selectedDomain, campaignHash, activeParams);
   }, [selectedDomain, campaignHash, activeParams]);
 
+  const webhookUrl = useMemo(() => {
+    if (!selectedDomain) return "";
+    const base = selectedDomain.trim().replace(/\/+$/, "");
+    const dm = base.startsWith("http") ? base : `https://${base}`;
+    return `${dm}/webhook/conversion?click_id={click_id}&revenue={commission}`;
+  }, [selectedDomain]);
+
   // ── Handlers ─────────────────────────────────────────────────────────
   const toggleParam = (key: string) => {
     setEnabledParams((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -187,6 +196,16 @@ export default function CampaignLinkGenerator({
       setCopied(false);
       onCopied?.();
     }, 800);
+  };
+
+  const handleCopyWebhook = async () => {
+    if (!webhookUrl) return;
+    await navigator.clipboard.writeText(webhookUrl);
+    setCopiedWebhook(true);
+    toast.success(t("campaigns.webhookCopied"), {
+      style: { background: "hsl(var(--success))", color: "#fff", border: "none" },
+    });
+    setTimeout(() => setCopiedWebhook(false), 800);
   };
 
   // ── Render ───────────────────────────────────────────────────────────
@@ -358,6 +377,16 @@ export default function CampaignLinkGenerator({
         </div>
       )}
 
+      {/* Pass-through hint */}
+      {previewLink && (
+        <div className="flex items-start gap-2 rounded-lg border border-border bg-secondary/20 p-3">
+          <Info className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            {t("campaigns.passthroughHint")}
+          </p>
+        </div>
+      )}
+
       {/* Copy button */}
       <Button className="w-full neon-glow" onClick={handleCopy} disabled={copied || !selectedDomain}>
         {copied ? (
@@ -370,6 +399,45 @@ export default function CampaignLinkGenerator({
           </>
         )}
       </Button>
+
+      {/* Webhook Section */}
+      <Separator className="my-2" />
+
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Webhook className="h-4 w-4 text-primary" />
+          <h4 className="text-sm font-semibold text-foreground">{t("campaigns.webhookTitle")}</h4>
+        </div>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          {t("campaigns.webhookDescription")}
+        </p>
+
+        {selectedDomain ? (
+          <div className="space-y-2">
+            <div className="rounded-lg border border-border bg-muted/30 p-3">
+              <p className="font-mono text-xs text-primary break-all leading-relaxed">{webhookUrl}</p>
+            </div>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={handleCopyWebhook}
+              disabled={copiedWebhook}
+            >
+              {copiedWebhook ? (
+                <>
+                  <Check className="h-4 w-4 mr-2" /> {t("common.copied")}
+                </>
+              ) : (
+                <>
+                  <Copy className="h-4 w-4 mr-2" /> {t("campaigns.copyWebhook")}
+                </>
+              )}
+            </Button>
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground italic">{t("campaigns.selectDomainFirst")}</p>
+        )}
+      </div>
     </div>
   );
 }
