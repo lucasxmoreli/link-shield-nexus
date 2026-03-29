@@ -331,6 +331,7 @@ export default function Analytics() {
                     <ChartTooltip content={<ChartTooltipContent />} />
                     <Area type="monotone" dataKey="approved" stroke="hsl(142 71% 45%)" fill="hsl(142 71% 45%)" fillOpacity={0.3} strokeWidth={2} dot={false} connectNulls />
                     <Area type="monotone" dataKey="blocked" stroke="hsl(var(--destructive))" fill="hsl(var(--destructive))" fillOpacity={0.2} strokeWidth={2} dot={false} connectNulls />
+                    <Area type="monotone" dataKey="conversions" stroke="hsl(45 100% 51%)" fill="hsl(45 100% 51%)" fillOpacity={0.15} strokeWidth={2} dot={false} connectNulls />
                   </AreaChart>
                 </ChartContainer>
               </CardContent>
