@@ -36,7 +36,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { TRAFFIC_SOURCES, getPlanByName, getAllowedSources } from "@/lib/plan-config";
-import { buildDefaultTrackingUrl } from "@/components/campaigns/CampaignLinkGenerator";
+import CampaignFinalLinkModal, { type CampaignFinalLinkData } from "@/components/campaigns/CampaignFinalLinkModal";
 
 const COUNTRIES = [
   { code: "US", name: "United States" },
@@ -113,13 +113,7 @@ export default function CampaignEdit() {
   const [countrySearch, setCountrySearch] = useState("");
   const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
   const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
-  const [successModal, setSuccessModal] = useState<{
-    hash: string;
-    domain: string;
-    source: string;
-    offerUrl: string;
-    safeUrl: string;
-  } | null>(null);
+  const [successModal, setSuccessModal] = useState<CampaignFinalLinkData | null>(null);
 
   // ── Webhook Postback states (Visual Builder) ─────────────────────────
   const [postbackBaseUrl, setPostbackBaseUrl] = useState("");
@@ -245,11 +239,10 @@ export default function CampaignEdit() {
     onSuccess: (result) => {
       qc.invalidateQueries({ queryKey: ["campaigns"] });
       setSuccessModal({
+        name,
         hash: result.hash,
         domain: result.domain || domain || "",
-        source: trafficSource,
-        offerUrl: ensureAbsoluteUrl(offerUrl),
-        safeUrl: ensureAbsoluteUrl(safeUrl),
+        traffic_source: trafficSource,
       });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -970,103 +963,10 @@ export default function CampaignEdit() {
       </Dialog>
 
       {/* Success Modal */}
-      <Dialog
-        open={!!successModal}
-        onOpenChange={(open) => {
-          if (!open) {
-            setSuccessModal(null);
-            navigate("/campaigns");
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader className="text-center sm:text-center space-y-3">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-              <Zap className="h-7 w-7 text-primary" />
-            </div>
-            <DialogTitle className="text-xl">{t("campaignEdit.successTitle")}</DialogTitle>
-            <DialogDescription className="text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">{name}</span>
-              <br />
-              {t("campaignEdit.successHelp")}
-            </DialogDescription>
-          </DialogHeader>
-
-          {successModal && (() => {
-            const finalUrl = buildDefaultTrackingUrl(
-              successModal.domain || "yourdomain.com",
-              successModal.hash,
-              successModal.source
-            );
-            const handleCopyUrl = () => {
-              navigator.clipboard.writeText(finalUrl);
-              toast.success(t("campaignEdit.linkCopied"));
-            };
-            return (
-              <div className="space-y-4">
-                {/* URL Box */}
-                <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-2">
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    {t("campaignEdit.finalUrl")}
-                  </p>
-                  <div className="rounded-md border border-primary/30 bg-background p-3 break-all">
-                    <code className="text-xs sm:text-sm text-primary font-mono leading-relaxed">{finalUrl}</code>
-                  </div>
-                </div>
-
-                {/* Copy Button */}
-                <Button className="w-full gap-2" size="lg" onClick={handleCopyUrl}>
-                  <Copy className="h-4 w-4" />
-                  {t("campaignEdit.copyFinalUrl")}
-                </Button>
-              </div>
-            );
-          })()}
-
-          {/* Quick Setup */}
-          <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-2.5">
-            <p className="text-xs font-semibold uppercase tracking-wider text-primary">
-              {t("campaignEdit.quickSetup")}
-            </p>
-            <div className="space-y-2">
-              {["step1", "step2", "step3"].map((stepKey, i) => (
-                <div key={stepKey} className="flex items-start gap-2.5">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold text-primary">
-                    {i + 1}
-                  </span>
-                  <p className="text-sm text-muted-foreground">
-                    {t(`campaignEdit.${stepKey}`)
-                      .split("<bold>")
-                      .map((part: string, j: number) => {
-                        if (j === 0) return part;
-                        const [bold, rest] = part.split("</bold>");
-                        return (
-                          <span key={j}>
-                            <span className="font-medium text-foreground">{bold}</span>
-                            {rest}
-                          </span>
-                        );
-                      })}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setSuccessModal(null);
-                navigate("/campaigns");
-              }}
-              className="w-full"
-            >
-              {t("campaignEdit.closeCampaigns")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <CampaignFinalLinkModal
+        campaign={successModal}
+        onClose={() => setSuccessModal(null)}
+      />
     </div>
   );
 }
