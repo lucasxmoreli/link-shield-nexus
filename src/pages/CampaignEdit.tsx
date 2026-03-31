@@ -1,28 +1,8 @@
 import { useState, useEffect, KeyboardEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  ArrowLeft,
-  X,
-  AlertTriangle,
-  Plus,
-  Trash2,
-  Lock,
-  Zap,
-  ShieldAlert,
-  Info,
-  ExternalLink,
-  Copy,
-} from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Dialog,
   DialogContent,
@@ -35,36 +15,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-import { TRAFFIC_SOURCES, getPlanByName, getAllowedSources } from "@/lib/plan-config";
+import { TRAFFIC_SOURCES, getAllowedSources } from "@/lib/plan-config";
+import { useProfile } from "@/hooks/useProfile";
+import { useDomains } from "@/hooks/useDomains";
+import { useCampaign } from "@/hooks/useCampaigns";
 import CampaignFinalLinkModal, { type CampaignFinalLinkData } from "@/components/campaigns/CampaignFinalLinkModal";
 
-const COUNTRIES = [
-  { code: "US", name: "United States" },
-  { code: "BR", name: "Brazil" },
-  { code: "GB", name: "United Kingdom" },
-  { code: "DE", name: "Germany" },
-  { code: "FR", name: "France" },
-  { code: "ES", name: "Spain" },
-  { code: "IT", name: "Italy" },
-  { code: "PT", name: "Portugal" },
-  { code: "CA", name: "Canada" },
-  { code: "AU", name: "Australia" },
-  { code: "JP", name: "Japan" },
-  { code: "MX", name: "Mexico" },
-  { code: "AR", name: "Argentina" },
-  { code: "CO", name: "Colombia" },
-  { code: "IN", name: "India" },
-  { code: "NG", name: "Nigeria" },
-  { code: "ZA", name: "South Africa" },
-  { code: "PH", name: "Philippines" },
-  { code: "ID", name: "Indonesia" },
-  { code: "TH", name: "Thailand" },
-];
-
-const DEVICES = ["desktop", "mobile", "tablet"] as const;
+import CampaignGeneralConfig from "@/components/campaigns/edit/CampaignGeneralConfig";
+import SafePageConfig from "@/components/campaigns/edit/SafePageConfig";
+import OfferPageConfig from "@/components/campaigns/edit/OfferPageConfig";
+import SecurityConfig from "@/components/campaigns/edit/SecurityConfig";
+import WebhookPostbackConfig from "@/components/campaigns/edit/WebhookPostbackConfig";
+import TargetingConfig from "@/components/campaigns/edit/TargetingConfig";
 
 const POSTBACK_MACROS = ["{click_id}", "{campaign_id}", "{ip}", "{country}", "{device}", "{cost}", "{timestamp}"];
-
 
 function generateHash(len = 10) {
   const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -115,64 +79,35 @@ export default function CampaignEdit() {
   const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
   const [successModal, setSuccessModal] = useState<CampaignFinalLinkData | null>(null);
 
-  // ── Webhook Postback states (Visual Builder) ─────────────────────────
+  // ── Webhook Postback states ─────────────────────────
   const [postbackBaseUrl, setPostbackBaseUrl] = useState("");
   const [postbackParams, setPostbackParams] = useState<PostbackParam[]>([{ key: "", value: "", isCustom: false }]);
   const [postbackMethod, setPostbackMethod] = useState<"GET" | "POST">("GET");
 
-  const { data: domains = [] } = useQuery({
-    queryKey: ["domains", user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("domains").select("*");
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user,
-  });
-
-  const { data: profile } = useQuery({
-    queryKey: ["profile", user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("profiles").select("*").eq("user_id", user!.id).single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user,
-  });
-
-  const userPlan = getPlanByName(profile?.plan_name);
+  const { domains } = useDomains();
+  const { planConfig: userPlan } = useProfile();
   const allowedSources = getAllowedSources(userPlan);
   const hasLockedSources = allowedSources.length < TRAFFIC_SOURCES.length;
-
-  const { data: campaign } = useQuery({
-    queryKey: ["campaign", id],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("campaigns").select("*").eq("id", id!).single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: isEditing,
-  });
+  const { campaign } = useCampaign(id);
 
   useEffect(() => {
     if (campaign) {
       setName(campaign.name);
-      setDomain((campaign as any).domain ?? "");
+      setDomain(campaign.domain ?? "");
       setTrafficSource(campaign.traffic_source);
       setSafeUrl(campaign.safe_url);
       setOfferUrl(campaign.offer_url);
-      const bUrl = (campaign as any).offer_page_b ?? "";
+      const bUrl = campaign.offer_page_b ?? "";
       setOfferPageB(bUrl);
       setAbStormEnabled(!!bUrl);
-      setSafeMethod((campaign as any).safe_page_method ?? "redirect");
-      setOfferMethod((campaign as any).offer_page_method ?? "redirect");
-      setTargetCountries((campaign as any).target_countries ?? []);
-      setTargetDevices((campaign as any).target_devices ?? []);
-      setTags((campaign as any).tags ?? []);
-      setStrictMode((campaign as any).strict_mode ?? false);
+      setSafeMethod(campaign.safe_page_method ?? "redirect");
+      setOfferMethod(campaign.offer_page_method ?? "redirect");
+      setTargetCountries(campaign.target_countries ?? []);
+      setTargetDevices(campaign.target_devices ?? []);
+      setTags(campaign.tags ?? []);
+      setStrictMode(campaign.strict_mode ?? false);
 
-      // ── Parse postback_url into base + params ──────────────────────
-      const raw = (campaign as any).postback_url ?? "";
+      const raw = campaign.postback_url ?? "";
       if (raw.includes("?")) {
         const [base, query] = raw.split("?");
         setPostbackBaseUrl(base);
@@ -187,15 +122,65 @@ export default function CampaignEdit() {
         setPostbackBaseUrl(raw);
         setPostbackParams([{ key: "", value: "", isCustom: false }]);
       }
-      setPostbackMethod(((campaign as any).postback_method as "GET" | "POST") ?? "GET");
+      setPostbackMethod((campaign.postback_method as "GET" | "POST") ?? "GET");
     }
   }, [campaign]);
 
   const [pendingHash, setPendingHash] = useState("");
 
+  // ── URL utilities ──────────────────────────
+  const normalizeUrlInput = (url: string): string => url.trim().replace(/^\/+/, "");
+
+  const ensureAbsoluteUrl = (url: string): string => {
+    const cleaned = normalizeUrlInput(url);
+    if (!cleaned) return "";
+    if (/^https?:\/\//i.test(cleaned)) return cleaned;
+    return `https://${cleaned}`;
+  };
+
+  const isValidAbsoluteUrl = (url: string): boolean => {
+    const normalized = ensureAbsoluteUrl(url);
+    if (!normalized) return false;
+    try {
+      const parsed = new URL(normalized);
+      return /^https?:$/i.test(parsed.protocol) && Boolean(parsed.hostname);
+    } catch {
+      return false;
+    }
+  };
+
+  const normalizeUrlField = (setter: (value: string) => void) => (value: string) => {
+    setter(ensureAbsoluteUrl(value));
+  };
+
+  // ── Validation ──────────────────────────
+  const areDestinationUrlsValid =
+    isValidAbsoluteUrl(safeUrl) &&
+    (offerMode === "single" ? isValidAbsoluteUrl(offerUrl) : abOffers.every((o) => isValidAbsoluteUrl(o.url))) &&
+    (!abStormEnabled || !offerPageB.trim() || isValidAbsoluteUrl(offerPageB));
+
+  const isFormValid = Boolean(
+    name &&
+    domain &&
+    trafficSource &&
+    safeUrl &&
+    (offerMode === "single" ? offerUrl : abOffers.every((o) => o.url)) &&
+    areDestinationUrlsValid,
+  );
+
+  // ── Postback preview ──────────────────────────
+  const postbackPreview = (() => {
+    if (!postbackBaseUrl.trim()) return "";
+    const qs = postbackParams
+      .filter((p) => p.key.trim())
+      .map((p) => `${p.key}=${p.value || "..."}`)
+      .join("&");
+    return qs ? `${postbackBaseUrl.trim()}?${qs}` : postbackBaseUrl.trim();
+  })();
+
+  // ── Save mutation ──────────────────────────
   const saveMutation = useMutation({
     mutationFn: async () => {
-      // ── Build postback_url from base + params (no URLSearchParams — preserves {} macros) ──
       const qs = postbackParams
         .filter((p) => p.key.trim() !== "")
         .map((p) => `${p.key.trim()}=${p.value}`)
@@ -248,6 +233,7 @@ export default function CampaignEdit() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // ── Handler functions ──────────────────────────
   const handleTagKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && tagInput.trim()) {
       e.preventDefault();
@@ -259,22 +245,6 @@ export default function CampaignEdit() {
   };
   const removeTag = (t: string) => setTags(tags.filter((x) => x !== t));
 
-  const addAbOffer = () => {
-    if (abOffers.length < 3) setAbOffers([...abOffers, { url: "", weight: 0 }]);
-  };
-  const removeAbOffer = (i: number) => {
-    if (abOffers.length > 2) setAbOffers(abOffers.filter((_, idx) => idx !== i));
-  };
-  const updateAbOffer = (i: number, field: keyof OfferEntry, value: string | number) => {
-    setAbOffers(abOffers.map((o, idx) => (idx === i ? { ...o, [field]: value } : o)));
-  };
-
-  const filteredCountries = COUNTRIES.filter(
-    (c) =>
-      !targetCountries.includes(c.code) &&
-      (c.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
-        c.code.toLowerCase().includes(countrySearch.toLowerCase())),
-  );
   const addCountry = (code: string) => {
     setTargetCountries([...targetCountries, code]);
     setCountrySearch("");
@@ -286,55 +256,49 @@ export default function CampaignEdit() {
     setTargetDevices((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
   };
 
-  const normalizeUrlInput = (url: string): string => url.trim().replace(/^\/+/, "");
-
-  const ensureAbsoluteUrl = (url: string): string => {
-    const cleaned = normalizeUrlInput(url);
-    if (!cleaned) return "";
-    if (/^https?:\/\//i.test(cleaned)) return cleaned;
-    return `https://${cleaned}`;
-  };
-
-  const isValidAbsoluteUrl = (url: string): boolean => {
-    const normalized = ensureAbsoluteUrl(url);
-    if (!normalized) return false;
-    try {
-      const parsed = new URL(normalized);
-      return /^https?:$/i.test(parsed.protocol) && Boolean(parsed.hostname);
-    } catch {
-      return false;
+  const handleSave = () => {
+    normalizeUrlField(setSafeUrl)(safeUrl);
+    normalizeUrlField(setOfferUrl)(offerUrl);
+    if (abStormEnabled && offerPageB.trim()) normalizeUrlField(setOfferPageB)(offerPageB);
+    if (!areDestinationUrlsValid) {
+      toast.error(t("campaignEdit.invalidUrl"));
+      return;
     }
+    if (domain) {
+      try {
+        const selectedDomain = domain.replace(/^(https?:\/\/)?(www\.)?/, "").replace(/\/+$/, "");
+        const urlsToCheck: string[] = [];
+        if (safeMethod === "redirect") {
+          const s = ensureAbsoluteUrl(safeUrl);
+          if (s) urlsToCheck.push(s);
+        }
+        if (offerMethod === "redirect") {
+          const o = ensureAbsoluteUrl(offerUrl);
+          if (o) urlsToCheck.push(o);
+          if (abStormEnabled && offerPageB.trim()) {
+            const b = ensureAbsoluteUrl(offerPageB);
+            if (b) urlsToCheck.push(b);
+          }
+        }
+        const hasConflict = urlsToCheck.some((u) => {
+          try {
+            const host = new URL(u).hostname.replace(/^www\./, "");
+            return host === selectedDomain || host.endsWith(`.${selectedDomain}`);
+          } catch {
+            return false;
+          }
+        });
+        if (hasConflict) {
+          setConflictDialogOpen(true);
+          return;
+        }
+      } catch {
+        toast.error(t("campaignEdit.invalidUrl"));
+        return;
+      }
+    }
+    saveMutation.mutate();
   };
-
-  const normalizeUrlField = (setter: (value: string) => void) => (value: string) => {
-    setter(ensureAbsoluteUrl(value));
-  };
-
-  const areDestinationUrlsValid =
-    isValidAbsoluteUrl(safeUrl) &&
-    (offerMode === "single" ? isValidAbsoluteUrl(offerUrl) : abOffers.every((o) => isValidAbsoluteUrl(o.url))) &&
-    (!abStormEnabled || !offerPageB.trim() || isValidAbsoluteUrl(offerPageB));
-
-  const hasDomains = domains.length > 0;
-
-  const isFormValid = Boolean(
-    name &&
-    domain &&
-    trafficSource &&
-    safeUrl &&
-    (offerMode === "single" ? offerUrl : abOffers.every((o) => o.url)) &&
-    areDestinationUrlsValid,
-  );
-
-  // ── Postback preview URL (live, no encoding) ──────────────────────────
-  const postbackPreview = (() => {
-    if (!postbackBaseUrl.trim()) return "";
-    const qs = postbackParams
-      .filter((p) => p.key.trim())
-      .map((p) => `${p.key}=${p.value || "..."}`)
-      .join("&");
-    return qs ? `${postbackBaseUrl.trim()}?${qs}` : postbackBaseUrl.trim();
-  })();
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 pb-12">
@@ -347,533 +311,73 @@ export default function CampaignEdit() {
         </h1>
       </div>
 
-      {/* BLOCK 1: Campaign */}
-      <section className="rounded-xl bg-[hsl(var(--card))] p-6 space-y-4">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-          {t("campaignEdit.campaignSection")}
-        </h2>
-        <div className="space-y-4">
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">{t("campaignEdit.campaignName")}</Label>
-            <Input
-              placeholder={t("campaignEdit.campaignNamePlaceholder")}
-              className="bg-secondary border-border"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-1.5">
-              <Label className="text-xs text-muted-foreground">{t("campaignEdit.domainLabel")}</Label>
-              <TooltipProvider delayDuration={200}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent side="right" className="max-w-[280px] text-xs leading-relaxed">
-                    <p>{t("campaignEdit.domainTooltip")}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-            {domains.length === 0 ? (
-              <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
-                <AlertTriangle className="h-4 w-4 mt-0.5 text-destructive shrink-0" />
-                <p className="text-sm text-muted-foreground">
-                  {t("campaignEdit.noDomainsBlock")}{" "}
-                  <button
-                    type="button"
-                    onClick={() => navigate("/domains")}
-                    className="underline text-primary hover:text-primary/80 transition-colors"
-                  >
-                    {t("campaignEdit.noDomainsAction")}
-                  </button>
-                </p>
-              </div>
-            ) : (
-              <>
-                <Select value={domain} onValueChange={setDomain}>
-                  <SelectTrigger className="bg-secondary border-border">
-                    <SelectValue placeholder={t("campaignEdit.selectDomain")} />
-                  </SelectTrigger>
-                  <SelectContent className="bg-card border-border">
-                    {domains.map((d) => (
-                      <SelectItem key={d.id} value={d.url}>
-                        <span className="flex items-center gap-2">
-                          {d.url}
-                          {d.ssl_status === "active" ? (
-                            <Badge
-                              variant="outline"
-                              className="text-[10px] px-1.5 py-0 border-green-500/30 text-green-400"
-                            >
-                              {t("campaignEdit.domainSslActive")}
-                            </Badge>
-                          ) : (
-                            <Badge
-                              variant="outline"
-                              className="text-[10px] px-1.5 py-0 border-blue-500/30 text-blue-400"
-                            >
-                              {t("campaignEdit.domainSslPending")}
-                            </Badge>
-                          )}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">{t("campaignEdit.domainHelper")}</p>
-                {domain &&
-                  (() => {
-                    const selectedDomainObj = domains.find((d) => d.url === domain);
-                    if (selectedDomainObj && selectedDomainObj.ssl_status !== "active") {
-                      return (
-                        <div className="flex items-start gap-2 rounded-lg border border-blue-500/30 bg-blue-500/5 p-3">
-                          <Info className="h-4 w-4 mt-0.5 text-blue-400 shrink-0" />
-                          <p className="text-xs text-blue-200/80">{t("campaignEdit.domainSslWarning")}</p>
-                        </div>
-                      );
-                    }
-                    return null;
-                  })()}
-              </>
-            )}
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">{t("campaignEdit.trafficSource")}</Label>
-            <Select value={trafficSource} onValueChange={setTrafficSource}>
-              <SelectTrigger className="bg-secondary border-border">
-                <SelectValue placeholder={t("campaignEdit.selectSource")} />
-              </SelectTrigger>
-              <SelectContent className="bg-card border-border">
-                {allowedSources.map((src) => {
-                  const Icon = src.icon;
-                  return (
-                    <SelectItem key={src.key} value={src.key}>
-                      <span className="flex items-center gap-2">
-                        <Icon size={14} style={{ color: src.color }} />
-                        {src.name}
-                      </span>
-                    </SelectItem>
-                  );
-                })}
-                {hasLockedSources && (
-                  <SelectItem value="__locked" disabled>
-                    <span className="flex items-center gap-2 text-muted-foreground">
-                      <Lock size={14} />
-                      {t("campaignEdit.unlockMore")}
-                    </span>
-                  </SelectItem>
-                )}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </section>
+      <CampaignGeneralConfig
+        name={name}
+        onNameChange={setName}
+        domain={domain}
+        onDomainChange={setDomain}
+        trafficSource={trafficSource}
+        onTrafficSourceChange={setTrafficSource}
+        domains={domains}
+        allowedSources={allowedSources}
+        hasLockedSources={hasLockedSources}
+      />
 
-      {/* BLOCK 2: Safe Page */}
-      <section className="rounded-xl border border-green-500/20 bg-[hsl(var(--card))] p-6 space-y-4">
-        <div>
-          <h2 className="text-sm font-semibold text-foreground">{t("campaignEdit.safePageSection")}</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">{t("campaignEdit.safePageSectionDesc")}</p>
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">{t("campaignEdit.safePageUrl")}</Label>
-          <Input
-            placeholder={t("campaignEdit.safePagePlaceholder")}
-            className="bg-secondary border-border"
-            value={safeUrl}
-            onChange={(e) => setSafeUrl(e.target.value)}
-            onBlur={(e) => normalizeUrlField(setSafeUrl)(e.target.value)}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">{t("campaignEdit.method")}</Label>
-          <RadioGroup value={safeMethod} onValueChange={setSafeMethod} className="flex flex-col sm:flex-row gap-3">
-            <label
-              className={`flex-1 flex items-start gap-3 cursor-pointer rounded-lg border px-4 py-3 text-sm transition-colors ${safeMethod === "redirect" ? "border-primary bg-primary/10" : "border-border bg-secondary"}`}
-            >
-              <RadioGroupItem value="redirect" className="mt-0.5" />
-              <div>
-                <p className={`font-medium ${safeMethod === "redirect" ? "text-primary" : "text-foreground"}`}>
-                  {t("campaignEdit.redirect")}
-                </p>
-                <p className="text-xs text-muted-foreground mt-0.5">{t("campaignEdit.redirectDesc")}</p>
-              </div>
-            </label>
-            <label
-              className={`flex-1 flex items-start gap-3 cursor-pointer rounded-lg border px-4 py-3 text-sm transition-colors ${safeMethod === "content_fetch" ? "border-primary bg-primary/10" : "border-border bg-secondary"}`}
-            >
-              <RadioGroupItem value="content_fetch" className="mt-0.5" />
-              <div>
-                <p className={`font-medium ${safeMethod === "content_fetch" ? "text-primary" : "text-foreground"}`}>
-                  {t("campaignEdit.contentFetch")}
-                </p>
-                <p className="text-xs text-muted-foreground mt-0.5">{t("campaignEdit.contentFetchDesc")}</p>
-              </div>
-            </label>
-          </RadioGroup>
-          <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/30 p-3">
-            <Info className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
-            <p className="text-xs text-muted-foreground">{t("campaignEdit.safeMethodHint")}</p>
-          </div>
-        </div>
-      </section>
+      <SafePageConfig
+        safeUrl={safeUrl}
+        onSafeUrlChange={setSafeUrl}
+        onSafeUrlBlur={normalizeUrlField(setSafeUrl)}
+        safeMethod={safeMethod}
+        onSafeMethodChange={setSafeMethod}
+      />
 
-      {/* BLOCK 3: Offer Page */}
-      <section className="rounded-xl border border-yellow-500/20 bg-[hsl(var(--card))] p-6 space-y-4">
-        <div>
-          <h2 className="text-sm font-semibold text-foreground">{t("campaignEdit.offerPageSection")}</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">{t("campaignEdit.offerPageSectionDesc")}</p>
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">{t("campaignEdit.primaryOffer")}</Label>
-          <Input
-            placeholder={t("campaignEdit.offerPlaceholder")}
-            className="bg-secondary border-border"
-            value={offerUrl}
-            onChange={(e) => setOfferUrl(e.target.value)}
-            onBlur={(e) => normalizeUrlField(setOfferUrl)(e.target.value)}
-          />
-        </div>
-        <div className="flex items-center justify-between rounded-lg border border-border bg-secondary/50 px-4 py-3">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-              <Zap className="h-4 w-4 text-primary" />
-            </div>
-            <div>
-              <p className="text-sm font-medium">{t("campaignEdit.abStormTitle")}</p>
-              <p className="text-xs text-muted-foreground">{t("campaignEdit.abStormDesc")}</p>
-            </div>
-          </div>
-          <Switch
-            checked={abStormEnabled}
-            onCheckedChange={(checked) => {
-              setAbStormEnabled(checked);
-              if (!checked) setOfferPageB("");
-            }}
-          />
-        </div>
-        <Collapsible open={abStormEnabled}>
-          <CollapsibleContent className="overflow-hidden data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-up-2 data-[state=open]:slide-down-2">
-            <div className="space-y-3 rounded-lg border border-primary/20 bg-primary/5 p-4">
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">{t("campaignEdit.testOfferB")}</Label>
-                <Input
-                  placeholder={t("campaignEdit.testOfferPlaceholder")}
-                  className="bg-secondary border-border"
-                  value={offerPageB}
-                  onChange={(e) => setOfferPageB(e.target.value)}
-                  onBlur={(e) => normalizeUrlField(setOfferPageB)(e.target.value)}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                {t("campaignEdit.abStormHelp")
-                  .split("<bold>")
-                  .map((part, i) => {
-                    if (i === 0) return part;
-                    const [bold, rest] = part.split("</bold>");
-                    return (
-                      <span key={i}>
-                        <span className="font-semibold text-primary">{bold}</span>
-                        {rest}
-                      </span>
-                    );
-                  })}
-              </p>
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
-        <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">{t("campaignEdit.method")}</Label>
-          <RadioGroup value={offerMethod} onValueChange={setOfferMethod} className="flex flex-col sm:flex-row gap-3">
-            <label
-              className={`flex-1 flex items-start gap-3 cursor-pointer rounded-lg border px-4 py-3 text-sm transition-colors ${offerMethod === "redirect" ? "border-primary bg-primary/10" : "border-border bg-secondary"}`}
-            >
-              <RadioGroupItem value="redirect" className="mt-0.5" />
-              <div>
-                <p className={`font-medium ${offerMethod === "redirect" ? "text-primary" : "text-foreground"}`}>
-                  {t("campaignEdit.redirect")}
-                </p>
-                <p className="text-xs text-muted-foreground mt-0.5">{t("campaignEdit.redirectDesc")}</p>
-              </div>
-            </label>
-            <label
-              className={`flex-1 flex items-start gap-3 cursor-pointer rounded-lg border px-4 py-3 text-sm transition-colors ${offerMethod === "content_fetch" ? "border-primary bg-primary/10" : "border-border bg-secondary"}`}
-            >
-              <RadioGroupItem value="content_fetch" className="mt-0.5" />
-              <div>
-                <p className={`font-medium ${offerMethod === "content_fetch" ? "text-primary" : "text-foreground"}`}>
-                  {t("campaignEdit.contentFetch")}
-                </p>
-                <p className="text-xs text-muted-foreground mt-0.5">{t("campaignEdit.contentFetchDesc")}</p>
-              </div>
-            </label>
-          </RadioGroup>
-          <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/30 p-3">
-            <Info className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
-            <p className="text-xs text-muted-foreground">{t("campaignEdit.offerMethodHint")}</p>
-          </div>
-        </div>
-      </section>
+      <OfferPageConfig
+        offerUrl={offerUrl}
+        onOfferUrlChange={setOfferUrl}
+        onOfferUrlBlur={normalizeUrlField(setOfferUrl)}
+        abStormEnabled={abStormEnabled}
+        onAbStormEnabledChange={(checked) => {
+          setAbStormEnabled(checked);
+          if (!checked) setOfferPageB("");
+        }}
+        offerPageB={offerPageB}
+        onOfferPageBChange={setOfferPageB}
+        onOfferPageBBlur={normalizeUrlField(setOfferPageB)}
+        offerMethod={offerMethod}
+        onOfferMethodChange={setOfferMethod}
+      />
 
-      {/* BLOCK 3.5: Strict Mode */}
-      <section className="rounded-xl bg-[hsl(var(--card))] p-6 space-y-4">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-          {t("campaignEdit.securitySection")}
-        </h2>
-        <div className="flex items-center justify-between rounded-lg border border-border bg-secondary/50 px-4 py-3">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-destructive/10">
-              <ShieldAlert className="h-4 w-4 text-destructive" />
-            </div>
-            <div>
-              <p className="text-sm font-medium">{t("campaignEdit.strictModeTitle")}</p>
-              <p className="text-xs text-muted-foreground">{t("campaignEdit.strictModeDesc")}</p>
-            </div>
-          </div>
-          <Switch checked={strictMode} onCheckedChange={setStrictMode} />
-        </div>
-      </section>
+      <SecurityConfig
+        strictMode={strictMode}
+        onStrictModeChange={setStrictMode}
+      />
 
-      {/* BLOCK 3.7: Webhook Postback — Visual Builder */}
-       <section className="rounded-xl border border-primary/20 bg-[hsl(var(--card))] p-6 space-y-4">
-        <div>
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-            {t("campaignEdit.webhookTitle")}
-            <Badge variant="secondary" className="ml-2 text-[10px] bg-primary/10 text-primary border-primary/20 uppercase tracking-wider">
-              {t("common.advanced")}
-            </Badge>
-          </h2>
-          <p className="text-xs text-muted-foreground mt-1">
-            {t("campaignEdit.webhookDesc")}
-          </p>
-        </div>
+      <WebhookPostbackConfig
+        postbackBaseUrl={postbackBaseUrl}
+        onPostbackBaseUrlChange={setPostbackBaseUrl}
+        postbackParams={postbackParams}
+        onPostbackParamsChange={setPostbackParams}
+        postbackMethod={postbackMethod}
+        onPostbackMethodChange={setPostbackMethod}
+        postbackPreview={postbackPreview}
+      />
 
-        {/* Base URL */}
-        <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">{t("campaignEdit.webhookBaseUrl")}</Label>
-          <Input
-            placeholder="https://tracker.com/postback"
-            className="bg-secondary border-border font-mono text-xs"
-            value={postbackBaseUrl}
-            onChange={(e) => setPostbackBaseUrl(e.target.value)}
-          />
-        </div>
-
-        {/* Query Parameters */}
-        <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">{t("campaignEdit.webhookParams")}</Label>
-          <div className="space-y-2">
-            {postbackParams.map((param, index) => (
-              <div key={index} className="flex gap-2 items-center">
-                <Input
-                  placeholder={t("campaignEdit.paramKey")}
-                  className="bg-secondary border-border font-mono text-xs w-28 shrink-0"
-                  value={param.key}
-                  onChange={(e) => {
-                    const updated = [...postbackParams];
-                    updated[index] = { ...updated[index], key: e.target.value };
-                    setPostbackParams(updated);
-                  }}
-                />
-                {param.isCustom ? (
-                  <Input
-                    placeholder={t("campaignEdit.paramValue")}
-                    className="bg-secondary border-border font-mono text-xs flex-1"
-                    value={param.value}
-                    onChange={(e) => {
-                      const updated = [...postbackParams];
-                      updated[index] = { ...updated[index], value: e.target.value };
-                      setPostbackParams(updated);
-                    }}
-                  />
-                ) : (
-                  <Select
-                    value={param.value || "__placeholder__"}
-                    onValueChange={(val) => {
-                      const updated = [...postbackParams];
-                      if (val === "__custom__") {
-                        updated[index] = { ...updated[index], isCustom: true, value: "" };
-                      } else if (val !== "__placeholder__") {
-                        updated[index] = { ...updated[index], value: val, isCustom: false };
-                      }
-                      setPostbackParams(updated);
-                    }}
-                  >
-                    <SelectTrigger className="bg-secondary border-border font-mono text-xs flex-1">
-                      <SelectValue placeholder={t("campaignEdit.selectMacro")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {POSTBACK_MACROS.map((m) => (
-                        <SelectItem key={m} value={m} className="font-mono text-xs">
-                          {m}
-                        </SelectItem>
-                      ))}
-                      <SelectItem value="__custom__" className="text-xs italic text-muted-foreground">
-                        ✏ {t("campaignEdit.customValue")}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="shrink-0"
-                  disabled={postbackParams.length === 1}
-                  onClick={() => setPostbackParams(postbackParams.filter((_, i) => i !== index))}
-                >
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
-              </div>
-            ))}
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="gap-1.5 text-xs mt-1"
-            onClick={() => setPostbackParams([...postbackParams, { key: "", value: "", isCustom: false }])}
-          >
-            <Plus className="h-3.5 w-3.5" /> {t("campaignEdit.addParam")}
-          </Button>
-        </div>
-
-        {/* Live Preview */}
-        {postbackPreview && (
-          <div className="rounded-lg border border-border bg-secondary/50 p-3 space-y-1">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Preview</p>
-            <p className="text-xs font-mono text-primary break-all leading-relaxed">{postbackPreview}</p>
-          </div>
-        )}
-
-        {/* Method */}
-        <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">{t("campaignEdit.webhookMethod")}</Label>
-          <div className="flex gap-2">
-            {(["GET", "POST"] as const).map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => setPostbackMethod(m)}
-                className={`rounded-lg border px-5 py-2 text-sm font-medium transition-colors ${
-                  postbackMethod === m
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-border bg-secondary text-muted-foreground"
-                }`}
-              >
-                {m}
-              </button>
-            ))}
-          </div>
-          <p className="text-xs text-muted-foreground">
-            {t("campaignEdit.webhookMethodDesc")}
-          </p>
-        </div>
-      </section>
-
-
-
-      {/* BLOCK 4: Target */}
-      <section className="rounded-xl bg-[hsl(var(--card))] p-6 space-y-4">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-          {t("campaignEdit.targetSection")}
-        </h2>
-        <div className="flex items-start gap-3 rounded-lg border border-yellow-500/30 bg-yellow-500/5 p-3">
-          <AlertTriangle className="h-4 w-4 mt-0.5 text-yellow-500 shrink-0" />
-          <p className="text-sm text-yellow-200/80">{t("campaignEdit.tiktokWarning")}</p>
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">{t("campaignEdit.countries")}</Label>
-          <div className="relative">
-            <Input
-              placeholder={t("campaignEdit.searchCountries")}
-              className="bg-secondary border-border"
-              value={countrySearch}
-              onChange={(e) => {
-                setCountrySearch(e.target.value);
-                setCountryDropdownOpen(true);
-              }}
-              onFocus={() => setCountryDropdownOpen(true)}
-              onBlur={() => setTimeout(() => setCountryDropdownOpen(false), 200)}
-            />
-            {countryDropdownOpen && filteredCountries.length > 0 && (
-              <div className="absolute z-50 mt-1 w-full max-h-48 overflow-y-auto rounded-lg border border-border bg-card shadow-lg">
-                {filteredCountries.slice(0, 10).map((c) => (
-                  <button
-                    key={c.code}
-                    type="button"
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-secondary transition-colors"
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      addCountry(c.code);
-                    }}
-                  >
-                    <span className="font-mono text-primary mr-2">{c.code}</span>
-                    {c.name}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          {targetCountries.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mt-2">
-              {targetCountries.map((code) => (
-                <Badge key={code} variant="secondary" className="gap-1 bg-primary/10 text-primary border-primary/20">
-                  {code}
-                  <button type="button" onClick={() => removeCountry(code)} className="hover:text-destructive">
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              ))}
-            </div>
-          )}
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">{t("campaignEdit.devices")}</Label>
-          <div className="flex gap-2">
-            {DEVICES.map((d) => (
-              <button
-                key={d}
-                type="button"
-                onClick={() => toggleDevice(d)}
-                className={`rounded-lg border px-4 py-2 text-sm font-medium capitalize transition-colors ${targetDevices.includes(d) ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary text-muted-foreground"}`}
-              >
-                {d}
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* BLOCK 5: Tags */}
-      <section className="rounded-xl bg-[hsl(var(--card))] p-6 space-y-4">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-          {t("campaignEdit.tagsSection")}
-        </h2>
-        <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">{t("campaignEdit.tagHelper")}</Label>
-          <Input
-            placeholder={t("campaignEdit.tagPlaceholder")}
-            className="bg-secondary border-border"
-            value={tagInput}
-            onChange={(e) => setTagInput(e.target.value)}
-            onKeyDown={handleTagKeyDown}
-          />
-        </div>
-        {tags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {tags.map((tg) => (
-              <Badge key={tg} variant="secondary" className="gap-1 bg-primary/10 text-primary border-primary/20">
-                {tg}
-                <button type="button" onClick={() => removeTag(tg)} className="hover:text-destructive">
-                  <X className="h-3 w-3" />
-                </button>
-              </Badge>
-            ))}
-          </div>
-        )}
-      </section>
+      <TargetingConfig
+        targetCountries={targetCountries}
+        countrySearch={countrySearch}
+        onCountrySearchChange={setCountrySearch}
+        countryDropdownOpen={countryDropdownOpen}
+        onCountryDropdownOpenChange={setCountryDropdownOpen}
+        onAddCountry={addCountry}
+        onRemoveCountry={removeCountry}
+        targetDevices={targetDevices}
+        onToggleDevice={toggleDevice}
+        tags={tags}
+        tagInput={tagInput}
+        onTagInputChange={setTagInput}
+        onTagKeyDown={handleTagKeyDown}
+        onRemoveTag={removeTag}
+      />
 
       {/* Footer */}
       <div className="flex justify-end gap-3 pt-2">
@@ -881,49 +385,7 @@ export default function CampaignEdit() {
           {t("common.cancel")}
         </Button>
         <Button
-          onClick={() => {
-            normalizeUrlField(setSafeUrl)(safeUrl);
-            normalizeUrlField(setOfferUrl)(offerUrl);
-            if (abStormEnabled && offerPageB.trim()) normalizeUrlField(setOfferPageB)(offerPageB);
-            if (!areDestinationUrlsValid) {
-              toast.error(t("campaignEdit.invalidUrl"));
-              return;
-            }
-            if (domain) {
-              try {
-                const selectedDomain = domain.replace(/^(https?:\/\/)?(www\.)?/, "").replace(/\/+$/, "");
-                const urlsToCheck: string[] = [];
-                if (safeMethod === "redirect") {
-                  const s = ensureAbsoluteUrl(safeUrl);
-                  if (s) urlsToCheck.push(s);
-                }
-                if (offerMethod === "redirect") {
-                  const o = ensureAbsoluteUrl(offerUrl);
-                  if (o) urlsToCheck.push(o);
-                  if (abStormEnabled && offerPageB.trim()) {
-                    const b = ensureAbsoluteUrl(offerPageB);
-                    if (b) urlsToCheck.push(b);
-                  }
-                }
-                const hasConflict = urlsToCheck.some((u) => {
-                  try {
-                    const host = new URL(u).hostname.replace(/^www\./, "");
-                    return host === selectedDomain || host.endsWith(`.${selectedDomain}`);
-                  } catch {
-                    return false;
-                  }
-                });
-                if (hasConflict) {
-                  setConflictDialogOpen(true);
-                  return;
-                }
-              } catch {
-                toast.error(t("campaignEdit.invalidUrl"));
-                return;
-              }
-            }
-            saveMutation.mutate();
-          }}
+          onClick={handleSave}
           disabled={saveMutation.isPending || !isFormValid}
         >
           {saveMutation.isPending ? t("common.saving") : t("campaignEdit.saveCampaign")}
