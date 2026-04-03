@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Plus, Pencil, Trash2, Link, Lock, Copy } from "lucide-react";
+import { Plus, Pencil, Trash2, Link, Lock, Copy, CopyPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -172,13 +172,17 @@ export default function Campaigns() {
                               traffic_source: c.traffic_source,
                             })
                           }
+                          title="Copiar Link"
                         >
                           <Copy className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => navigate(`/campaigns/${c.id}/edit`)}>
+                        <Button variant="ghost" size="icon" onClick={() => navigate(`/campaigns/${c.id}/clone`)} title="Clonar Campanha">
+                          <CopyPlus className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => navigate(`/campaigns/${c.id}/edit`)} title="Editar">
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(c.id)}>
+                        <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(c.id)} title="Excluir">
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>

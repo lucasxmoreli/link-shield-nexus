@@ -59,6 +59,7 @@ const App = () => (
               <Route path="/campaigns" element={<Campaigns />} />
               <Route path="/campaigns/new" element={<CampaignEdit />} />
               <Route path="/campaigns/:id/edit" element={<CampaignEdit />} />
+              <Route path="/campaigns/:id/clone" element={<CampaignEdit />} />
               <Route path="/requests" element={<Requests />} />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/cloak-test" element={<CloakTest />} />

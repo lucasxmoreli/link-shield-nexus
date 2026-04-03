@@ -1,5 +1,5 @@
 import { useState, useEffect, KeyboardEvent } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -49,7 +49,9 @@ interface PostbackParam {
 
 export default function CampaignEdit() {
   const { id } = useParams<{ id: string }>();
-  const isEditing = !!id;
+  const location = useLocation();
+  const isCloning = location.pathname.endsWith('/clone');
+  const isEditing = !!id && !isCloning;
   const navigate = useNavigate();
   const { user } = useAuth();
   const qc = useQueryClient();
@@ -92,8 +94,8 @@ export default function CampaignEdit() {
 
   useEffect(() => {
     if (campaign) {
-      setName(campaign.name);
-      setDomain(campaign.domain ?? "");
+      setName(isCloning ? `${campaign.name} (cópia)` : campaign.name);
+      setDomain(isCloning ? "" : (campaign.domain ?? ""));
       setTrafficSource(campaign.traffic_source);
       setSafeUrl(campaign.safe_url);
       setOfferUrl(campaign.offer_url);
@@ -124,7 +126,7 @@ export default function CampaignEdit() {
       }
       setPostbackMethod((campaign.postback_method as "GET" | "POST") ?? "GET");
     }
-  }, [campaign]);
+  }, [campaign, isCloning]);
 
   const [pendingHash, setPendingHash] = useState("");
 
@@ -307,7 +309,7 @@ export default function CampaignEdit() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <h1 className="text-2xl font-bold">
-          {isEditing ? t("campaignEdit.editCampaign") : t("campaignEdit.newCampaign")}
+          {isCloning ? t("campaignEdit.cloneCampaign", "Clonar Campanha") : isEditing ? t("campaignEdit.editCampaign") : t("campaignEdit.newCampaign")}
         </h1>
       </div>
 
