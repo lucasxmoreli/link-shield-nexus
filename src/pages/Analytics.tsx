@@ -8,12 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatCard } from "@/components/StatCard";
+import { RoiHero } from "@/components/dashboard/RoiHero";
 import { BarChart2, MousePointerClick, Users, CheckCircle, Percent, DollarSign, TrendingUp, Shield, ShieldAlert, ShieldCheck } from "lucide-react";
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
+import { getThreatDisplay } from "@/lib/threat-display";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis, PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { subDays, startOfDay, format } from "date-fns";
 
@@ -193,20 +195,16 @@ export default function Analytics() {
     const blockedLogs = logs.filter(l => l.status_final === "Bloqueado" || l.status_final === "Página Segura");
     if (blockedLogs.length === 0) return [];
 
-    // Normalize reason keys
-    const normalize = (motivo: string): string => {
-      const lower = motivo.toLowerCase();
-      if (["datacenter", "proxy", "blacklist", "vpn"].some(k => lower.includes(k))) {
-        return "Datacenter / VPN (Trava 1)";
-      }
-      return motivo;
+    // Normalize reason keys → nomes comerciais (threat-display.ts SSOT)
+    const toCommercialName = (motivo: string): string => {
+      return getThreatDisplay(motivo).label;
     };
 
-    // Aggregate by motivo_limpo
+    // Aggregate by nome comercial
     const grouped: Record<string, number> = {};
     blockedLogs.forEach(l => {
       const motivo = l.motivo_limpo || "Desconhecido";
-      const key = normalize(motivo);
+      const key = toCommercialName(motivo);
       grouped[key] = (grouped[key] || 0) + 1;
     });
 
@@ -290,14 +288,13 @@ export default function Analytics() {
       {/* Data loaded */}
       {selectedCampaign && metrics && (
         <>
-          {/* Metrics cards */}
-           {/* Financial highlight row */}
-           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <StatCard title={t("analytics.totalRevenue")} value={`$${metrics.totalRevenue.toFixed(2)}`} icon={DollarSign} variant="success" />
-            <StatCard title={t("analytics.realRoi")} value={`${metrics.realRoi.toFixed(1)}%`} icon={TrendingUp} variant={metrics.realRoi >= 0 ? "success" : "destructive"} />
-            <StatCard title={t("analytics.totalCost")} value={`$${metrics.totalCost.toFixed(2)}`} icon={DollarSign} variant="destructive" />
-            <StatCard title={t("analytics.roiSaved")} value={`$${metrics.roiSaved.toFixed(2)}`} icon={ShieldCheck} variant="success" />
-           </div>
+          {/* ROI Hero — inteligência financeira por campanha */}
+           <RoiHero
+             blocked={metrics.blocked + metrics.safePage}
+             approved={metrics.approved}
+             totalCost={metrics.totalCost}
+             totalRevenue={metrics.totalRevenue}
+           />
 
            {/* Traffic metrics row */}
            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -305,7 +302,7 @@ export default function Analytics() {
             <StatCard title={t("analytics.uniqueClicks")} value={metrics.unique.toLocaleString()} icon={Users} variant="primary" />
             <StatCard title={t("analytics.realTraffic")} value={metrics.approved.toLocaleString()} icon={CheckCircle} variant="success" />
             <StatCard title={t("analytics.approvalRate")} value={`${metrics.approvalRate}%`} icon={Percent} variant="default" />
-            <StatCard title={t("analytics.cpl")} value={`$${metrics.cpl.toFixed(2)}`} icon={TrendingUp} variant="primary" />
+            <StatCard title={t("analytics.cpl")} value={metrics.cpl > 0 ? `$${metrics.cpl.toFixed(2)}` : "—"} icon={TrendingUp} variant="primary" />
             <StatCard title={t("analytics.avgScore")} value={metrics.avgScore != null ? metrics.avgScore : "—"} icon={Shield} variant={metrics.avgScore != null && metrics.avgScore > 65 ? "destructive" : metrics.avgScore != null && metrics.avgScore > 25 ? "default" : "success"} />
           </div>
 
@@ -321,7 +318,7 @@ export default function Analytics() {
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
                     <XAxis dataKey="day" className="text-xs" />
                     <YAxis className="text-xs" />
-                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <ChartTooltip content={<ChartTooltipContent />} wrapperStyle={{ outline: 'none' }} />
                     <Area type="monotone" dataKey="approved" stroke="hsl(142 71% 45%)" fill="hsl(142 71% 45%)" fillOpacity={0.3} strokeWidth={2} dot={false} connectNulls />
                     <Area type="monotone" dataKey="rejected" stroke="hsl(var(--destructive))" fill="hsl(var(--destructive))" fillOpacity={0.2} strokeWidth={2} dot={false} connectNulls />
                     <Area type="monotone" dataKey="conversions" stroke="hsl(45 100% 51%)" fill="hsl(45 100% 51%)" fillOpacity={0.15} strokeWidth={2} dot={false} connectNulls />
@@ -376,13 +373,8 @@ export default function Analytics() {
                             ))}
                           </Pie>
                           <Tooltip
-                            contentStyle={{
-                              backgroundColor: "hsl(0 0% 9%)",
-                              border: "1px solid hsl(0 0% 18%)",
-                              borderRadius: "10px",
-                              color: "hsl(0 0% 95%)",
-                              fontSize: 12,
-                            }}
+                            contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a', color: '#f4f4f5', borderRadius: '8px' }}
+                            itemStyle={{ color: '#f4f4f5' }}
                             formatter={(value: number) => {
                               const pct = reasonsTotal > 0 ? ((value / reasonsTotal) * 100).toFixed(1) : "0";
                               return [`${value} (${pct}%)`, ""];
