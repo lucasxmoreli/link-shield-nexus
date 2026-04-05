@@ -62,7 +62,7 @@ serve(async (req) => {
   } catch (err) {
     console.error("CF API test error:", err);
     return new Response(
-      JSON.stringify({ status: "error", message: `Network error: ${err.message}` }),
+      JSON.stringify({ status: "error", message: `Network error: ${(err as Error).message}` }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

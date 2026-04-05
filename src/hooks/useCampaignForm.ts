@@ -246,7 +246,7 @@ export function useCampaignForm() {
         setPendingHash(hash);
         payload.user_id = user!.id;
         payload.hash = hash;
-        const { error } = await supabase.from("campaigns").insert(payload);
+        const { error } = await supabase.from("campaigns").insert(payload as any);
         if (error) throw error;
         return { hash, domain: payload.domain as string };
       }
