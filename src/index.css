@@ -6,26 +6,30 @@
 
 @layer base {
   :root {
-    --background: 0 0% 7.1%;
-    --foreground: 0 0% 95%;
+    /* Fundo Preto Absoluto para o estilo Dark Tech */
+    --background: 0 0% 0%;
+    --foreground: 210 40% 98%;
 
-    --card: 0 0% 11.8%;
-    --card-foreground: 0 0% 95%;
+    /* Cards e menus com um cinza super escuro e frio para contrastar com o fundo */
+    --card: 222 20% 3%;
+    --card-foreground: 210 40% 98%;
 
-    --popover: 0 0% 11.8%;
-    --popover-foreground: 0 0% 95%;
+    --popover: 222 20% 3%;
+    --popover-foreground: 210 40% 98%;
 
-    --primary: 271 81% 56%;
+    /* O Azul Elétrico do CloakerX (#004BFF convertido para HSL) */
+    --primary: 222 100% 50%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 0% 14.5%;
-    --secondary-foreground: 0 0% 85%;
+    /* Tons secundários e inputs levemente azulados para harmonia */
+    --secondary: 222 20% 10%;
+    --secondary-foreground: 210 40% 98%;
 
-    --muted: 0 0% 14.5%;
-    --muted-foreground: 0 0% 55%;
+    --muted: 222 20% 10%;
+    --muted-foreground: 215 20.2% 65.1%;
 
-    --accent: 0 0% 18%;
-    --accent-foreground: 0 0% 95%;
+    --accent: 222 20% 15%;
+    --accent-foreground: 210 40% 98%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
@@ -33,22 +37,24 @@
     --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
 
-    --border: 0 0% 18%;
-    --input: 0 0% 18%;
-    --ring: 271 81% 56%;
+    --border: 222 20% 15%;
+    --input: 222 20% 15%;
+    --ring: 222 100% 50%;
 
     --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 7.1%;
-    --sidebar-foreground: 0 0% 65%;
-    --sidebar-primary: 271 81% 56%;
+    /* Sidebar minimalista e agressiva */
+    --sidebar-background: 0 0% 2%;
+    --sidebar-foreground: 215 20.2% 65.1%;
+    --sidebar-primary: 222 100% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 14.5%;
-    --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 0 0% 15%;
-    --sidebar-ring: 271 81% 56%;
+    --sidebar-accent: 222 20% 10%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 222 20% 10%;
+    --sidebar-ring: 222 100% 50%;
 
-    --neon-glow: 0 0 20px hsl(271 81% 56% / 0.4);
+    /* Glows atualizados do Roxo para o Azul Elétrico do CloakerX */
+    --neon-glow: 0 0 20px hsl(222 100% 50% / 0.4);
     --success-glow: 0 0 20px hsl(142 71% 45% / 0.3);
   }
 }
@@ -76,7 +82,8 @@
     box-shadow: var(--success-glow);
   }
   .neon-text {
-    text-shadow: 0 0 10px hsl(271 81% 56% / 0.6);
+    /* Texto com brilho azul */
+    text-shadow: 0 0 10px hsl(222 100% 50% / 0.6);
   }
   .scrollbar-hide {
     -ms-overflow-style: none;
