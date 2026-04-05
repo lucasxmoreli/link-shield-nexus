@@ -28,8 +28,8 @@ export default function Landing() {
       <nav className="border-b border-border/50 backdrop-blur-sm sticky top-0 z-50 bg-background/80">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2">
-            <Shield className="h-7 w-7 text-primary" />
-            <span className="text-xl font-bold tracking-tight">CloakGuard</span>
+            <Shield className="h-7 w-7 text-primary drop-shadow-[0_0_8px_hsl(222,100%,50%,0.5)]" />
+            <span className="text-xl font-bold tracking-tight neon-text">CloakerX</span>
           </div>
           <div className="flex items-center gap-3">
             <LanguageSelector />

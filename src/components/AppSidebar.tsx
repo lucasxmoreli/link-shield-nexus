@@ -1,6 +1,5 @@
 import { LayoutDashboard, Globe, Megaphone, FileText, Settings, Shield, LogOut, FlaskConical, Ticket, CreditCard, ShieldAlert, BarChart2 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
-import { useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useTranslation } from "react-i18next";
@@ -14,11 +13,11 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-  const location = useLocation();
   const { signOut } = useAuth();
   const { isAdmin } = useAdmin();
   const { t } = useTranslation();
@@ -42,12 +41,12 @@ export function AppSidebar() {
   const items = [...baseItems, ...(isAdmin ? adminItems : [])];
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border">
-      <div className="flex items-center gap-2 px-4 py-5 border-b border-border">
-        <Shield className="h-7 w-7 text-primary shrink-0" />
+    <Sidebar collapsible="icon" className="border-r border-border/30 bg-[hsl(222,20%,2%)]">
+      <div className="flex items-center justify-center py-5 border-b border-border/30">
+        <Shield className="h-7 w-7 text-primary shrink-0 drop-shadow-[0_0_8px_hsl(222,100%,50%,0.5)]" />
         {!collapsed && (
-          <span className="text-lg font-bold tracking-tight text-foreground neon-text">
-            CloakGuard
+          <span className="ml-2 text-lg font-bold tracking-tight text-foreground neon-text">
+            CloakerX
           </span>
         )}
       </div>
@@ -55,21 +54,32 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => (
-                <SidebarMenuItem key={item.url}>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.url}
-                      end={item.url === "/"}
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-md text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-                      activeClassName="bg-primary/15 text-primary font-semibold neon-glow"
-                    >
-                      <item.icon className="h-5 w-5 shrink-0" />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              <TooltipProvider delayDuration={0}>
+                {items.map((item) => (
+                  <SidebarMenuItem key={item.url}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <SidebarMenuButton asChild>
+                          <NavLink
+                            to={item.url}
+                            end={item.url === "/"}
+                            className="flex items-center justify-center gap-3 px-3 py-2.5 rounded-md text-sidebar-foreground hover:bg-primary/10 hover:text-primary transition-all duration-200"
+                            activeClassName="bg-primary/15 text-primary font-semibold shadow-[0_0_12px_hsl(222,100%,50%,0.15)]"
+                          >
+                            <item.icon className="h-5 w-5 shrink-0" />
+                            {!collapsed && <span className="text-sm">{item.title}</span>}
+                          </NavLink>
+                        </SidebarMenuButton>
+                      </TooltipTrigger>
+                      {collapsed && (
+                        <TooltipContent side="right" className="bg-card border-border text-foreground">
+                          {item.title}
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
+                  </SidebarMenuItem>
+                ))}
+              </TooltipProvider>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -80,10 +90,10 @@ export function AppSidebar() {
                 <SidebarMenuButton asChild>
                   <button
                     onClick={signOut}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-md text-destructive hover:bg-destructive/10 transition-colors w-full"
+                    className="flex items-center justify-center gap-3 px-3 py-2.5 rounded-md text-destructive/70 hover:bg-destructive/10 hover:text-destructive transition-all duration-200 w-full"
                   >
                     <LogOut className="h-5 w-5 shrink-0" />
-                    {!collapsed && <span>{t("common.signOut")}</span>}
+                    {!collapsed && <span className="text-sm">{t("common.signOut")}</span>}
                   </button>
                 </SidebarMenuButton>
               </SidebarMenuItem>
