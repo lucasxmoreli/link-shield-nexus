@@ -54,7 +54,7 @@ export default function Landing() {
       </nav>
 
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,hsl(271_81%_56%/0.15),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,hsl(222_100%_50%/0.12),transparent_60%)]" />
         <div className="max-w-4xl mx-auto px-6 pt-24 pb-20 text-center relative z-10">
           <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm text-primary mb-8">
             <Zap className="h-3.5 w-3.5" />
@@ -138,7 +138,7 @@ export default function Landing() {
         <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <Shield className="h-4 w-4 text-primary" />
-            <span>CloakGuard © {new Date().getFullYear()}</span>
+            <span>CloakerX © {new Date().getFullYear()}</span>
           </div>
           <span>{t("landing.footer")}</span>
         </div>
