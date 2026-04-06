@@ -28,7 +28,6 @@ export function AppSidebar() {
     { title: t("nav.campaigns"), url: "/campaigns", icon: Megaphone },
     { title: t("nav.requests"), url: "/requests", icon: FileText },
     { title: t("nav.analytics"), url: "/analytics", icon: BarChart2 },
-    { title: t("nav.cloakTest"), url: "/cloak-test", icon: FlaskConical },
     { title: t("nav.billing"), url: "/billing", icon: CreditCard },
     { title: t("nav.settings"), url: "/settings", icon: Settings },
   ];

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Zap, Copy, Check } from "lucide-react";
+import { Zap, Copy, Check, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,6 +11,11 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { buildDefaultTrackingUrl } from "@/components/campaigns/CampaignLinkGenerator";
 
@@ -77,11 +82,22 @@ export default function CampaignFinalLinkModal({
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* URL Box */}
           <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-2">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-              {t("campaignEdit.finalUrl")}
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {t("campaignEdit.finalUrl")}
+              </p>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="h-3 w-3 text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs max-w-xs">
+                    {t("campaignEdit.testRecommendation")}
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
             <div className="rounded-md border border-primary/30 bg-background p-3 break-all">
               <code className="text-xs sm:text-sm text-primary font-mono leading-relaxed">
                 {finalUrl}

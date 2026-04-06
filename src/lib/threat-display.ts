@@ -56,9 +56,9 @@ const THREAT_MAP: Array<{ match: (reason: string) => boolean; display: ThreatDis
     display: {
       label: "Tráfego Fantasma",
       icon: Ghost,
-      color: "hsl(270, 60%, 55%)",
-      bgClass: "bg-purple-500/15",
-      badgeClass: "bg-purple-500/15 text-purple-400 border-purple-500/25",
+      color: "hsl(222, 100%, 50%)",
+      bgClass: "bg-primary/15",
+      badgeClass: "bg-primary/15 text-primary border-primary/25",
     },
   },
   {

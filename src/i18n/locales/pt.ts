@@ -217,6 +217,7 @@ const pt = {
     step3: "Teste seu link usando uma <bold>VPN ou janela Anônima</bold> para verificar se o redirecionamento funciona corretamente.",
     goToCampaigns: "Ir para Campanhas",
     linkCopied: "Link copiado!",
+    testRecommendation: "Teste este link usando uma VPN ou janela anônima para verificar se o cloaking funciona corretamente.",
     invalidUrl: "Insira uma URL de destino válida.",
     webhookTitle: "WEBHOOK POSTBACK",
     webhookDesc: "Disparado quando um lead é aprovado. Monte a URL do seu tracker visualmente usando as macros.",

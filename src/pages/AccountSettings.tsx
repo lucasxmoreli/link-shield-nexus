@@ -175,7 +175,7 @@ export default function AccountSettings() {
 
       <Button
         onClick={() => navigate("/billing")}
-        className="w-full h-14 text-base font-semibold bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-500 text-primary-foreground shadow-[0_0_20px_hsl(271_81%_56%/0.3)] hover:shadow-[0_0_30px_hsl(271_81%_56%/0.5)] transition-all duration-300"
+        className="w-full h-14 text-base font-semibold bg-gradient-to-r from-primary to-blue-700 hover:from-primary/90 hover:to-blue-600 text-primary-foreground shadow-[0_0_20px_hsl(222_100%_50%/0.3)] hover:shadow-[0_0_30px_hsl(222_100%_50%/0.5)] transition-all duration-300"
       >
         {t("settings.seePlans")}
         <ArrowRight className="ml-2 h-5 w-5" />

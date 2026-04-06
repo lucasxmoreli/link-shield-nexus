@@ -227,6 +227,7 @@ const en = {
     step3: "Test your link using a <bold>VPN or Incognito window</bold> to verify the redirection works correctly.",
     goToCampaigns: "Go to Campaigns",
     linkCopied: "Link copied!",
+    testRecommendation: "Test this link using a VPN or incognito window to verify the cloaking works correctly.",
     invalidUrl: "Please enter a valid destination URL.",
     webhookTitle: "WEBHOOK POSTBACK",
     webhookDesc: "Fired when a lead is approved. Build your tracker URL visually using macros.",
