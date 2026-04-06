@@ -106,7 +106,7 @@ const pt = {
 
   dopamine: {
     title: "🛡️ Escudo Ativo",
-    description: "CloakGuard interceptou com sucesso {{count}} ameaças nas últimas 24 horas.",
+    description: "CloakerX interceptou com sucesso {{count}} ameaças nas últimas 24 horas.",
     topThreat: "Ameaça principal: {{reason}}",
   },
 
@@ -179,7 +179,7 @@ const pt = {
     abStormDesc: "Divida o tráfego humano 50/50 entre duas ofertas",
     testOfferB: "Página de Oferta de Teste (B)",
     testOfferPlaceholder: "https://oferta-alternativa.exemplo.com/...",
-    abStormHelp: "Quando ativado, o CloakGuard dividirá automaticamente seu tráfego humano aprovado <bold>50/50</bold> entre Oferta A e Oferta B. Bots ainda serão enviados para a Página Segura.",
+    abStormHelp: "Quando ativado, o CloakerX dividirá automaticamente seu tráfego humano aprovado <bold>50/50</bold> entre Oferta A e Oferta B. Bots ainda serão enviados para a Página Segura.",
 
     securitySection: "Segurança",
     strictModeTitle: "🛡️ Modo Estrito",
@@ -278,17 +278,17 @@ const pt = {
     dnsProxyActive: "Ativo (nuvem laranja)",
     dnsSetupTitle: "Como configurar seu DNS",
     dnsNameHint: "ou @ para domínio raiz",
-    dnsProxyWarning: "A nuvem laranja (proxy) é obrigatória. Sem ela o CloakGuard não funciona.",
+    dnsProxyWarning: "A nuvem laranja (proxy) é obrigatória. Sem ela o CloakerX pode não funcionar.",
     dnsError: "Erro DNS",
     verifying: "Verificando",
     cfWhyTitle: "Por que a Cloudflare é obrigatória?",
     cfBanWaveTitle: "Proteção contra Ban Wave",
     cfBanWaveDesc: "A Cloudflare esconde o IP real do seu servidor. Sem ela, redes de anúncios como Meta e TikTok conseguem identificar e banir sua infraestrutura diretamente, derrubando todas as campanhas de uma vez.",
     cfSecurityTitle: "Segurança do Motor de Cloaking",
-    cfSecurityDesc: "O CloakGuard valida que todo tráfego passa obrigatoriamente pela Cloudflare antes de chegar ao motor. Isso impede que bots, moderadores e crawlers acessem sua página real diretamente.",
+    cfSecurityDesc: "O CloakerX valida que todo tráfego passa obrigatoriamente pela Cloudflare antes de chegar ao motor. Isso impede que bots, moderadores e crawlers acessem sua página real diretamente.",
     cfSslTitle: "SSL Gratuito e DDoS Protection",
     cfSslDesc: "A Cloudflare fornece certificado SSL gratuito e proteção contra ataques DDoS automaticamente, sem custo adicional para você.",
-    cfWarning: "Domínios sem a Cloudflare ativa (nuvem laranja) não funcionarão com o CloakGuard.",
+    cfWarning: "Domínios sem a Cloudflare ativa (nuvem laranja) podem não funcionar com o CloakerX.",
   },
 
   requests: {
@@ -397,7 +397,7 @@ const pt = {
   },
 
   onboarding: {
-    welcomeTitle: "Bem-vindo ao CloakGuard!",
+    welcomeTitle: "Bem-vindo ao CloakerX!",
     welcomeDesc: "Complete estes 3 passos para começar a proteger seu tráfego.",
     step1Title: "Adicionar um Domínio",
     step1Desc: "Conecte seu domínio personalizado com DNS da Cloudflare.",
@@ -427,7 +427,7 @@ const pt = {
     passwordPlaceholder: "••••••••",
     signInButton: "Entrar",
     inviteCodeLabel: "Código de Convite",
-    inviteCodePlaceholder: "CLOAK-XXXX-XXXX",
+    inviteCodePlaceholder: "CLOAKER-XXXX-XXXX",
     invalidInvite: "Este código de convite é inválido ou já foi usado.",
     validateCode: "Validar Código",
     validCode: "Código válido! Crie sua conta.",
@@ -449,7 +449,7 @@ const pt = {
     smartProtection: "Proteção inteligente para seus links",
     heroTitle: "Proteja suas campanhas.",
     heroTitleHighlight: "Maximize seus resultados.",
-    heroDesc: "CloakGuard filtra bots, moderadores e tráfego indesejado em tempo real, garantindo que apenas visitantes reais cheguem à sua oferta.",
+    heroDesc: "CloakerX filtra bots, moderadores e tráfego indesejado em tempo real, garantindo que apenas visitantes reais cheguem à sua oferta.",
     createFreeAccount: "Criar Conta Gratuita",
     seeFeatures: "Ver Recursos",
     login: "Entrar",
@@ -465,7 +465,7 @@ const pt = {
     ultraLowLatencyDesc: "Edge Functions processam cada requisição em milissegundos sem atrasar seu funil.",
     multiPlatform: "Multiplataforma",
     multiPlatformDesc: "Suporte nativo para TikTok, Facebook e Google Ads.",
-    whyChoose: "Por que escolher o CloakGuard?",
+    whyChoose: "Por que escolher o CloakerX?",
     whyChooseDesc: "Feito para afiliados e compradores de mídia que precisam de segurança e performance sem complexidade.",
     benefit1: "Proteja suas campanhas contra revisões manuais",
     benefit2: "Dashboard completo com métricas em tempo real",

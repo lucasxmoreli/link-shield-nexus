@@ -112,7 +112,7 @@ const en = {
   // Dopamine Toast
   dopamine: {
     title: "🛡️ Shield Active",
-    description: "CloakGuard successfully intercepted {{count}} threats in the last 24 hours.",
+    description: "CloakerX successfully intercepted {{count}} threats in the last 24 hours.",
     topThreat: "Top threat: {{reason}}",
   },
 
@@ -187,7 +187,7 @@ const en = {
     abStormDesc: "Split human traffic 50/50 between two offers",
     testOfferB: "Test Offer Page (B)",
     testOfferPlaceholder: "https://alternative-offer.example.com/...",
-    abStormHelp: "When enabled, CloakGuard will automatically split your approved human traffic <bold>50/50</bold> between Offer A and Offer B. Bots will still be sent to the Safe Page.",
+    abStormHelp: "When enabled, CloakerX will automatically split your approved human traffic <bold>50/50</bold> between Offer A and Offer B. Bots will still be sent to the Safe Page.",
 
     securitySection: "Security",
     strictModeTitle: "🛡️ Strict Mode",
@@ -289,17 +289,17 @@ const en = {
     dnsProxyActive: "Active (orange cloud)",
     dnsSetupTitle: "How to configure your DNS",
     dnsNameHint: "or @ for root domain",
-    dnsProxyWarning: "The orange cloud (proxy) is mandatory. Without it, CloakGuard will not work.",
+    dnsProxyWarning: "The orange cloud (proxy) is mandatory. Without it, CloakerX may not work.",
     dnsError: "DNS Error",
     verifying: "Verifying",
     cfWhyTitle: "Why is Cloudflare mandatory?",
     cfBanWaveTitle: "Ban Wave Protection",
     cfBanWaveDesc: "Cloudflare hides your server's real IP. Without it, ad networks like Meta and TikTok can identify and ban your infrastructure directly, taking down all campaigns at once.",
     cfSecurityTitle: "Cloaking Engine Security",
-    cfSecurityDesc: "CloakGuard validates that all traffic passes through Cloudflare before reaching the engine. This prevents bots, moderators, and crawlers from accessing your real page directly.",
+    cfSecurityDesc: "CloakerX validates that all traffic passes through Cloudflare before reaching the engine. This prevents bots, moderators, and crawlers from accessing your real page directly.",
     cfSslTitle: "Free SSL & DDoS Protection",
     cfSslDesc: "Cloudflare provides a free SSL certificate and automatic DDoS protection at no additional cost to you.",
-    cfWarning: "Domains without active Cloudflare (orange cloud) will not work with CloakGuard.",
+    cfWarning: "Domains without active Cloudflare (orange cloud) may not work with CloakerX.",
   },
 
   // Requests Log
@@ -412,7 +412,7 @@ const en = {
   },
 
   onboarding: {
-    welcomeTitle: "Welcome to CloakGuard!",
+    welcomeTitle: "Welcome to CloakerX!",
     welcomeDesc: "Complete these 3 steps to start protecting your traffic.",
     step1Title: "Add a Domain",
     step1Desc: "Connect your custom domain with Cloudflare DNS.",
@@ -443,7 +443,7 @@ const en = {
     passwordPlaceholder: "••••••••",
     signInButton: "Sign In",
     inviteCodeLabel: "Invite Code",
-    inviteCodePlaceholder: "CLOAK-XXXX-XXXX",
+    inviteCodePlaceholder: "CLOAKER-XXXX-XXXX",
     invalidInvite: "This invite code is invalid or has already been used.",
     validateCode: "Validate Code",
     validCode: "Valid code! Create your account.",
@@ -466,7 +466,7 @@ const en = {
     smartProtection: "Smart protection for your links",
     heroTitle: "Protect your campaigns.",
     heroTitleHighlight: "Maximize your results.",
-    heroDesc: "CloakGuard filters bots, moderators, and unwanted traffic in real time, ensuring only real visitors reach your offer.",
+    heroDesc: "CloakerX filters bots, moderators, and unwanted traffic in real time, ensuring only real visitors reach your offer.",
     createFreeAccount: "Create Free Account",
     seeFeatures: "See Features",
     login: "Login",
@@ -482,7 +482,7 @@ const en = {
     ultraLowLatencyDesc: "Edge Functions process each request in milliseconds without slowing your funnel.",
     multiPlatform: "Multi-Platform",
     multiPlatformDesc: "Native support for TikTok, Facebook, and Google Ads.",
-    whyChoose: "Why choose CloakGuard?",
+    whyChoose: "Why choose CloakerX?",
     whyChooseDesc: "Built for affiliates and media buyers who need security and performance without complexity.",
     benefit1: "Protect your campaigns against manual reviews",
     benefit2: "Complete dashboard with real-time metrics",

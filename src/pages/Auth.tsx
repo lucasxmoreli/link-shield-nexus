@@ -118,15 +118,14 @@ export default function Auth() {
             <div className="h-12 w-12 rounded-2xl bg-primary/15 flex items-center justify-center">
               <Shield className="h-7 w-7 text-primary" />
             </div>
-            <span className="text-2xl font-bold tracking-tight">CloakGuard</span>
+            <span className="text-2xl font-bold tracking-tight">CloakerX</span>
           </div>
           <div className="space-y-4">
             <h2 className="text-3xl font-bold leading-tight">
-              {t("auth.invisibleProtection")}{" "}
-              <span className="text-primary">{t("auth.realResults")}</span>
+              Next-level cloaking for elite traffic campaigns
             </h2>
             <p className="text-muted-foreground text-lg leading-relaxed">
-              {t("auth.authDescription")}
+              Protect your funnels with real-time bot filtering, smart cloaking, and performance-first security.
             </p>
           </div>
           <div className="flex gap-6 pt-4">
@@ -160,7 +159,7 @@ export default function Auth() {
           <div className="w-full max-w-sm space-y-8">
             <div className="lg:hidden flex items-center gap-2 justify-center">
               <Shield className="h-7 w-7 text-primary" />
-              <span className="text-xl font-bold">CloakGuard</span>
+              <span className="text-xl font-bold">CloakerX</span>
             </div>
 
             <div className="space-y-2 text-center lg:text-left">

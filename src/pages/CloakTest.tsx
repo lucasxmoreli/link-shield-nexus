@@ -96,7 +96,7 @@ export default function CloakTest() {
     try {
       const domain = getCampaignDomain();
       // Usar domínio da campanha como base URL para alcançar a VPS via Cloudflare
-      const baseUrl = domain ? `https://${domain}` : (import.meta.env.VITE_VPS_FILTER_URL || "");
+      const baseUrl = domain ? `https://${domain}` : (import.meta.env.VITE_VPS_FILTER_URL || "https://api.cloakerx.com");
       if (!baseUrl) { toast.error("Campanha sem domínio configurado. Configure o domínio primeiro."); setTesting(false); return; }
 
       const res = await fetch(`${baseUrl}/test`, {
