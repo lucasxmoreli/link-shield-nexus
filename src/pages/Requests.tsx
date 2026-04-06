@@ -16,7 +16,7 @@ import { actionToStatusFinal, getStatusBadgeConfig } from "@/lib/status-utils";
 type DatePreset = "all" | "today" | "7d" | "30d";
 
 export default function Requests() {
-  const { user } = useAuth();
+  const { user, effectiveUserId } = useAuth();
   const { t } = useTranslation();
 
 
@@ -30,7 +30,7 @@ export default function Requests() {
   const { data: logs = [], isLoading } = useQuery({
     queryKey: ["requests_log_full", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("requests_log").select("*, is_conversion, revenue, campaigns(name, hash)").order("created_at", { ascending: false }).limit(200);
+      const { data, error } = await supabase.from("requests_log").select("*, is_conversion, revenue, campaigns(name, hash)").eq("user_id", effectiveUserId!).order("created_at", { ascending: false }).limit(200);
       if (error) throw error;
       return data;
     },

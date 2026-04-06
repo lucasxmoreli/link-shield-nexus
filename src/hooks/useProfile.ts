@@ -21,20 +21,20 @@ export interface ProfileData {
 }
 
 export function useProfile() {
-  const { user } = useAuth();
+  const { effectiveUserId } = useAuth();
 
   const { data: profile, isLoading, error } = useQuery({
-    queryKey: ["profile", user?.id],
+    queryKey: ["profile", effectiveUserId],
     queryFn: async (): Promise<ProfileData | null> => {
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
-        .eq("user_id", user!.id)
+        .eq("user_id", effectiveUserId!)
         .maybeSingle();
       if (error) throw error;
       return data as ProfileData | null;
     },
-    enabled: !!user,
+    enabled: !!effectiveUserId,
     staleTime: 30_000,
   });
 
@@ -42,12 +42,5 @@ export function useProfile() {
   const planName = profile?.plan_name ?? "Free";
   const isFreePlan = planConfig.isFree;
 
-  return {
-    profile,
-    planConfig,
-    planName,
-    isFreePlan,
-    isLoading,
-    error,
-  };
+  return { profile, planConfig, planName, isFreePlan, isLoading, error };
 }

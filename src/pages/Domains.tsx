@@ -17,7 +17,7 @@ import { AddDomainModal } from "@/components/domains/AddDomainModal";
 import { DnsConfigTable } from "@/components/domains/DnsConfigTable";
 
 export default function Domains() {
-  const { user } = useAuth();
+  const { user, effectiveUserId } = useAuth();
   const qc = useQueryClient();
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -28,7 +28,7 @@ export default function Domains() {
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("profiles").select("*").eq("user_id", user!.id).single();
+      const { data, error } = await supabase.from("profiles").select("*").eq("user_id", effectiveUserId!).single();
       if (error) throw error;
       return data;
     },
@@ -38,7 +38,7 @@ export default function Domains() {
   const { data: domains = [], isLoading } = useQuery({
     queryKey: ["domains", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("domains").select("*").order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("domains").select("*").eq("user_id", effectiveUserId!).order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },

@@ -21,18 +21,19 @@ import { format, subDays, startOfDay, getHours } from "date-fns";
 const DEVICE_COLORS = ["hsl(271, 81%, 56%)", "hsl(142, 71%, 45%)", "hsl(45, 100%, 51%)"];
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, effectiveUserId } = useAuth();
   const [dateRange, setDateRange] = useState("all");
   const { t } = useTranslation();
   useDopamineToast();
 
   // ── DATA FETCH ──
   const { data: logs = [], isLoading } = useQuery({
-    queryKey: ["dashboard_analytics_view", user?.id],
+    queryKey: ["dashboard_analytics_view", effectiveUserId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("dashboard_analytics_view" as any)
         .select("action_taken, status_final, motivo_limpo, created_at, device_type, ip_address, country_code, risk_score")
+        .eq("user_id", effectiveUserId!)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as unknown as Array<{
@@ -51,11 +52,19 @@ export default function Dashboard() {
 
   // ── Buscar shadow metrics agregadas (campaign_stats) ──
   const { data: shadowStats } = useQuery({
-    queryKey: ["campaign_stats_shadow", user?.id, dateRange],
+    queryKey: ["campaign_stats_shadow", effectiveUserId, dateRange],
     queryFn: async () => {
+      const { data: userCampaigns } = await supabase
+        .from("campaigns")
+        .select("id")
+        .eq("user_id", effectiveUserId!);
+      const campaignIds = (userCampaigns || []).map((c: any) => c.id);
+      if (campaignIds.length === 0) return { dedup: 0, prefetch: 0, ghost: 0 };
+
       let query = supabase
         .from("campaign_stats" as any)
-        .select("dedup_clicks, prefetch_clicks, ghost_clicks");
+        .select("dedup_clicks, prefetch_clicks, ghost_clicks")
+        .in("campaign_id", campaignIds);
 
       if (dateRange !== "all") {
         const now = new Date();
@@ -73,7 +82,7 @@ export default function Dashboard() {
         ghost: rows.reduce((acc: number, r: any) => acc + (r.ghost_clicks || 0), 0),
       };
     },
-    enabled: !!user,
+    enabled: !!effectiveUserId,
   });
 
   // ── DATE FILTER ──

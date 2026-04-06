@@ -17,7 +17,7 @@ import { getSourceByKey, getPlanByName } from "@/lib/plan-config";
 import CampaignFinalLinkModal, { type CampaignFinalLinkData } from "@/components/campaigns/CampaignFinalLinkModal";
 
 export default function Campaigns() {
-  const { user } = useAuth();
+  const { user, effectiveUserId } = useAuth();
   const qc = useQueryClient();
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -27,7 +27,7 @@ export default function Campaigns() {
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("profiles").select("*").eq("user_id", user!.id).single();
+      const { data, error } = await supabase.from("profiles").select("*").eq("user_id", effectiveUserId!).single();
       if (error) throw error;
       return data;
     },
@@ -40,7 +40,7 @@ export default function Campaigns() {
   const { data: campaigns = [], isLoading } = useQuery({
     queryKey: ["campaigns", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("campaigns").select("*").order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("campaigns").select("*").eq("user_id", effectiveUserId!).order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },

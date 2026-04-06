@@ -13,46 +13,42 @@ export interface DomainRow {
 }
 
 export function useDomains() {
-  const { user } = useAuth();
+  const { effectiveUserId } = useAuth();
 
   const { data: domains = [], isLoading, error } = useQuery({
-    queryKey: ["domains", user?.id],
+    queryKey: ["domains", effectiveUserId],
     queryFn: async (): Promise<DomainRow[]> => {
       const { data, error } = await supabase
         .from("domains")
         .select("*")
+        .eq("user_id", effectiveUserId!)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as DomainRow[];
     },
-    enabled: !!user,
+    enabled: !!effectiveUserId,
   });
 
   const verifiedDomains = domains.filter((d) => d.is_verified);
   const domainsCount = domains.length;
 
-  return {
-    domains,
-    verifiedDomains,
-    domainsCount,
-    isLoading,
-    error,
-  };
+  return { domains, verifiedDomains, domainsCount, isLoading, error };
 }
 
 export function useDomainsCount() {
-  const { user } = useAuth();
+  const { effectiveUserId } = useAuth();
 
   const { data: count = 0, isLoading } = useQuery({
-    queryKey: ["domains-count", user?.id],
+    queryKey: ["domains-count", effectiveUserId],
     queryFn: async () => {
       const { count, error } = await supabase
         .from("domains")
-        .select("*", { count: "exact", head: true });
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", effectiveUserId!);
       if (error) throw error;
       return count ?? 0;
     },
-    enabled: !!user,
+    enabled: !!effectiveUserId,
   });
 
   return { domainsCount: count, isLoading };

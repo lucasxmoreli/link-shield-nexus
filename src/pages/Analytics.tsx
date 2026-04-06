@@ -34,21 +34,22 @@ const DONUT_COLORS = [
 
 export default function Analytics() {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, effectiveUserId } = useAuth();
   const [selectedCampaign, setSelectedCampaign] = useState<string>("");
   const [datePreset, setDatePreset] = useState<DatePreset>("all");
 
   const { data: campaigns, isLoading: loadingCampaigns } = useQuery({
-    queryKey: ["campaigns-list", user?.id],
+    queryKey: ["campaigns-list", effectiveUserId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("campaigns")
         .select("id, name, hash")
+        .eq("user_id", effectiveUserId!)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
-    enabled: !!user,
+    enabled: !!effectiveUserId,
   });
 
   // Consistent date filter using startOfDay

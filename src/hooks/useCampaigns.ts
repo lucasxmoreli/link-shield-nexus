@@ -25,75 +25,79 @@ export interface CampaignRow {
 }
 
 export function useCampaigns() {
-  const { user } = useAuth();
+  const { effectiveUserId } = useAuth();
 
   const { data: campaigns = [], isLoading, error } = useQuery({
-    queryKey: ["campaigns", user?.id],
+    queryKey: ["campaigns", effectiveUserId],
     queryFn: async (): Promise<CampaignRow[]> => {
       const { data, error } = await supabase
         .from("campaigns")
         .select("*")
+        .eq("user_id", effectiveUserId!)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as CampaignRow[];
     },
-    enabled: !!user,
+    enabled: !!effectiveUserId,
   });
 
   return { campaigns, isLoading, error };
 }
 
 export function useCampaignsList() {
-  const { user } = useAuth();
+  const { effectiveUserId } = useAuth();
 
   const { data: campaigns = [], isLoading } = useQuery({
-    queryKey: ["campaigns-list", user?.id],
+    queryKey: ["campaigns-list", effectiveUserId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("campaigns")
         .select("id, name, hash")
+        .eq("user_id", effectiveUserId!)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
-    enabled: !!user,
+    enabled: !!effectiveUserId,
   });
 
   return { campaigns, isLoading };
 }
 
 export function useCampaignsCount() {
-  const { user } = useAuth();
+  const { effectiveUserId } = useAuth();
 
   const { data: count = 0, isLoading } = useQuery({
-    queryKey: ["campaigns-count", user?.id],
+    queryKey: ["campaigns-count", effectiveUserId],
     queryFn: async () => {
       const { count, error } = await supabase
         .from("campaigns")
-        .select("*", { count: "exact", head: true });
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", effectiveUserId!);
       if (error) throw error;
       return count ?? 0;
     },
-    enabled: !!user,
+    enabled: !!effectiveUserId,
   });
 
   return { campaignsCount: count, isLoading };
 }
 
 export function useHasActiveCampaign() {
-  const { user } = useAuth();
+  const { effectiveUserId } = useAuth();
 
   const { data: hasActive = false, isLoading } = useQuery({
-    queryKey: ["active-campaigns", user?.id],
+    queryKey: ["active-campaigns", effectiveUserId],
     queryFn: async () => {
       const { count, error } = await supabase
         .from("campaigns")
         .select("*", { count: "exact", head: true })
-        .eq("is_active", true);
+        .eq("is_active", true)
+        .eq("user_id", effectiveUserId!);
       if (error) throw error;
       return (count ?? 0) > 0;
     },
-    enabled: !!user,
+    enabled: !!effectiveUserId,
   });
 
   return { hasActiveCampaign: hasActive, isLoading };

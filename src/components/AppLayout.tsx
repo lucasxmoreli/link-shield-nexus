@@ -1,6 +1,7 @@
 import { AppSidebar } from "@/components/AppSidebar";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { OverageWarning } from "@/components/OverageWarning";
+import { AdminViewBanner } from "@/components/AdminViewBanner";
 import { Outlet } from "react-router-dom";
 import { useState } from "react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -12,6 +13,7 @@ export function AppLayout() {
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
+          <AdminViewBanner />
           <header className="h-12 flex items-center justify-between border-b border-border/50 px-4 bg-card/30 backdrop-blur-sm">
             <div className="flex items-center gap-3">
               <SidebarTrigger className="text-muted-foreground hover:text-primary transition-colors" />

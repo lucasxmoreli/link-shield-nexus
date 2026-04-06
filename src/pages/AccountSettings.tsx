@@ -13,14 +13,14 @@ import { useTranslation } from "react-i18next";
 import { LanguageSelector } from "@/components/LanguageSelector";
 
 export default function AccountSettings() {
-  const { user } = useAuth();
+  const { user, effectiveUserId } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ["profile", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("profiles").select("*").eq("user_id", user!.id).maybeSingle();
+      const { data, error } = await supabase.from("profiles").select("*").eq("user_id", effectiveUserId!).maybeSingle();
       if (error) throw error;
       return data;
     },
@@ -30,7 +30,7 @@ export default function AccountSettings() {
   const { data: domainsCount = 0 } = useQuery({
     queryKey: ["domains-count", user?.id],
     queryFn: async () => {
-      const { count, error } = await supabase.from("domains").select("*", { count: "exact", head: true });
+      const { count, error } = await supabase.from("domains").select("*", { count: "exact", head: true }).eq("user_id", effectiveUserId!);
       if (error) throw error;
       return count ?? 0;
     },
@@ -40,7 +40,7 @@ export default function AccountSettings() {
   const { data: campaignsCount = 0 } = useQuery({
     queryKey: ["campaigns-count", user?.id],
     queryFn: async () => {
-      const { count, error } = await supabase.from("campaigns").select("*", { count: "exact", head: true });
+      const { count, error } = await supabase.from("campaigns").select("*", { count: "exact", head: true }).eq("user_id", effectiveUserId!);
       if (error) throw error;
       return count ?? 0;
     },

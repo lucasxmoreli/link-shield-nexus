@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
-import { Users, Megaphone, MousePointerClick, ShieldAlert, Crown, Ban, RotateCcw } from "lucide-react";
+import { Users, Megaphone, MousePointerClick, ShieldAlert, Crown, Ban, RotateCcw, Eye } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -49,7 +49,7 @@ interface AdminUser {
 
 export default function AdminDashboard() {
   const { isAdmin, isLoading: adminLoading } = useAdmin();
-  const { user } = useAuth();
+  const { user, startClientView } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { t } = useTranslation();
@@ -304,6 +304,15 @@ export default function AdminDashboard() {
                               >
                                 <RotateCcw className="mr-2 h-4 w-4" />
                                 {t("admin.resetBilling")}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  startClientView(u.user_id, u.email || "—");
+                                  navigate("/dashboard");
+                                }}
+                              >
+                                <Eye className="mr-2 h-4 w-4" />
+                                {t("admin.viewAsClient", "Ver como cliente")}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>

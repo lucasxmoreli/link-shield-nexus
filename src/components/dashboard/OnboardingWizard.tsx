@@ -8,38 +8,38 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
 
 export function OnboardingWizard() {
-  const { user } = useAuth();
+  const { user, effectiveUserId } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
 
   const { data: domainsCount = 0 } = useQuery({
-    queryKey: ["domains-count", user?.id],
+    queryKey: ["domains-count", effectiveUserId],
     queryFn: async () => {
-      const { count, error } = await supabase.from("domains").select("*", { count: "exact", head: true });
+      const { count, error } = await supabase.from("domains").select("*", { count: "exact", head: true }).eq("user_id", effectiveUserId!);
       if (error) throw error;
       return count ?? 0;
     },
-    enabled: !!user,
+    enabled: !!effectiveUserId,
   });
 
   const { data: campaignsCount = 0 } = useQuery({
-    queryKey: ["campaigns-count", user?.id],
+    queryKey: ["campaigns-count", effectiveUserId],
     queryFn: async () => {
-      const { count, error } = await supabase.from("campaigns").select("*", { count: "exact", head: true });
+      const { count, error } = await supabase.from("campaigns").select("*", { count: "exact", head: true }).eq("user_id", effectiveUserId!);
       if (error) throw error;
       return count ?? 0;
     },
-    enabled: !!user,
+    enabled: !!effectiveUserId,
   });
 
   const { data: hasActiveCampaign = false } = useQuery({
-    queryKey: ["active-campaigns", user?.id],
+    queryKey: ["active-campaigns", effectiveUserId],
     queryFn: async () => {
-      const { count, error } = await supabase.from("campaigns").select("*", { count: "exact", head: true }).eq("is_active", true);
+      const { count, error } = await supabase.from("campaigns").select("*", { count: "exact", head: true }).eq("is_active", true).eq("user_id", effectiveUserId!);
       if (error) throw error;
       return (count ?? 0) > 0;
     },
-    enabled: !!user,
+    enabled: !!effectiveUserId,
   });
 
   const steps = [
