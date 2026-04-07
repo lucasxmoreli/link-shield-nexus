@@ -2,10 +2,9 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { OverageWarning } from "@/components/OverageWarning";
 import { AdminViewBanner } from "@/components/AdminViewBanner";
+import { CrispChat } from "@/components/CrispChat";
 import { Outlet } from "react-router-dom";
-import { useState } from "react";
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarTrigger, SidebarProvider } from "@/components/ui/sidebar";
 
 export function AppLayout() {
   return (
@@ -28,6 +27,7 @@ export function AppLayout() {
           </main>
         </div>
       </div>
+      <CrispChat />
     </SidebarProvider>
   );
 }

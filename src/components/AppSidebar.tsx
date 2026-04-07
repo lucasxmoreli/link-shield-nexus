@@ -1,8 +1,11 @@
-import { LayoutDashboard, Globe, Megaphone, FileText, Settings, Shield, LogOut, FlaskConical, Ticket, CreditCard, ShieldAlert, BarChart2 } from "lucide-react";
+import { LayoutDashboard, Globe, Megaphone, FileText, Settings, Shield, LogOut, Ticket, CreditCard, ShieldAlert, BarChart2, Zap } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdmin } from "@/hooks/useAdmin";
+import { useProfile } from "@/hooks/useProfile";
 import { useTranslation } from "react-i18next";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import {
   Sidebar,
   SidebarContent,
@@ -20,6 +23,7 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const { signOut } = useAuth();
   const { isAdmin } = useAdmin();
+  const { profile, planName } = useProfile();
   const { t } = useTranslation();
 
   const baseItems = [
@@ -39,8 +43,23 @@ export function AppSidebar() {
 
   const items = [...baseItems, ...(isAdmin ? adminItems : [])];
 
+  // ── Cockpit de Consumo ──
+  const currentClicks = profile?.current_clicks ?? 0;
+  const maxClicks = profile?.max_clicks ?? 0;
+  const isFreePlan = !maxClicks || maxClicks === 0;
+  const usagePercent = maxClicks > 0 ? Math.round((currentClicks / maxClicks) * 100) : 0;
+  const isOverlimit = usagePercent > 100;
+  const progressValue = Math.min(usagePercent, 100);
+
+  const formatClicks = (n: number) => {
+    if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
+    if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
+    return n.toLocaleString();
+  };
+
   return (
     <Sidebar collapsible="icon" className="border-r border-border/30 bg-[hsl(222,20%,2%)]">
+      {/* Logo */}
       <div className="flex items-center justify-center py-5 border-b border-border/30">
         <Shield className="h-7 w-7 text-primary shrink-0 drop-shadow-[0_0_8px_hsl(222,100%,50%,0.5)]" />
         {!collapsed && (
@@ -49,7 +68,9 @@ export function AppSidebar() {
           </span>
         )}
       </div>
+
       <SidebarContent className="pt-2 flex flex-col justify-between">
+        {/* Nav Items */}
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -82,8 +103,75 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* Bottom Section: Cockpit + Logout */}
         <SidebarGroup>
           <SidebarGroupContent>
+            {/* ── Cockpit de Consumo ── */}
+            {!collapsed && (
+              <div className="mx-2 mb-3 rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 space-y-2.5">
+                {/* Plan Badge + Usage % */}
+                <div className="flex items-center justify-between">
+                  <Badge
+                    variant="outline"
+                    className="text-[10px] font-semibold uppercase tracking-[0.15em] border-[#004BFF]/40 text-[#004BFF] bg-[#004BFF]/[0.06] px-2 py-0.5"
+                  >
+                    {planName}
+                  </Badge>
+                  {!isFreePlan && (
+                    isOverlimit ? (
+                      <Badge className="text-[10px] font-bold uppercase tracking-wider bg-destructive/20 text-destructive border border-destructive/30 px-1.5 py-0.5">
+                        OVERLIMIT
+                      </Badge>
+                    ) : (
+                      <span className="text-[10px] font-mono text-white/40">{usagePercent}%</span>
+                    )
+                  )}
+                </div>
+
+                {/* Progress Bar */}
+                {!isFreePlan && (
+                  <Progress
+                    value={progressValue}
+                    className="h-[3px] bg-white/[0.06] rounded-full"
+                    indicatorClassName={`rounded-full transition-all duration-500 ${
+                      isOverlimit
+                        ? "bg-destructive shadow-[0_0_8px_rgba(239,68,68,0.4)]"
+                        : "bg-[#004BFF] shadow-[0_0_6px_rgba(0,75,255,0.3)]"
+                    }`}
+                  />
+                )}
+
+                {/* Clicks Counter */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Zap className="h-3 w-3 text-white/20" />
+                    <span className="text-[11px] font-mono text-white/50 tracking-wide">
+                      {isFreePlan ? "—" : formatClicks(currentClicks)}
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-mono text-white/25">
+                    {isFreePlan ? "upgrade" : `/ ${formatClicks(maxClicks)}`}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Collapsed: Mini indicator */}
+            {collapsed && !isFreePlan && (
+              <div className="flex justify-center mb-3">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className={`w-2 h-2 rounded-full ${isOverlimit ? 'bg-destructive animate-pulse' : 'bg-[#004BFF]'}`} />
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="bg-card border-border text-foreground font-mono text-xs">
+                    {formatClicks(currentClicks)} / {formatClicks(maxClicks)}
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+            )}
+
+            {/* Logout */}
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
