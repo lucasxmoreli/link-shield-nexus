@@ -238,12 +238,22 @@ export default function AdminDashboard() {
                   {filteredUsers.map((u) => {
                     const pct = u.max_clicks > 0 ? Math.min((u.current_clicks / u.max_clicks) * 100, 100) : 0;
                     const expired = isExpired(u.billing_cycle_end);
+                    const isOverage = u.max_clicks > 0 && u.current_clicks > u.max_clicks;
                     return (
                       <TableRow
                         key={u.user_id}
                         className={`${u.is_suspended ? "opacity-60" : ""} ${expired ? "border-l-2 border-l-destructive" : ""}`}
                       >
-                        <TableCell className="font-medium text-foreground">{u.email || "—"}</TableCell>
+                        <TableCell className="font-medium text-foreground">
+                          <div className="flex items-center gap-2">
+                            <span>{u.email || "—"}</span>
+                            {isOverage && (
+                              <Badge variant="destructive" className="text-[10px] font-bold tracking-wider px-1.5 py-0">
+                                OVERAGE
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <Badge variant="outline" className="text-xs">
                             {u.plan_name || "Free"}

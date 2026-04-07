@@ -35,6 +35,8 @@ export interface PlanData {
   maxClicksLimit: number;
   maxDomains: number;
   maxCampaigns: number; // -1 = unlimited
+  /** Preço em USD por clique excedente (overage / pay-as-you-go). 0 = nao cobra. */
+  extraClickPrice: number;
 }
 
 export const PLANS: PlanData[] = [
@@ -56,6 +58,7 @@ export const PLANS: PlanData[] = [
     maxClicksLimit: 0,
     maxDomains: 0,
     maxCampaigns: 0,
+    extraClickPrice: 0,
   },
   {
     name: "BASIC PLAN",
@@ -76,6 +79,7 @@ export const PLANS: PlanData[] = [
     maxClicksLimit: 20000,
     maxDomains: 3,
     maxCampaigns: 5,
+    extraClickPrice: 0.01,
   },
   {
     name: "PRO PLAN",
@@ -97,6 +101,7 @@ export const PLANS: PlanData[] = [
     maxClicksLimit: 100000,
     maxDomains: 10,
     maxCampaigns: 20,
+    extraClickPrice: 0.004,
   },
   {
     name: "FREEDOM PLAN",
@@ -117,6 +122,7 @@ export const PLANS: PlanData[] = [
     maxClicksLimit: 300000,
     maxDomains: 20,
     maxCampaigns: 50,
+    extraClickPrice: 0.002,
   },
   {
     name: "ENTERPRISE CONQUEST",
@@ -137,6 +143,7 @@ export const PLANS: PlanData[] = [
     maxClicksLimit: 1000000,
     maxDomains: 25,
     maxCampaigns: -1,
+    extraClickPrice: 0.001,
   },
 ];
 
@@ -154,4 +161,21 @@ export function getAllowedSources(plan: PlanData): TrafficSourceDef[] {
 /** Find a traffic source definition by key */
 export function getSourceByKey(key: string): TrafficSourceDef | undefined {
   return TRAFFIC_SOURCES.find((s) => s.key === key);
+}
+
+/**
+ * Calcula o custo do excedente (overage / pay-as-you-go).
+ * Retorna 0 se o usuario nao estourou o limite ou se o plano nao tem cobranca avulsa.
+ */
+export function calculateOverageCost(
+  currentClicks: number,
+  maxClicks: number,
+  plan: PlanData
+): { extraClicks: number; cost: number } {
+  if (!maxClicks || maxClicks <= 0 || currentClicks <= maxClicks || plan.extraClickPrice <= 0) {
+    return { extraClicks: 0, cost: 0 };
+  }
+  const extraClicks = currentClicks - maxClicks;
+  const cost = extraClicks * plan.extraClickPrice;
+  return { extraClicks, cost };
 }

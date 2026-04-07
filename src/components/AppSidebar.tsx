@@ -6,6 +6,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { calculateOverageCost } from "@/lib/plan-config";
 import {
   Sidebar,
   SidebarContent,
@@ -23,7 +24,7 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const { signOut } = useAuth();
   const { isAdmin } = useAdmin();
-  const { profile, planName } = useProfile();
+  const { profile, planConfig, planName, isLoading: profileLoading } = useProfile();
   const { t } = useTranslation();
 
   const baseItems = [
@@ -46,14 +47,16 @@ export function AppSidebar() {
   // ── Cockpit de Consumo ──
   const currentClicks = profile?.current_clicks ?? 0;
   const maxClicks = profile?.max_clicks ?? 0;
-  const isFreePlan = !maxClicks || maxClicks === 0;
-  const usagePercent = maxClicks > 0 ? Math.round((currentClicks / maxClicks) * 100) : 0;
-  const isOverlimit = usagePercent > 100;
-  const progressValue = Math.min(usagePercent, 100);
+  const isFreePlan = planConfig.isFree;
+  const hasQuota = maxClicks > 0;
+  const usagePercent = hasQuota ? Math.round((currentClicks / maxClicks) * 100) : 0;
+  const isOverlimit = hasQuota && currentClicks > maxClicks;
+  const progressValue = isOverlimit ? 100 : Math.min(usagePercent, 100);
+  const { extraClicks, cost: overageCost } = calculateOverageCost(currentClicks, maxClicks, planConfig);
 
   const formatClicks = (n: number) => {
-    if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
-    if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+    if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
     return n.toLocaleString();
   };
 
@@ -107,20 +110,24 @@ export function AppSidebar() {
         {/* Bottom Section: Cockpit + Logout */}
         <SidebarGroup>
           <SidebarGroupContent>
-            {/* ── Cockpit de Consumo ── */}
-            {!collapsed && (
+            {/* ── Cockpit Financeiro (Expanded) ── */}
+            {!collapsed && !profileLoading && (
               <div className="mx-2 mb-3 rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 space-y-2.5">
-                {/* Plan Badge + Usage % */}
+                {/* Plan Badge + Usage % / OVERLIMIT badge */}
                 <div className="flex items-center justify-between">
                   <Badge
                     variant="outline"
-                    className="text-[10px] font-semibold uppercase tracking-[0.15em] border-[#004BFF]/40 text-[#004BFF] bg-[#004BFF]/[0.06] px-2 py-0.5"
+                    className={`text-[10px] font-semibold uppercase tracking-[0.15em] px-2 py-0.5 ${
+                      isOverlimit
+                        ? "border-destructive/40 text-destructive bg-destructive/[0.06]"
+                        : "border-[#004BFF]/40 text-[#004BFF] bg-[#004BFF]/[0.06]"
+                    }`}
                   >
                     {planName}
                   </Badge>
-                  {!isFreePlan && (
+                  {hasQuota && (
                     isOverlimit ? (
-                      <Badge className="text-[10px] font-bold uppercase tracking-wider bg-destructive/20 text-destructive border border-destructive/30 px-1.5 py-0.5">
+                      <Badge className="text-[10px] font-bold uppercase tracking-wider bg-destructive/20 text-destructive border border-destructive/30 px-1.5 py-0">
                         OVERLIMIT
                       </Badge>
                     ) : (
@@ -129,8 +136,8 @@ export function AppSidebar() {
                   )}
                 </div>
 
-                {/* Progress Bar */}
-                {!isFreePlan && (
+                {/* Progress Bar — azul normal / vermelho overlimit */}
+                {hasQuota && (
                   <Progress
                     value={progressValue}
                     className="h-[3px] bg-white/[0.06] rounded-full"
@@ -142,30 +149,64 @@ export function AppSidebar() {
                   />
                 )}
 
-                {/* Clicks Counter */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <Zap className="h-3 w-3 text-white/20" />
-                    <span className="text-[11px] font-mono text-white/50 tracking-wide">
-                      {isFreePlan ? "—" : formatClicks(currentClicks)}
+                {/* Linha 1: contador padrão clicks / max */}
+                {hasQuota && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <Zap className={`h-3 w-3 ${isOverlimit ? "text-destructive/60" : "text-white/20"}`} />
+                      <span className="text-[11px] font-mono text-white/50 tracking-wide">
+                        {formatClicks(currentClicks)}
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-mono text-white/25">
+                      / {formatClicks(maxClicks)}
                     </span>
                   </div>
-                  <span className="text-[10px] font-mono text-white/25">
-                    {isFreePlan ? "upgrade" : `/ ${formatClicks(maxClicks)}`}
-                  </span>
-                </div>
+                )}
+
+                {/* Linha 2 (sutil): aviso de excedente */}
+                {isOverlimit && extraClicks > 0 && (
+                  <div className="text-[10px] font-mono text-muted-foreground leading-relaxed pt-0.5 border-t border-white/[0.04]">
+                    Excedente: <span className="text-destructive/80">+{formatClicks(extraClicks)}</span>
+                    <span className="text-white/30"> · </span>
+                    Est. <span className="text-destructive/80">${overageCost.toFixed(2)}</span>
+                  </div>
+                )}
+
+                {/* Free plan: CTA upgrade */}
+                {isFreePlan && !hasQuota && (
+                  <div className="flex items-center gap-1.5">
+                    <Zap className="h-3 w-3 text-white/20" />
+                    <span className="text-[11px] font-mono text-white/30">upgrade required</span>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Collapsed: Mini indicator */}
-            {collapsed && !isFreePlan && (
+            {/* ── Cockpit Colapsado: dot pulsante quando overlimit ── */}
+            {collapsed && hasQuota && (
               <div className="flex justify-center mb-3">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className={`w-2 h-2 rounded-full ${isOverlimit ? 'bg-destructive animate-pulse' : 'bg-[#004BFF]'}`} />
+                    {isOverlimit ? (
+                      <span className="relative flex h-2.5 w-2.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-destructive"></span>
+                      </span>
+                    ) : (
+                      <div className="w-2 h-2 rounded-full bg-[#004BFF]" />
+                    )}
                   </TooltipTrigger>
                   <TooltipContent side="right" className="bg-card border-border text-foreground font-mono text-xs">
-                    {formatClicks(currentClicks)} / {formatClicks(maxClicks)}
+                    {isOverlimit ? (
+                      <div className="space-y-0.5">
+                        <div className="text-destructive font-bold">OVERLIMIT</div>
+                        <div>{formatClicks(currentClicks)} / {formatClicks(maxClicks)}</div>
+                        <div className="text-destructive/80">+{formatClicks(extraClicks)} · ${overageCost.toFixed(2)}</div>
+                      </div>
+                    ) : (
+                      <span>{formatClicks(currentClicks)} / {formatClicks(maxClicks)}</span>
+                    )}
                   </TooltipContent>
                 </Tooltip>
               </div>
