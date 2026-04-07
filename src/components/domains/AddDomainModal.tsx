@@ -9,7 +9,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
-const VPS_IP = "187.124.233.229";
+const CNAME_TARGET = "cname.cloakerx.com";
 
 interface AddDomainModalProps {
   open: boolean;
@@ -104,8 +104,8 @@ export function AddDomainModal({ open, onOpenChange, url, onUrlChange, onSubmit,
                   <p className="text-sm font-medium text-foreground">{t("domains.dnsStep2")}</p>
                 </div>
                 <div className="relative">
-                  <Input readOnly value={VPS_IP} className="pr-9 bg-background border-border font-mono text-sm h-9" />
-                  <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => copyToClipboard(VPS_IP, t("domains.valueCopied"))}>
+                  <Input readOnly value={CNAME_TARGET} className="pr-9 bg-background border-border font-mono text-sm h-9" />
+                  <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => copyToClipboard(CNAME_TARGET, t("domains.valueCopied"))}>
                     <Copy className="h-3 w-3" />
                   </Button>
                 </div>

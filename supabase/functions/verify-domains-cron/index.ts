@@ -1,3 +1,10 @@
+// =============================================================================
+// EDGE FUNCTION: verify-domains-cron (v2 — Cloudflare for SaaS)
+// =============================================================================
+// Roda em background, varre dominios pendentes e verifica CNAME + SSL.
+// Usa a mesma logica do verify-domain mas em batch.
+// =============================================================================
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -7,12 +14,12 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+const CNAME_TARGET = (Deno.env.get("CLOAKERX_CNAME_TARGET") || "cname.cloakerx.com").toLowerCase();
+const stripTrailingDot = (s: string) => s.replace(/\.$/, "").toLowerCase();
 
-  // Authenticate with shared secret
+serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
   const cronSecret = Deno.env.get("CRON_SECRET");
   const authHeader = req.headers.get("Authorization");
   if (!cronSecret || !authHeader || authHeader !== `Bearer ${cronSecret}`) {
@@ -30,7 +37,8 @@ serve(async (req) => {
     const { data: domains, error } = await supabase
       .from("domains")
       .select("*")
-      .eq("is_verified", false);
+      .eq("is_verified", false)
+      .limit(50);
 
     if (error) {
       console.error("Failed to fetch domains:", error);
@@ -47,43 +55,85 @@ serve(async (req) => {
       });
     }
 
+    const cfZoneId = Deno.env.get("CLOUDFLARE_ZONE_ID");
+    const cfToken = Deno.env.get("CLOUDFLARE_API_TOKEN");
+    const cfEmail = Deno.env.get("CLOUDFLARE_EMAIL");
+    const cfReady = !!(cfZoneId && cfToken && cfEmail);
+
     let verifiedCount = 0;
+    let updatedCount = 0;
 
     for (const domain of domains) {
-      const hostname = domain.url.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
-      const txtHost = `_cloakguard.${hostname}`;
-      const expectedValue = `cloakguard-verify=${domain.id}`;
+      const hostname = domain.url.replace(/^https?:\/\//, "").replace(/\/.*$/, "").toLowerCase();
 
+      // Check CNAME
+      let cnameOk = false;
       try {
         const dnsResponse = await fetch(
-          `https://dns.google/resolve?name=${encodeURIComponent(txtHost)}&type=TXT`
+          `https://dns.google/resolve?name=${encodeURIComponent(hostname)}&type=CNAME`
         );
         const dnsData = await dnsResponse.json();
-
-        let verified = false;
         if (dnsData.Answer && Array.isArray(dnsData.Answer)) {
           for (const answer of dnsData.Answer) {
-            const txt = (answer.data || "").replace(/"/g, "").trim();
-            if (txt === expectedValue) {
-              verified = true;
+            if (answer.type === 5 && stripTrailingDot(answer.data || "") === CNAME_TARGET) {
+              cnameOk = true;
               break;
             }
           }
         }
-
-        if (verified) {
-          await supabase.from("domains").update({ is_verified: true }).eq("id", domain.id);
-          verifiedCount++;
-        }
       } catch (dnsErr) {
-        console.error(`DNS lookup failed for domain:`, dnsErr);
+        console.error(`DNS lookup failed for ${hostname}:`, dnsErr);
+        continue;
       }
+
+      // Check SSL via CF API
+      let sslStatus = domain.ssl_status || "pending_validation";
+      let cfActive = false;
+      let cfErrors: string | null = null;
+
+      if (cfReady && domain.cloudflare_hostname_id) {
+        try {
+          const cfResponse = await fetch(
+            `https://api.cloudflare.com/client/v4/zones/${cfZoneId}/custom_hostnames/${domain.cloudflare_hostname_id}`,
+            {
+              method: "GET",
+              headers: {
+                "X-Auth-Key": cfToken!,
+                "X-Auth-Email": cfEmail!,
+                "Content-Type": "application/json",
+              },
+            }
+          );
+          const cfData = await cfResponse.json();
+          if (cfData.success) {
+            sslStatus = cfData.result?.ssl?.status || "pending_validation";
+            cfActive = cfData.result?.status === "active" && sslStatus === "active";
+            const validationErrors = cfData.result?.ssl?.validation_errors;
+            if (validationErrors && validationErrors.length > 0) {
+              cfErrors = validationErrors.map((e: any) => e.message).join("; ");
+            }
+          }
+        } catch (err) {
+          console.error(`CF API failed for ${hostname}:`, err);
+        }
+      }
+
+      const verified = cnameOk && cfActive;
+      const updatePayload: Record<string, unknown> = {
+        ssl_status: sslStatus,
+        verification_errors: cfErrors,
+      };
+      if (verified) updatePayload.is_verified = true;
+
+      await supabase.from("domains").update(updatePayload).eq("id", domain.id);
+      updatedCount++;
+      if (verified) verifiedCount++;
     }
 
-    console.log(`Checked ${domains.length} domains, verified ${verifiedCount}`);
+    console.log(`Cron: checked ${domains.length}, updated ${updatedCount}, verified ${verifiedCount}`);
 
     return new Response(
-      JSON.stringify({ checked: domains.length, verified: verifiedCount }),
+      JSON.stringify({ checked: domains.length, updated: updatedCount, verified: verifiedCount }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {

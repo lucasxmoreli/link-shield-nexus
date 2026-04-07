@@ -116,27 +116,33 @@ export type Database = {
           created_at: string
           id: string
           is_verified: boolean | null
+          ownership_token: string | null
           ssl_status: string | null
           url: string
           user_id: string
+          verification_errors: string | null
         }
         Insert: {
           cloudflare_hostname_id?: string | null
           created_at?: string
           id?: string
           is_verified?: boolean | null
+          ownership_token?: string | null
           ssl_status?: string | null
           url: string
           user_id: string
+          verification_errors?: string | null
         }
         Update: {
           cloudflare_hostname_id?: string | null
           created_at?: string
           id?: string
           is_verified?: boolean | null
+          ownership_token?: string | null
           ssl_status?: string | null
           url?: string
           user_id?: string
+          verification_errors?: string | null
         }
         Relationships: []
       }

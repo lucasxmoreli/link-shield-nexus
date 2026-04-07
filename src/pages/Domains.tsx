@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Plus, CheckCircle, XCircle, AlertTriangle, Trash2, Lock, RefreshCw } from "lucide-react";
+import { Plus, CheckCircle, Trash2, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,7 +14,19 @@ import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { getPlanByName } from "@/lib/plan-config";
 import { AddDomainModal } from "@/components/domains/AddDomainModal";
-import { DnsConfigTable } from "@/components/domains/DnsConfigTable";
+import { DomainSetupCard } from "@/components/domains/DomainSetupCard";
+
+interface DomainRow {
+  id: string;
+  url: string;
+  user_id: string;
+  is_verified: boolean | null;
+  ssl_status: string | null;
+  cloudflare_hostname_id: string | null;
+  ownership_token: string | null;
+  verification_errors: string | null;
+  created_at: string;
+}
 
 export default function Domains() {
   const { user, effectiveUserId } = useAuth();
@@ -24,7 +36,7 @@ export default function Domains() {
   const [open, setOpen] = useState(false);
   const [url, setUrl] = useState("");
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
-  const [failedIds, setFailedIds] = useState<Set<string>>(new Set());
+
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
     queryFn: async () => {
@@ -38,9 +50,13 @@ export default function Domains() {
   const { data: domains = [], isLoading } = useQuery({
     queryKey: ["domains", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("domains").select("*").eq("user_id", effectiveUserId!).order("created_at", { ascending: false });
+      const { data, error } = await supabase
+        .from("domains")
+        .select("*")
+        .eq("user_id", effectiveUserId!)
+        .order("created_at", { ascending: false });
       if (error) throw error;
-      return data;
+      return data as DomainRow[];
     },
     enabled: !!user,
   });
@@ -51,25 +67,28 @@ export default function Domains() {
   const isLimitReached = maxDomains <= 0 || currentDomains >= maxDomains;
   const usagePercent = maxDomains > 0 ? Math.round((currentDomains / maxDomains) * 100) : 0;
 
+  const verifiedDomains = domains.filter((d) => d.is_verified);
+  const pendingDomains = domains.filter((d) => !d.is_verified);
+
+  // ── Add domain via edge function (creates Cloudflare custom hostname) ──
   const createMutation = useMutation({
     mutationFn: async () => {
       const normalized = url.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/+$/, "");
       if (!normalized) throw new Error(t("domains.domainRequired"));
-      const isDuplicate = domains.some((d) => d.url.toLowerCase().replace(/\/+$/, "") === normalized);
-      if (isDuplicate) throw new Error(t("domains.domainDuplicate"));
 
-      const { error } = await supabase.from("domains").insert({
-        url: normalized,
-        user_id: user!.id,
-        is_verified: false,
+      const { data, error } = await supabase.functions.invoke("add-domain", {
+        body: { url: normalized },
       });
+
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["domains"] });
       setOpen(false);
       setUrl("");
-      toast.success(t("domains.domainAdded"));
+      toast.success("Domínio adicionado. Configure os registros DNS abaixo.");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -93,13 +112,15 @@ export default function Domains() {
         body: { domain_id: domainId },
       });
       if (error) throw error;
+
+      qc.invalidateQueries({ queryKey: ["domains"] });
+
       if (data?.verified) {
-        toast.success(t("domains.verified") + " ✓");
-        setFailedIds((prev) => { const next = new Set(prev); next.delete(domainId); return next; });
-        qc.invalidateQueries({ queryKey: ["domains"] });
-      } else {
-        setFailedIds((prev) => new Set(prev).add(domainId));
-        toast.error(t("domains.dnsNotPointing"));
+        toast.success("Domínio verificado e SSL ativo");
+      } else if (!data?.cname_ok) {
+        toast.error("CNAME ainda não está apontando para cname.cloakerx.com");
+      } else if (!data?.ssl_active) {
+        toast.info(`Aguardando SSL: ${data?.ssl_status || "pending"}`);
       }
     } catch (e: any) {
       toast.error(e.message || t("domains.verificationFailed"));
@@ -169,75 +190,85 @@ export default function Domains() {
         </CardContent>
       </Card>
 
-      {/* Domains table */}
-      <Card className="border-border bg-card">
-        <CardContent className="p-0 overflow-x-auto">
-          <Table className="min-w-[450px]">
-            <TableHeader>
-              <TableRow className="border-border hover:bg-transparent">
-                <TableHead className="text-muted-foreground">{t("domains.url")}</TableHead>
-                <TableHead className="text-muted-foreground">{t("common.status")}</TableHead>
-                <TableHead className="text-muted-foreground">{t("domains.created")}</TableHead>
-                <TableHead className="text-muted-foreground text-right">{t("common.actions")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                Array.from({ length: 3 }).map((_, i) => (
-                  <TableRow key={i} className="border-border">
-                    {Array.from({ length: 4 }).map((_, j) => (<TableCell key={j}><Skeleton className="h-5 w-20" /></TableCell>))}
-                  </TableRow>
-                ))
-              ) : domains.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground py-8">{t("campaigns.noCampaigns")}</TableCell>
-                </TableRow>
-              ) : (
-                domains.map((d) => (
-                  <TableRow key={d.id} className="border-border">
-                    <TableCell className="font-mono text-sm">{d.url}</TableCell>
-                    <TableCell>
-                      {d.is_verified ? (
-                        <Badge variant="outline" className="border-[hsl(var(--success))]/30 bg-[hsl(var(--success))]/10 text-[hsl(var(--success))]">
-                          <CheckCircle className="h-3 w-3 mr-1" /> {t("domains.verified")}
-                        </Badge>
-                      ) : failedIds.has(d.id) ? (
-                        <Badge variant="outline" className="border-destructive/30 bg-destructive/10 text-destructive">
-                          <AlertTriangle className="h-3 w-3 mr-1" /> {t("domains.dnsError")}
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="border-yellow-500/30 bg-yellow-500/10 text-yellow-500">
-                          <XCircle className="h-3 w-3 mr-1" /> {t("domains.verifying")}
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">{new Date(d.created_at).toLocaleDateString()}</TableCell>
-                    <TableCell className="text-right flex items-center justify-end gap-1">
-                      {!d.is_verified && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleVerifyDns(d.id)}
-                          disabled={verifyingId === d.id}
-                          title="Verify DNS"
-                        >
-                          <RefreshCw className={`h-4 w-4 text-muted-foreground ${verifyingId === d.id ? "animate-spin" : ""}`} />
-                        </Button>
-                      )}
-                      <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(d.id)} disabled={deleteMutation.isPending}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      {/* Pending domains — Setup cards */}
+      {pendingDomains.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">
+              Aguardando configuração
+            </h2>
+            <Badge variant="outline" className="border-amber-500/30 text-amber-400 text-[10px]">
+              {pendingDomains.length}
+            </Badge>
+          </div>
+          {pendingDomains.map((d) => (
+            <DomainSetupCard
+              key={d.id}
+              domain={d}
+              isVerifying={verifyingId === d.id}
+              onVerify={handleVerifyDns}
+            />
+          ))}
+        </div>
+      )}
 
-      {/* DNS Configuration Reference Table */}
-      <DnsConfigTable />
+      {/* Verified domains table */}
+      {(verifiedDomains.length > 0 || isLoading) && (
+        <div className="space-y-3">
+          <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">
+            Domínios ativos
+          </h2>
+          <Card className="border-border bg-card">
+            <CardContent className="p-0 overflow-x-auto">
+              <Table className="min-w-[450px]">
+                <TableHeader>
+                  <TableRow className="border-border hover:bg-transparent">
+                    <TableHead className="text-muted-foreground">{t("domains.url")}</TableHead>
+                    <TableHead className="text-muted-foreground">{t("common.status")}</TableHead>
+                    <TableHead className="text-muted-foreground">{t("domains.created")}</TableHead>
+                    <TableHead className="text-muted-foreground text-right">{t("common.actions")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    Array.from({ length: 3 }).map((_, i) => (
+                      <TableRow key={i} className="border-border">
+                        {Array.from({ length: 4 }).map((_, j) => (<TableCell key={j}><Skeleton className="h-5 w-20" /></TableCell>))}
+                      </TableRow>
+                    ))
+                  ) : (
+                    verifiedDomains.map((d) => (
+                      <TableRow key={d.id} className="border-border">
+                        <TableCell className="font-mono text-sm">{d.url}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
+                            <CheckCircle className="h-3 w-3 mr-1" /> SSL Ativo
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-sm">{new Date(d.created_at).toLocaleDateString()}</TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(d.id)} disabled={deleteMutation.isPending}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Empty state */}
+      {!isLoading && domains.length === 0 && (
+        <Card className="border-border bg-card">
+          <CardContent className="py-12 text-center">
+            <p className="text-sm text-muted-foreground">{t("campaigns.noCampaigns")}</p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
