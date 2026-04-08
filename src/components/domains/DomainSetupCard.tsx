@@ -1,4 +1,4 @@
-import { Copy, CheckCircle2, Loader2, AlertCircle, Shield, Clock } from "lucide-react";
+import { Copy, CheckCircle2, Loader2, AlertCircle, Shield, Clock, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -17,7 +17,9 @@ interface DomainSetupCardProps {
     verification_errors?: string | null;
   };
   isVerifying: boolean;
+  isDeleting: boolean;
   onVerify: (id: string) => void;
+  onDelete: (id: string) => void;
 }
 
 const getSslConfig = (status: string | null) => {
@@ -55,7 +57,7 @@ const getSslConfig = (status: string | null) => {
   }
 };
 
-export function DomainSetupCard({ domain, isVerifying, onVerify }: DomainSetupCardProps) {
+export function DomainSetupCard({ domain, isVerifying, isDeleting, onVerify, onDelete }: DomainSetupCardProps) {
   const { t } = useTranslation();
 
   const copyToClipboard = (value: string, label: string) => {
@@ -188,12 +190,35 @@ export function DomainSetupCard({ domain, isVerifying, onVerify }: DomainSetupCa
         </div>
 
         {/* Actions */}
-        <div className="flex items-center justify-end pt-1">
+        <div className="flex items-center justify-between gap-2 pt-1">
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-destructive/70 hover:text-destructive hover:bg-destructive/10 h-8 text-xs"
+            disabled={isDeleting || isVerifying}
+            onClick={() => {
+              if (confirm(`Excluir o domínio "${domain.url}"? Esta ação não pode ser desfeita.`)) {
+                onDelete(domain.id);
+              }
+            }}
+          >
+            {isDeleting ? (
+              <>
+                <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />
+                Excluindo...
+              </>
+            ) : (
+              <>
+                <Trash2 className="h-3 w-3 mr-1.5" />
+                Excluir
+              </>
+            )}
+          </Button>
           <Button
             size="sm"
             variant="outline"
             className="border-[#004BFF]/30 text-[#004BFF] hover:bg-[#004BFF]/10 hover:text-[#004BFF] h-8 text-xs"
-            disabled={isVerifying}
+            disabled={isVerifying || isDeleting}
             onClick={() => onVerify(domain.id)}
           >
             {isVerifying ? (

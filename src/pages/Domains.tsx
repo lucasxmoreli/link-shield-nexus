@@ -36,6 +36,7 @@ export default function Domains() {
   const [open, setOpen] = useState(false);
   const [url, setUrl] = useState("");
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
@@ -95,12 +96,20 @@ export default function Domains() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("domains").delete().eq("id", id);
+      const { data, error } = await supabase.functions.invoke("delete-domain", {
+        body: { domain_id: id },
+      });
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["domains"] });
-      toast.success(t("domains.domainRemoved"));
+      if (data?.cf_warning) {
+        toast.success(`Domínio removido (aviso CF: ${data.cf_warning})`);
+      } else {
+        toast.success(t("domains.domainRemoved"));
+      }
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -126,6 +135,15 @@ export default function Domains() {
       toast.error(e.message || t("domains.verificationFailed"));
     } finally {
       setVerifyingId(null);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    setDeletingId(id);
+    try {
+      await deleteMutation.mutateAsync(id);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -206,7 +224,9 @@ export default function Domains() {
               key={d.id}
               domain={d}
               isVerifying={verifyingId === d.id}
+              isDeleting={deletingId === d.id}
               onVerify={handleVerifyDns}
+              onDelete={handleDelete}
             />
           ))}
         </div>
@@ -247,7 +267,7 @@ export default function Domains() {
                         </TableCell>
                         <TableCell className="text-muted-foreground text-sm">{new Date(d.created_at).toLocaleDateString()}</TableCell>
                         <TableCell className="text-right">
-                          <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(d.id)} disabled={deleteMutation.isPending}>
+                          <Button variant="ghost" size="icon" onClick={() => handleDelete(d.id)} disabled={deletingId === d.id}>
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                         </TableCell>
