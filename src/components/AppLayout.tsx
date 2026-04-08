@@ -13,10 +13,10 @@ export function AppLayout() {
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
           <AdminViewBanner />
-          <header className="h-12 flex items-center justify-between border-b border-border/50 px-4 bg-card/30 backdrop-blur-sm">
-            <div className="flex items-center gap-3">
-              <SidebarTrigger className="text-muted-foreground hover:text-primary transition-colors" />
-              <div className="h-5 w-px bg-border/50" />
+          <header className="h-12 flex items-center justify-between border-b border-border/50 px-3 sm:px-4 bg-card/30 backdrop-blur-sm">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <SidebarTrigger className="text-muted-foreground hover:text-primary transition-colors h-9 w-9 shrink-0" />
+              <div className="h-5 w-px bg-border/50 hidden sm:block" />
               <span className="text-xs font-mono text-muted-foreground/60 uppercase tracking-[0.2em] hidden sm:block">CloakerX</span>
             </div>
             <LanguageSelector />

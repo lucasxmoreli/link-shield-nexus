@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { DollarSign, TrendingUp, Shield, Info } from "lucide-react";
+import { DollarSign, TrendingUp, Info } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -43,9 +43,9 @@ export function RoiHero({ blocked, approved, totalCost, totalRevenue }: RoiHeroP
       <div className="absolute -top-20 -right-20 h-40 w-40 rounded-full bg-emerald-500/10 blur-3xl" />
       <div className="absolute -bottom-10 -left-10 h-28 w-28 rounded-full bg-primary/5 blur-2xl" />
 
-      <div className="relative grid grid-cols-1 sm:grid-cols-3 gap-5">
+      <div className="relative grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
         {/* MONEY SAVED — HERO */}
-        <div className="sm:col-span-1">
+        <div>
           <div className="flex items-center gap-2 mb-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/15">
               <DollarSign className="h-4 w-4 text-emerald-400" />
@@ -101,31 +101,13 @@ export function RoiHero({ blocked, approved, totalCost, totalRevenue }: RoiHeroP
             <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">ROI</span>
           </div>
-          <p className={`text-2xl font-bold font-mono ${roi >= 0 ? 'text-emerald-400' : 'text-destructive'}`}>
+          <p className={`text-3xl sm:text-4xl font-extrabold font-mono tracking-tight ${roi >= 0 ? 'text-emerald-400' : 'text-destructive'}`}>
             {totalCost > 0 ? `${roi.toFixed(1)}%` : "—"}
           </p>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-xs text-muted-foreground mt-1">
             {totalCost > 0
               ? `Receita: $${totalRevenue.toFixed(2)} · Custo: $${totalCost.toFixed(2)}`
               : "Dados de custo não disponíveis"}
-          </p>
-        </div>
-
-        {/* MOTOR STATUS */}
-        <div className="flex flex-col justify-center">
-          <div className="flex items-center gap-2 mb-1">
-            <Shield className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Motor</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400" />
-            </span>
-            <span className="text-sm font-semibold text-foreground">v19 · 8 Camadas Ativas</span>
-          </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            6 travas server-side + JS Fingerprint
           </p>
         </div>
       </div>

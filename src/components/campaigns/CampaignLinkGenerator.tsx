@@ -31,19 +31,12 @@ export const PLATFORM_PARAMS: Record<string, TrackingParam[]> = {
     { key: "placement", label: "Placement", macro: "__PLACEMENT__", enabled: false },
     { key: "source_platform", label: "Platform", macro: "tiktok", enabled: false },
   ],
-  facebook: [
+  meta: [
     { key: "click_id", label: "Click ID", macro: "{{fbclid}}", enabled: true },
     { key: "campaign", label: "Campaign", macro: "{{campaign.name}}", enabled: true },
     { key: "adset", label: "Ad Set", macro: "{{adset.name}}", enabled: true },
     { key: "cost", label: "Cost", macro: "{{cost_per_result}}", enabled: true },
-    { key: "source_platform", label: "Platform", macro: "facebook", enabled: false },
-  ],
-  instagram: [
-    { key: "click_id", label: "Click ID", macro: "{{fbclid}}", enabled: true },
-    { key: "campaign", label: "Campaign", macro: "{{campaign.name}}", enabled: true },
-    { key: "adset", label: "Ad Set", macro: "{{adset.name}}", enabled: true },
-    { key: "cost", label: "Cost", macro: "{{cost_per_result}}", enabled: true },
-    { key: "source_platform", label: "Platform", macro: "instagram", enabled: false },
+    { key: "source_platform", label: "Platform", macro: "meta", enabled: false },
   ],
   google: [
     { key: "click_id", label: "Click ID", macro: "{gclid}", enabled: true },
@@ -92,8 +85,7 @@ export function buildDefaultTrackingUrl(domain: string, hash: string, source: st
 function getSourceLabel(source: string): string {
   const labels: Record<string, string> = {
     tiktok: "TikTok Ads",
-    facebook: "Facebook Ads",
-    instagram: "Instagram Ads",
+    meta: "Meta Ads",
     google: "Google Ads",
     youtube: "YouTube Ads",
   };

@@ -48,16 +48,16 @@ function PlanCard({ plan, userPlan, userPlanIndex, onSelect, t }: { plan: PlanDa
           </li>
         ))}
       </ul>
-      <div className="grid grid-cols-5 gap-2 mb-6">
+      <div className="grid grid-cols-4 gap-2 mb-6">
         {TRAFFIC_SOURCES.map((src, i) => {
           const visible = i < plan.visibleSources;
           const Icon = src.icon;
           return (
-            <div key={src.name} className={`flex flex-col items-center gap-1 ${visible ? "opacity-100" : "opacity-20"}`} title={src.name}>
-              <div className="w-8 h-8 rounded-lg border border-border flex items-center justify-center bg-secondary/50">
-                <Icon size={16} style={{ color: visible ? src.color : undefined }} className={!visible ? "text-muted-foreground" : ""} />
+            <div key={src.name} className={`flex flex-col items-center gap-1.5 transition-opacity ${visible ? "opacity-100" : "opacity-15"}`} title={src.name}>
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${visible ? "border border-[#004BFF]/20 bg-[#004BFF]/[0.04]" : "border border-border bg-secondary/30"}`}>
+                <Icon size={18} style={{ color: visible ? src.color : undefined }} className={!visible ? "text-muted-foreground" : ""} />
               </div>
-              <span className="text-[9px] text-muted-foreground truncate w-full text-center">{src.name}</span>
+              <span className="text-[10px] text-muted-foreground truncate w-full text-center font-medium">{src.name}</span>
             </div>
           );
         })}

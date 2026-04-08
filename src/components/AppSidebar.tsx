@@ -79,18 +79,20 @@ export function AppSidebar() {
             <SidebarMenu>
               <TooltipProvider delayDuration={0}>
                 {items.map((item) => (
-                  <SidebarMenuItem key={item.url}>
+                  <SidebarMenuItem key={item.url} className="px-2">
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <SidebarMenuButton asChild>
                           <NavLink
                             to={item.url}
                             end={item.url === "/"}
-                            className="flex items-center justify-center gap-3 px-3 py-2.5 rounded-md text-sidebar-foreground hover:bg-primary/10 hover:text-primary transition-all duration-200"
+                            className={`flex items-center gap-3 rounded-md text-sidebar-foreground hover:bg-primary/10 hover:text-primary transition-all duration-200 ${
+                              collapsed ? "justify-center px-0 py-2.5" : "justify-start px-3 py-2"
+                            }`}
                             activeClassName="bg-primary/15 text-primary font-semibold shadow-[0_0_12px_hsl(222,100%,50%,0.15)]"
                           >
-                            <item.icon className="h-5 w-5 shrink-0" />
-                            {!collapsed && <span className="text-sm">{item.title}</span>}
+                            <item.icon className="h-[18px] w-[18px] shrink-0" />
+                            {!collapsed && <span className="text-[13px] tracking-tight">{item.title}</span>}
                           </NavLink>
                         </SidebarMenuButton>
                       </TooltipTrigger>
@@ -110,8 +112,23 @@ export function AppSidebar() {
         {/* Bottom Section: Cockpit + Logout */}
         <SidebarGroup>
           <SidebarGroupContent>
+            {/* ── Cockpit Skeleton (enquanto carrega) ── */}
+            {!collapsed && !profile && profileLoading && (
+              <div className="mx-2 mb-3 rounded-lg border border-white/[0.04] bg-white/[0.01] p-3 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="h-4 w-16 rounded bg-white/[0.04] animate-pulse" />
+                  <div className="h-3 w-8 rounded bg-white/[0.04] animate-pulse" />
+                </div>
+                <div className="h-[3px] w-full rounded-full bg-white/[0.04]" />
+                <div className="flex items-center justify-between">
+                  <div className="h-3 w-12 rounded bg-white/[0.04] animate-pulse" />
+                  <div className="h-3 w-10 rounded bg-white/[0.04] animate-pulse" />
+                </div>
+              </div>
+            )}
+
             {/* ── Cockpit Financeiro (Expanded) ── */}
-            {!collapsed && !profileLoading && (
+            {!collapsed && profile && (
               <div className="mx-2 mb-3 rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 space-y-2.5">
                 {/* Plan Badge + Usage % / OVERLIMIT badge */}
                 <div className="flex items-center justify-between">
@@ -214,14 +231,16 @@ export function AppSidebar() {
 
             {/* Logout */}
             <SidebarMenu>
-              <SidebarMenuItem>
+              <SidebarMenuItem className="px-2">
                 <SidebarMenuButton asChild>
                   <button
                     onClick={signOut}
-                    className="flex items-center justify-center gap-3 px-3 py-2.5 rounded-md text-destructive/70 hover:bg-destructive/10 hover:text-destructive transition-all duration-200 w-full"
+                    className={`flex items-center gap-3 rounded-md text-destructive/70 hover:bg-destructive/10 hover:text-destructive transition-all duration-200 w-full ${
+                      collapsed ? "justify-center px-0 py-2.5" : "justify-start px-3 py-2"
+                    }`}
                   >
-                    <LogOut className="h-5 w-5 shrink-0" />
-                    {!collapsed && <span className="text-sm">{t("common.signOut")}</span>}
+                    <LogOut className="h-[18px] w-[18px] shrink-0" />
+                    {!collapsed && <span className="text-[13px] tracking-tight">{t("common.signOut")}</span>}
                   </button>
                 </SidebarMenuButton>
               </SidebarMenuItem>
