@@ -133,8 +133,10 @@ serve(async (req) => {
 
     if (!cfData.success) {
       const errorMsg = cfData.errors?.[0]?.message || "Cloudflare API error";
+      // Log the full error array internally for debugging, but do not leak
+      // the raw CF error payload to the client (topology/account info).
       console.error("[add-domain] CF API error:", JSON.stringify(cfData.errors));
-      return json(502, { error: `Cloudflare: ${errorMsg}`, cf_errors: cfData.errors });
+      return json(502, { error: `Cloudflare: ${errorMsg}` });
     }
 
     const cfHostname = cfData.result;

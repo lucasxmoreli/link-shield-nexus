@@ -77,8 +77,13 @@ serve(async (req) => {
         .update({ is_used: false, used_by: null, used_at: null })
         .eq("code", code);
 
+      // Log the real error internally for debugging, but never echo it to the client.
+      // Echoing Supabase Auth error messages enables account enumeration
+      // (e.g. "A user with this email address has already been registered").
+      console.error("[register] createUser failed:", createError.message);
+
       return new Response(
-        JSON.stringify({ error: createError.message }),
+        JSON.stringify({ error: "Unable to create account. Please try again or contact support." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
