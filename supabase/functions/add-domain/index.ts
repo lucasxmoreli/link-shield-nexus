@@ -33,6 +33,20 @@ const isValidHostname = (h: string): boolean =>
   /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$/.test(h);
 
 serve(async (req) => {
+  serve(async (req) => {
+  // ============================================================
+  // DIAGNOSTIC BLOCK — REMOVE AFTER DEBUGGING
+  // ============================================================
+  const allEnvKeys = Object.keys(Deno.env.toObject()).sort();
+  console.log("[DIAG] Total env keys:", allEnvKeys.length);
+  console.log("[DIAG] All env keys:", JSON.stringify(allEnvKeys));
+  console.log("[DIAG] CLOUDFLARE_API_TOKEN defined?", typeof Deno.env.get("CLOUDFLARE_API_TOKEN"));
+  console.log("[DIAG] CLOUDFLARE_ZONE_ID defined?", typeof Deno.env.get("CLOUDFLARE_ZONE_ID"));
+  console.log("[DIAG] CLOUDFLARE_API_TOKEN length:", (Deno.env.get("CLOUDFLARE_API_TOKEN") || "").length);
+  console.log("[DIAG] CLOUDFLARE_ZONE_ID length:", (Deno.env.get("CLOUDFLARE_ZONE_ID") || "").length);
+  // ============================================================
+
+  // ... resto do código continua igual
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
