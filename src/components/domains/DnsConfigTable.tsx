@@ -5,13 +5,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
-const VPS_IP = "187.124.233.229";
+const CNAME_TARGET = "cname.cloakerx.com";
 
 export function DnsConfigTable() {
   const { t } = useTranslation();
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(VPS_IP);
+    navigator.clipboard.writeText(CNAME_TARGET);
     toast.success(t("domains.valueCopied"));
   };
 
@@ -34,13 +34,13 @@ export function DnsConfigTable() {
             </TableHeader>
             <TableBody>
               <TableRow className="border-border">
-                <TableCell className="font-mono text-sm font-semibold">A</TableCell>
+                <TableCell className="font-mono text-sm font-semibold">CNAME</TableCell>
                 <TableCell className="font-mono text-sm text-muted-foreground">
                   track <span className="text-xs">({t("domains.dnsNameHint")})</span>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-sm">{VPS_IP}</span>
+                    <span className="font-mono text-sm">{CNAME_TARGET}</span>
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleCopy}>
                       <Copy className="h-3.5 w-3.5 text-muted-foreground" />
                     </Button>
