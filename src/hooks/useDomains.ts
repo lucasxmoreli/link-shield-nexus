@@ -9,7 +9,16 @@ export interface DomainRow {
   is_verified: boolean | null;
   ssl_status: string | null;
   cloudflare_hostname_id: string | null;
+  verification_errors: string | null;
   created_at: string;
+  // v3: Delegated DCV CNAME (preferred, permanent)
+  dcv_cname_name: string | null;
+  dcv_cname_target: string | null;
+  // v3: TXT fallback (used only if Delegated DCV unavailable)
+  ssl_txt_name: string | null;
+  ssl_txt_value: string | null;
+  // Legacy — kept for backwards compat, no longer read by UI
+  ownership_token: string | null;
 }
 
 export function useDomains() {

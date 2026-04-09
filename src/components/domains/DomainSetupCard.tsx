@@ -1,4 +1,4 @@
-import { Copy, CheckCircle2, Loader2, AlertCircle, Shield, Clock, Trash2 } from "lucide-react";
+import { Copy, CheckCircle2, Loader2, AlertCircle, Shield, Clock, Trash2, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -12,9 +12,16 @@ interface DomainSetupCardProps {
     url: string;
     is_verified: boolean | null;
     ssl_status: string | null;
-    ownership_token: string | null;
     cloudflare_hostname_id: string | null;
     verification_errors?: string | null;
+    // DCV CNAME (preferred, permanent)
+    dcv_cname_name?: string | null;
+    dcv_cname_target?: string | null;
+    // TXT fallback (expires with cert)
+    ssl_txt_name?: string | null;
+    ssl_txt_value?: string | null;
+    // Legacy — kept for backwards compat but no longer rendered
+    ownership_token?: string | null;
   };
   isVerifying: boolean;
   isDeleting: boolean;
@@ -68,7 +75,11 @@ export function DomainSetupCard({ domain, isVerifying, isDeleting, onVerify, onD
   const sslConfig = getSslConfig(domain.ssl_status);
   const SslIcon = sslConfig.icon;
   const isPending = sslConfig.icon === Loader2;
-  const txtRecordHost = `_acme-challenge.${domain.url}`;
+
+  // Determine which SSL validation method to show.
+  // Priority: Delegated DCV CNAME > TXT fallback > degenerate (no tokens yet).
+  const hasDcvCname = !!(domain.dcv_cname_name && domain.dcv_cname_target);
+  const hasTxtFallback = !!(domain.ssl_txt_name && domain.ssl_txt_value);
 
   return (
     <div className="rounded-lg border border-amber-500/20 bg-amber-500/[0.03] overflow-hidden">
@@ -91,11 +102,11 @@ export function DomainSetupCard({ domain, isVerifying, isDeleting, onVerify, onD
 
       {/* DNS Records */}
       <div className="p-4 space-y-3">
-        {/* CNAME Record */}
+        {/* Record 1: Main CNAME (routing) */}
         <div className="rounded-md border border-white/[0.06] bg-white/[0.02] p-3 space-y-2.5">
           <div className="flex items-center gap-2">
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#004BFF]/15 text-[#004BFF] text-[10px] font-bold">1</span>
-            <span className="text-xs font-semibold text-foreground uppercase tracking-wider">Registro CNAME</span>
+            <span className="text-xs font-semibold text-foreground uppercase tracking-wider">Registro CNAME (Roteamento)</span>
           </div>
 
           <div className="grid grid-cols-[80px_1fr] gap-x-3 gap-y-1.5 text-xs">
@@ -125,12 +136,67 @@ export function DomainSetupCard({ domain, isVerifying, isDeleting, onVerify, onD
           </div>
         </div>
 
-        {/* TXT Validation Record (if exists) */}
-        {domain.ownership_token && (
+        {/* Record 2: SSL Validation — Delegated DCV CNAME (preferred) */}
+        {hasDcvCname && (
+          <div className="rounded-md border border-emerald-500/15 bg-emerald-500/[0.03] p-3 space-y-2.5">
+            <div className="flex items-center gap-2">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-400 text-[10px] font-bold">2</span>
+              <span className="text-xs font-semibold text-foreground uppercase tracking-wider">Registro CNAME (Validação SSL)</span>
+              <Badge variant="outline" className="ml-auto text-[9px] uppercase border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
+                Permanente
+              </Badge>
+            </div>
+
+            <div className="grid grid-cols-[80px_1fr] gap-x-3 gap-y-1.5 text-xs">
+              <span className="text-muted-foreground font-mono">Tipo</span>
+              <span className="font-mono text-foreground">CNAME</span>
+
+              <span className="text-muted-foreground font-mono">Host</span>
+              <div className="flex items-center gap-1.5">
+                <code className="flex-1 px-2 py-1 rounded bg-black/40 font-mono text-foreground border border-white/[0.06] truncate text-[11px]">
+                  {domain.dcv_cname_name}
+                </code>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 text-muted-foreground hover:text-foreground hover:bg-white/5"
+                  onClick={() => copyToClipboard(domain.dcv_cname_name!, "Host CNAME")}
+                >
+                  <Copy className="h-3 w-3" />
+                </Button>
+              </div>
+
+              <span className="text-muted-foreground font-mono">Aponta para</span>
+              <div className="flex items-center gap-1.5">
+                <code className="flex-1 px-2 py-1 rounded bg-black/40 font-mono text-emerald-400 border border-emerald-500/20 truncate text-[11px]">
+                  {domain.dcv_cname_target}
+                </code>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 text-muted-foreground hover:text-foreground hover:bg-white/5"
+                  onClick={() => copyToClipboard(domain.dcv_cname_target!, "Alvo CNAME")}
+                >
+                  <Copy className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-1.5 text-[10px] text-emerald-400/80 leading-relaxed pt-0.5">
+              <Info className="h-3 w-3 shrink-0 mt-0.5" />
+              <span>
+                Este CNAME é permanente e renova o SSL automaticamente. Configure uma vez e esqueça.
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Record 2: SSL Validation — TXT fallback (used only if DCV CNAME unavailable) */}
+        {!hasDcvCname && hasTxtFallback && (
           <div className="rounded-md border border-white/[0.06] bg-white/[0.02] p-3 space-y-2.5">
             <div className="flex items-center gap-2">
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#004BFF]/15 text-[#004BFF] text-[10px] font-bold">2</span>
-              <span className="text-xs font-semibold text-foreground uppercase tracking-wider">Registro TXT (Validação)</span>
+              <span className="text-xs font-semibold text-foreground uppercase tracking-wider">Registro TXT (Validação SSL)</span>
             </div>
 
             <div className="grid grid-cols-[80px_1fr] gap-x-3 gap-y-1.5 text-xs">
@@ -140,13 +206,13 @@ export function DomainSetupCard({ domain, isVerifying, isDeleting, onVerify, onD
               <span className="text-muted-foreground font-mono">Host</span>
               <div className="flex items-center gap-1.5">
                 <code className="flex-1 px-2 py-1 rounded bg-black/40 font-mono text-foreground border border-white/[0.06] truncate text-[11px]">
-                  {txtRecordHost}
+                  {domain.ssl_txt_name}
                 </code>
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-6 w-6 text-muted-foreground hover:text-foreground hover:bg-white/5"
-                  onClick={() => copyToClipboard(txtRecordHost, "Host TXT")}
+                  onClick={() => copyToClipboard(domain.ssl_txt_name!, "Host TXT")}
                 >
                   <Copy className="h-3 w-3" />
                 </Button>
@@ -155,17 +221,27 @@ export function DomainSetupCard({ domain, isVerifying, isDeleting, onVerify, onD
               <span className="text-muted-foreground font-mono">Valor</span>
               <div className="flex items-center gap-1.5">
                 <code className="flex-1 px-2 py-1 rounded bg-black/40 font-mono text-[#004BFF] border border-[#004BFF]/20 truncate text-[11px]">
-                  {domain.ownership_token}
+                  {domain.ssl_txt_value}
                 </code>
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-6 w-6 text-muted-foreground hover:text-foreground hover:bg-white/5"
-                  onClick={() => copyToClipboard(domain.ownership_token!, "Valor TXT")}
+                  onClick={() => copyToClipboard(domain.ssl_txt_value!, "Valor TXT")}
                 >
                   <Copy className="h-3 w-3" />
                 </Button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Degenerate case: no SSL tokens captured yet */}
+        {!hasDcvCname && !hasTxtFallback && (
+          <div className="flex items-start gap-2 rounded-md border border-amber-500/20 bg-amber-500/[0.04] p-3">
+            <Loader2 className="h-3.5 w-3.5 text-amber-400 shrink-0 mt-0.5 animate-spin" />
+            <div className="text-[11px] text-amber-400/90 leading-relaxed">
+              Aguardando geração do token de validação SSL pela Cloudflare. Clique em <span className="font-semibold">Verificar agora</span> em alguns segundos para capturar o registro.
             </div>
           </div>
         )}
