@@ -15,8 +15,7 @@ import { useTranslation } from "react-i18next";
 import { getPlanByName } from "@/lib/plan-config";
 import { AddDomainModal } from "@/components/domains/AddDomainModal";
 import { DomainSetupCard } from "@/components/domains/DomainSetupCard";
-import { DomainRow } from "@/hooks/useDomains";
-
+import type { DomainRow } from "@/hooks/useDomains";
 
 export default function Domains() {
   const { user, effectiveUserId } = useAuth();
@@ -25,8 +24,6 @@ export default function Domains() {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [url, setUrl] = useState("");
-  const [verifyingId, setVerifyingId] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
@@ -84,6 +81,7 @@ export default function Domains() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // ── Delete domain via edge function (removes from DB + Cloudflare) ──
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const { data, error } = await supabase.functions.invoke("delete-domain", {
@@ -93,48 +91,37 @@ export default function Domains() {
       if (data?.error) throw new Error(data.error);
       return data;
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["domains"] });
-      if (data?.cf_warning) {
-        toast.success(`Domínio removido (aviso CF: ${data.cf_warning})`);
-      } else {
-        toast.success(t("domains.domainRemoved"));
-      }
+      toast.success(t("domains.domainRemoved"));
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const handleVerifyDns = async (domainId: string) => {
-    setVerifyingId(domainId);
-    try {
-      const { data, error } = await supabase.functions.invoke("verify-domain", {
-        body: { domain_id: domainId },
-      });
-      if (error) throw error;
+  // ── Verify domain — called by DomainSetupCard, returns Promise<void> ──
+  // Card manages its own loading state; this function only does the API call,
+  // invalidates the cache, and shows toasts. If it throws, the card catches
+  // and resets its spinner.
+  const handleVerifyDns = async (domainId: string): Promise<void> => {
+    const { data, error } = await supabase.functions.invoke("verify-domain", {
+      body: { domain_id: domainId },
+    });
+    if (error) throw error;
 
-      qc.invalidateQueries({ queryKey: ["domains"] });
+    qc.invalidateQueries({ queryKey: ["domains"] });
 
-      if (data?.verified) {
-        toast.success("Domínio verificado e SSL ativo");
-      } else if (!data?.cname_ok) {
-        toast.error("CNAME ainda não está apontando para cname.cloakerx.com");
-      } else if (!data?.ssl_active) {
-        toast.info(`Aguardando SSL: ${data?.ssl_status || "pending"}`);
-      }
-    } catch (e: any) {
-      toast.error(e.message || t("domains.verificationFailed"));
-    } finally {
-      setVerifyingId(null);
+    if (data?.verified) {
+      toast.success("Domínio verificado e SSL ativo");
+    } else if (!data?.cname_ok) {
+      toast.error("CNAME ainda não está apontando para cname.cloakerx.com");
+    } else if (!data?.ssl_active) {
+      toast.info(`Aguardando SSL: ${data?.ssl_status || "pending"}`);
     }
   };
 
-  const handleDelete = async (id: string) => {
-    setDeletingId(id);
-    try {
-      await deleteMutation.mutateAsync(id);
-    } finally {
-      setDeletingId(null);
-    }
+  // ── Delete handler — returns Promise<void> for the card to await ──
+  const handleDelete = async (id: string): Promise<void> => {
+    await deleteMutation.mutateAsync(id);
   };
 
   const handleAddClick = () => {
@@ -155,7 +142,9 @@ export default function Domains() {
             <Lock className="h-4 w-4 mr-1" /> {t("domains.limitReached")}
           </Button>
         ) : (
-          <Button onClick={handleAddClick}><Plus className="h-4 w-4 mr-1" /> {t("domains.addDomain")}</Button>
+          <Button onClick={handleAddClick}>
+            <Plus className="h-4 w-4 mr-1" /> {t("domains.addDomain")}
+          </Button>
         )}
       </div>
 
@@ -213,8 +202,6 @@ export default function Domains() {
             <DomainSetupCard
               key={d.id}
               domain={d}
-              isVerifying={verifyingId === d.id}
-              isDeleting={deletingId === d.id}
               onVerify={handleVerifyDns}
               onDelete={handleDelete}
             />
@@ -243,7 +230,11 @@ export default function Domains() {
                   {isLoading ? (
                     Array.from({ length: 3 }).map((_, i) => (
                       <TableRow key={i} className="border-border">
-                        {Array.from({ length: 4 }).map((_, j) => (<TableCell key={j}><Skeleton className="h-5 w-20" /></TableCell>))}
+                        {Array.from({ length: 4 }).map((_, j) => (
+                          <TableCell key={j}>
+                            <Skeleton className="h-5 w-20" />
+                          </TableCell>
+                        ))}
                       </TableRow>
                     ))
                   ) : (
@@ -255,9 +246,16 @@ export default function Domains() {
                             <CheckCircle className="h-3 w-3 mr-1" /> SSL Ativo
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-muted-foreground text-sm">{new Date(d.created_at).toLocaleDateString()}</TableCell>
+                        <TableCell className="text-muted-foreground text-sm">
+                          {new Date(d.created_at).toLocaleDateString()}
+                        </TableCell>
                         <TableCell className="text-right">
-                          <Button variant="ghost" size="icon" onClick={() => handleDelete(d.id)} disabled={deletingId === d.id}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(d.id)}
+                            disabled={deleteMutation.isPending}
+                          >
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                         </TableCell>

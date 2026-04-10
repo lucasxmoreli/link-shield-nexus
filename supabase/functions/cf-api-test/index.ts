@@ -1,8 +1,12 @@
 // =============================================================================
-// EDGE FUNCTION: cf-api-test
+// EDGE FUNCTION: cf-api-test (v2 — Bearer Token auth)
 // =============================================================================
 // Testa conectividade com a Cloudflare API. Endpoint de diagnóstico restrito
 // a admins autenticados — NÃO é público.
+//
+// v2 changes:
+//   - Bearer Token auth (X-Auth-Key/X-Auth-Email deprecated per Frente 1)
+//   - Removed CLOUDFLARE_EMAIL dependency
 // =============================================================================
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -61,13 +65,12 @@ serve(async (req) => {
     // ── Cloudflare API check ──
     const cfZoneId = Deno.env.get("CLOUDFLARE_ZONE_ID");
     const cfToken = Deno.env.get("CLOUDFLARE_API_TOKEN");
-    const cfEmail = Deno.env.get("CLOUDFLARE_EMAIL");
 
-    if (!cfZoneId || !cfToken || !cfEmail) {
+    if (!cfZoneId || !cfToken) {
       return new Response(
         JSON.stringify({
           status: "error",
-          message: "Missing secrets: CLOUDFLARE_ZONE_ID, CLOUDFLARE_API_TOKEN, or CLOUDFLARE_EMAIL not configured.",
+          message: "Missing secrets: CLOUDFLARE_ZONE_ID or CLOUDFLARE_API_TOKEN not configured.",
         }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -78,8 +81,7 @@ serve(async (req) => {
       {
         method: "GET",
         headers: {
-          "X-Auth-Key": cfToken,
-          "X-Auth-Email": cfEmail,
+          "Authorization": `Bearer ${cfToken}`,
           "Content-Type": "application/json",
         },
       }
@@ -91,7 +93,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           status: "success",
-          message: "✅ Cloudflare API connection verified. Global Key and Zone ID are valid.",
+          message: "✅ Cloudflare API connection verified. Bearer Token and Zone ID are valid.",
           hostname_count: cfData.result_info?.total_count ?? "unknown",
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
