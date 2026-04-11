@@ -49,6 +49,7 @@ const pt = {
     billing: "Planos e Cobranças",
     settings: "Configurações",
     adminUsers: "Admin e Usuários",
+    adminCommandCenter: "Central Admin",
   },
 
   dashboard: {
@@ -553,6 +554,53 @@ const pt = {
     userSuspended: "Usuário suspenso",
     userReactivated: "Usuário reativado",
     planUpdatedSuccess: "Plano atualizado",
+    // === Turno A.2 — Visibilidade Comercial v2 ===
+    lastLogin: "Último Login",
+    lastActivity: "Última Atividade",
+    daysAgo: "{{count}}d atrás",
+    today: "Hoje",
+    yesterday: "Ontem",
+    neverLoggedIn: "Nunca",
+    noActivity: "Sem atividade",
+    usageStatus: "Status de Uso",
+    churnRisk: "Risco de Churn",
+    // Usage status — 5 buckets
+    statusSafe: "Saudável",
+    statusWarning: "Atenção",
+    statusCritical: "Crítico",
+    statusOverage: "Excedido",
+    statusInactive: "Inativo",
+    // Churn risk — 4 faixas
+    churnLow: "Baixo",
+    churnMedium: "Médio",
+    churnHigh: "Alto",
+    churnCritical: "Crítico",
+    churnNone: "—",
+    // Filtros e ordenação
+    filterByStatus: "Filtrar por status",
+    filterByChurn: "Filtrar por risco",
+    allStatuses: "Todos os status",
+    allChurnLevels: "Todos os riscos",
+    sortBy: "Ordenar",
+    clearFilters: "Limpar filtros",
+    activeFilters: "{{count}} filtros ativos",
+    // Empty states
+    noUsersFound: "Nenhum usuário corresponde aos filtros aplicados.",
+    noUsersFoundHint: "Tente ajustar os filtros ou limpá-los para ver todos os usuários.",
+    noUsersAtAll: "Nenhum usuário cadastrado ainda.",
+    noUsersAtAllHint: "Quando alguém criar uma conta, vai aparecer aqui.",
+    // Tooltip / metadata
+    signupDays: "{{count}} dias na plataforma",
+    clicksOf: "{{current}} de {{max}} cliques",
+    domainsCount: "{{count}} domínios",
+    campaignsCount: "{{count}} campanhas",
+    // === Turno B.1 — Command Center ===
+    commandCenterSubtitle: "Visibilidade comercial, convites e códigos promocionais em um único lugar",
+    tabVisibility: "Visibilidade",
+    tabInvites: "Convites",
+    tabPromos: "Promocionais",
+    placeholderLabel: "Aba em construção",
+    placeholderHint: "O conteúdo desta aba será migrado no próximo turno (B.2). O orquestrador já está funcional.",
   },
 
   analytics: {

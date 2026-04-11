@@ -51,6 +51,7 @@ const en = {
     billing: "Billing & Plans",
     settings: "Settings",
     adminUsers: "Admin & Users",
+    adminCommandCenter: "Admin Center",
   },
 
   // Dashboard
@@ -572,6 +573,53 @@ const en = {
     userSuspended: "User suspended",
     userReactivated: "User reactivated",
     planUpdatedSuccess: "Plan updated",
+    // === Turn A.2 — Commercial Visibility v2 ===
+    lastLogin: "Last Login",
+    lastActivity: "Last Activity",
+    daysAgo: "{{count}}d ago",
+    today: "Today",
+    yesterday: "Yesterday",
+    neverLoggedIn: "Never",
+    noActivity: "No activity",
+    usageStatus: "Usage Status",
+    churnRisk: "Churn Risk",
+    // Usage status — 5 buckets
+    statusSafe: "Healthy",
+    statusWarning: "Warning",
+    statusCritical: "Critical",
+    statusOverage: "Overage",
+    statusInactive: "Inactive",
+    // Churn risk — 4 levels
+    churnLow: "Low",
+    churnMedium: "Medium",
+    churnHigh: "High",
+    churnCritical: "Critical",
+    churnNone: "—",
+    // Filters and sorting
+    filterByStatus: "Filter by status",
+    filterByChurn: "Filter by risk",
+    allStatuses: "All statuses",
+    allChurnLevels: "All risk levels",
+    sortBy: "Sort",
+    clearFilters: "Clear filters",
+    activeFilters: "{{count}} active filters",
+    // Empty states
+    noUsersFound: "No users match the applied filters.",
+    noUsersFoundHint: "Try adjusting or clearing the filters to see all users.",
+    noUsersAtAll: "No users registered yet.",
+    noUsersAtAllHint: "When someone creates an account, they will appear here.",
+    // Tooltip / metadata
+    signupDays: "{{count}} days on platform",
+    clicksOf: "{{current}} of {{max}} clicks",
+    domainsCount: "{{count}} domains",
+    campaignsCount: "{{count}} campaigns",
+    // === Turn B.1 — Command Center ===
+    commandCenterSubtitle: "Commercial visibility, invites and promo codes in one place",
+    tabVisibility: "Visibility",
+    tabInvites: "Invites",
+    tabPromos: "Promos",
+    placeholderLabel: "Tab under construction",
+    placeholderHint: "This tab's content will be migrated in the next turn (B.2). The orchestrator is already functional.",
   },
 
   // Analytics

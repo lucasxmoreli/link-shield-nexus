@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useAuth } from "@/hooks/useAuth";
@@ -78,7 +78,7 @@ const formatNumber = (n: number): string => n.toLocaleString();
 // COMPONENT
 // =============================================================================
 
-export default function AdminDashboard() {
+export default function CommercialVisibilityTab() {
   const { isAdmin, isLoading: adminLoading } = useAdmin();
   const { startClientView } = useAuth();
   const navigate = useNavigate();
@@ -92,10 +92,6 @@ export default function AdminDashboard() {
   const [churnFilter, setChurnFilter] = useState<ChurnLevel | "All">("All");
   const [sortColumn, setSortColumn] = useState<SortColumn | null>("created_at");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
-
-  useEffect(() => {
-    if (!adminLoading && !isAdmin) navigate("/dashboard", { replace: true });
-  }, [adminLoading, isAdmin, navigate]);
 
   // ── Queries ──
   const { data: stats } = useQuery({
@@ -269,27 +265,11 @@ export default function AdminDashboard() {
     );
   };
 
-  // ── Loading guard ──
-  if (adminLoading) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-      </div>
-    );
-  }
-  if (!isAdmin) return null;
-
   // =============================================================================
   // RENDER
   // =============================================================================
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <ShieldAlert className="h-7 w-7 text-primary" aria-hidden="true" />
-        <h1 className="text-2xl font-bold text-foreground">{t("admin.commandCenter")}</h1>
-      </div>
-
       {/* Metric Cards */}
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="border-border bg-card">

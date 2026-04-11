@@ -1,3 +1,4 @@
+import AdminCommandCenter from "./pages/admin/AdminCommandCenter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -14,7 +15,6 @@ import Requests from "./pages/Requests";
 import AccountSettings from "./pages/AccountSettings";
 import Billing from "./pages/Billing";
 import Auth from "./pages/Auth";
-import CloakTest from "./pages/CloakTest";
 import InviteCodes from "./pages/InviteCodes";
 import CampaignRedirect from "./pages/CampaignRedirect";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -54,18 +54,23 @@ const App = () => (
             <Route path="/" element={<Landing />} />
             <Route path="/auth" element={<AuthRoute />} />
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/domains" element={<Domains />} />
-              <Route path="/campaigns" element={<Campaigns />} />
-              <Route path="/campaigns/new" element={<CampaignEdit />} />
-              <Route path="/campaigns/:id/edit" element={<CampaignEdit />} />
-              <Route path="/campaigns/:id/clone" element={<CampaignEdit />} />
-              <Route path="/requests" element={<Requests />} />
-              <Route path="/analytics" element={<Analytics />} />
-              <Route path="/billing" element={<Billing />} />
-              <Route path="/invite-codes" element={<InviteCodes />} />
-              <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/settings" element={<AccountSettings />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/domains" element={<Domains />} />
+            <Route path="/campaigns" element={<Campaigns />} />
+            <Route path="/campaigns/new" element={<CampaignEdit />} />
+            <Route path="/campaigns/:id/edit" element={<CampaignEdit />} />
+            <Route path="/campaigns/:id/clone" element={<CampaignEdit />} />
+            <Route path="/requests" element={<Requests />} />
+            <Route path="/analytics" element={<Analytics />} />
+            <Route path="/billing" element={<Billing />} />
+            <Route path="/settings" element={<AccountSettings />} />
+
+          {/* === Admin Command Center (unified) === */}
+            <Route path="/admin" element={<AdminCommandCenter />} />
+
+          {/* === Legacy redirects — kept for bookmarks, removed in a future cleanup === */}
+            <Route path="/invite-codes" element={<Navigate to="/admin?tab=invites" replace />} />
+            <Route path="/admin-old" element={<Navigate to="/admin" replace />} />
             </Route>
             <Route path="/c/:hash" element={<CampaignRedirect />} />
             <Route path="*" element={<NotFound />} />

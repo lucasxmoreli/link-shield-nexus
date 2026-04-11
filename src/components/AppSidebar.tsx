@@ -38,9 +38,8 @@ export function AppSidebar() {
   ];
 
   const adminItems = [
-    { title: t("nav.adminUsers"), url: "/invite-codes", icon: Ticket },
-    { title: "Admin Panel", url: "/admin", icon: ShieldAlert },
-  ];
+  { title: t("nav.adminCommandCenter"), url: "/admin", icon: ShieldAlert },
+];
 
   const items = [...baseItems, ...(isAdmin ? adminItems : [])];
 
