@@ -452,7 +452,7 @@ const en = {
     createAccountButton: "Create Account",
     minChars: "Minimum 6 characters",
     inviteConsumed: "Invite code was already consumed. Please contact the administrator.",
-    accountCreated: "Account created! Check your email to confirm.",
+    accountCreated: "Account created successfully! You can now sign in.",
     registrationFailed: "Registration failed. Please try again.",
     accessRestricted: "Access is restricted. If you don't have an invite code, contact the administrator.",
     invisibleProtection: "Invisible protection.",

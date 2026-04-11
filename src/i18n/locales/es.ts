@@ -436,7 +436,7 @@ const es = {
     createAccountButton: "Crear Cuenta",
     minChars: "Mínimo 6 caracteres",
     inviteConsumed: "El código de invitación ya fue consumido. Contacta al administrador.",
-    accountCreated: "¡Cuenta creada! Revisa tu email para confirmar.",
+    accountCreated: "¡Cuenta creada con éxito! Ya puedes iniciar sesión.",
     registrationFailed: "Error en el registro. Inténtalo de nuevo.",
     accessRestricted: "El acceso es restringido. Si no tienes un código de invitación, contacta al administrador.",
     invisibleProtection: "Protección invisible.",
