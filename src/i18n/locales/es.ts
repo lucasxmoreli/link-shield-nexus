@@ -405,6 +405,31 @@ const es = {
     addSlotButton: "+ Añadir espacio",
     limitsIncludesAddons: "(+ {{extra}} addon)",
     limitsIncludesAddonsPlural: "(+ {{extra}} addons)",
+    // ── Sprint 6 Bloco B: Faturas + Payment Method ──
+    tabFaturas: "Facturas",
+
+    paymentMethodTitle: "Método de pago",
+    cardExpires: "Expira el {{date}}",
+    manageSubscription: "Gestionar en Stripe",
+    noCardLinked: "Ningún método vinculado",
+    noCardLinkedDesc: "Suscríbete a un plan para añadir un método de pago",
+    portalFailed: "No se pudo abrir el portal",
+    portalFailedDesc: "Intenta de nuevo en unos segundos",
+
+    invoicesTitle: "Historial de facturas",
+    invoicesCount: "{{count}} factura",
+    invoicesCountPlural: "{{count}} facturas",
+    invoicesEmptyTitle: "Aún no hay facturas",
+    invoicesEmptyDesc: "Tu primera factura aparecerá aquí cuando se cierre el ciclo.",
+    invoiceColDate: "Fecha",
+    invoiceColDescription: "Descripción",
+    invoiceColAmount: "Importe",
+    invoiceColStatus: "Estado",
+    invoiceColActions: "Acciones",
+    invoiceStatusPaid: "Pagada",
+    invoiceStatusFailed: "Fallida",
+    invoiceStatusPending: "Pendiente",
+    invoiceViewTooltip: "Ver factura en Stripe",
   },
 
   settings: {

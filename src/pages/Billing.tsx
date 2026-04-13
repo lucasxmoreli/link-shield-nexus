@@ -14,6 +14,8 @@ import { PLANS, TRAFFIC_SOURCES, getPlanByName, type PlanData } from "@/lib/plan
 import { PlanOverviewCard } from "@/components/billing/PlanOverviewCard";
 import { OverageCard } from "@/components/billing/OverageCard";
 import { LimitsGrid } from "@/components/billing/LimitsGrid";
+import { PaymentMethodCard } from "@/components/billing/PaymentMethodCard";
+import { InvoicesTable } from "@/components/billing/InvoicesTable";
 
 const STARTER_PLANS = PLANS.filter((p) => ["FREE", "BASIC PLAN", "PRO PLAN"].includes(p.name));
 const SCALE_PLANS = PLANS.filter((p) => ["FREEDOM PLAN", "ENTERPRISE CONQUEST"].includes(p.name));
@@ -176,7 +178,11 @@ export default function Billing() {
   const defaultPlanTab = isScalePlan ? "scale" : "starter";
 
   // Tab principal (account vs plans) — persistência via query param
-  const activeTab = searchParams.get("tab") === "plans" ? "plans" : "account";
+  const tabParam = searchParams.get("tab");
+  const activeTab = 
+    tabParam === "plans" ? "plans" :
+    tabParam === "faturas" ? "faturas" :
+    "account";
   const handleTabChange = (value: string) => {
     const params = new URLSearchParams(searchParams);
     if (value === "account") {
@@ -294,6 +300,9 @@ export default function Billing() {
             className="flex-1 sm:flex-initial px-6 py-2 text-sm font-semibold tracking-wide data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md rounded-md transition-all"
           >
             {t("billing.tabAccount")}
+          </TabsTrigger>
+          <TabsTrigger value="faturas" className="flex-1 sm:flex-initial px-6 py-2 text-sm font-semibold tracking-wide data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md rounded-md transition-all">
+            {t("billing.tabFaturas")}
           </TabsTrigger>
           <TabsTrigger
             value="plans"

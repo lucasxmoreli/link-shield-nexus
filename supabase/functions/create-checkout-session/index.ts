@@ -2,10 +2,28 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+// ─── CORS Allowlist ────────────────────────────────────────────────
+const ALLOWED_ORIGINS = [
+  "https://www.cloakerx.com",
+  "https://cloakerx.com",
+  "http://localhost:5173",
+  "http://localhost:8080",
+];
+
+const VERCEL_PREVIEW_REGEX = /^https:\/\/[a-z0-9-]+\.vercel\.app$/;
+
+function getCorsHeaders(origin: string | null) {
+  const isAllowed = origin && (
+    ALLOWED_ORIGINS.includes(origin) ||
+    VERCEL_PREVIEW_REGEX.test(origin)
+  );
+  return {
+    "Access-Control-Allow-Origin": isAllowed ? origin! : ALLOWED_ORIGINS[0],
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Vary": "Origin",
+  };
+}
 
 // Mapa fixed → metered. Deve espelhar o plan-config.ts do frontend.
 const PLAN_METERED_MAP: Record<string, string> = {
@@ -15,13 +33,16 @@ const PLAN_METERED_MAP: Record<string, string> = {
   "price_1TLVULLZEOji6sEJ4VyuhzMF": "price_1TLaR3LZEOji6sEJmagidXcF", // ENTERPRISE
 };
 
-const json = (status: number, body: unknown) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-
 serve(async (req) => {
+  const origin = req.headers.get("origin");
+  const corsHeaders = getCorsHeaders(origin);
+
+  const json = (status: number, body: unknown) =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
@@ -43,7 +64,6 @@ serve(async (req) => {
       return json(400, { error: "Invalid price_id" });
     }
 
-    // Valida que é um price de plano conhecido
     const meteredPriceId = PLAN_METERED_MAP[price_id];
     if (!meteredPriceId) {
       return json(400, { error: "Unknown plan price_id" });
@@ -91,18 +111,17 @@ serve(async (req) => {
       }
     }
 
-    const origin = req.headers.get("origin") || "https://www.cloakerx.com";
+    const requestOrigin = req.headers.get("origin") || "https://www.cloakerx.com";
 
-    // 2 line_items: mensalidade fixa (com quantity) + overage metered (sem quantity)
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: "subscription",
       line_items: [
         { price: price_id, quantity: 1 },
-        { price: meteredPriceId }, // metered: sem quantity
+        { price: meteredPriceId },
       ],
-      success_url: `${origin}/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/billing?checkout=cancelled`,
+      success_url: `${requestOrigin}/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${requestOrigin}/billing?checkout=cancelled`,
       metadata: { supabase_user_id: user.id },
       subscription_data: {
         metadata: { supabase_user_id: user.id },
