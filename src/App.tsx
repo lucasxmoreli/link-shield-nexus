@@ -15,9 +15,7 @@ import Requests from "./pages/Requests";
 import AccountSettings from "./pages/AccountSettings";
 import Billing from "./pages/Billing";
 import Auth from "./pages/Auth";
-import InviteCodes from "./pages/InviteCodes";
 import CampaignRedirect from "./pages/CampaignRedirect";
-import AdminDashboard from "./pages/AdminDashboard";
 import Analytics from "./pages/Analytics";
 import NotFound from "./pages/NotFound";
 

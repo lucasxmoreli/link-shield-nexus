@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ShieldAlert, Users, Ticket, Gift, type LucideIcon } from "lucide-react";
+import { ShieldAlert, Users, Ticket, Gift, History, type LucideIcon } from "lucide-react";
 import { useAdmin } from "@/hooks/useAdmin";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { ComponentType } from "react";
@@ -9,6 +9,8 @@ import type { ComponentType } from "react";
 // Imports reais dos nossos componentes extraídos
 import CommercialVisibilityTab from "./tabs/CommercialVisibilityTab";
 import InviteCodesTab from "./tabs/InviteCodesTab";
+import PromoCodesTab from "./tabs/PromoCodesTab";
+import AuditLogTab from "./tabs/AuditLogTab";
 
 // =============================================================================
 // TAB CONFIG — array-driven, ready to grow
@@ -24,7 +26,10 @@ interface TabDef {
 const TABS: ReadonlyArray<TabDef> = [
   { id: "visibility", labelKey: "admin.tabVisibility", icon: Users, component: CommercialVisibilityTab },
   { id: "invites",    labelKey: "admin.tabInvites",    icon: Ticket, component: InviteCodesTab },
+  { id: "promos",     labelKey: "admin.tabPromos",     icon: Gift,   component: PromoCodesTab },
+  { id: "audit",      labelKey: "admin.tabAudit",      icon: History, component: AuditLogTab },
 ];
+
 
 const DEFAULT_TAB = TABS[0].id;
 const VALID_TAB_IDS = new Set(TABS.map((t) => t.id));
