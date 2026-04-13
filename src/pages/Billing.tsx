@@ -84,7 +84,7 @@ export default function Billing() {
     enabled: !!user,
   });
 
-  // ── Detecta retorno do Stripe Checkout ──
+  // ── Detecta retorno do Stripe Checkout via URL ──
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const checkout = params.get("checkout");
@@ -94,7 +94,6 @@ export default function Billing() {
         title: t("billing.checkoutSuccess"),
         description: t("billing.checkoutSuccessDesc"),
       });
-      // Força refetch do profile pra mostrar plano novo imediatamente
       queryClient.invalidateQueries({ queryKey: ["profile"] });
       window.history.replaceState({}, "", "/billing");
     } else if (checkout === "cancelled") {
@@ -105,6 +104,31 @@ export default function Billing() {
       window.history.replaceState({}, "", "/billing");
     }
   }, [toast, t, queryClient]);
+
+  // ── Reset loading quando usuário volta do bfcache (botão voltar do navegador) ──
+  useEffect(() => {
+    const resetLoadingOnReturn = (e: PageTransitionEvent) => {
+      // persisted === true quando a página foi restaurada do bfcache
+      if (e.persisted) {
+        setCheckoutLoading(false);
+      }
+    };
+
+    const resetOnVisibility = () => {
+      // Fallback: se a aba voltou a ser visível, reseta loading preso
+      if (document.visibilityState === "visible") {
+        setCheckoutLoading(false);
+      }
+    };
+
+    window.addEventListener("pageshow", resetLoadingOnReturn);
+    document.addEventListener("visibilitychange", resetOnVisibility);
+
+    return () => {
+      window.removeEventListener("pageshow", resetLoadingOnReturn);
+      document.removeEventListener("visibilitychange", resetOnVisibility);
+    };
+  }, []);
 
   const userPlan = getPlanByName(profile?.plan_name);
   const userPlanIndex = PLANS.findIndex((p) => p.name === userPlan.name);
@@ -119,7 +143,7 @@ export default function Billing() {
   const handleConfirmUpgrade = async () => {
     if (!selectedPlan) return;
 
-    // Plano Free não tem cobrança — apenas informa e fecha
+    // Plano Free não tem cobrança
     if (!selectedPlan.stripePriceId) {
       toast({
         title: t("billing.freePlanInfo"),
@@ -140,7 +164,6 @@ export default function Billing() {
       if (data?.error) throw new Error(data.error);
       if (!data?.url) throw new Error("Checkout URL not returned");
 
-      // Redirect imediato — Stripe assume o controle
       window.location.href = data.url;
     } catch (err: any) {
       console.error("[checkout] Failed:", err);
@@ -151,7 +174,6 @@ export default function Billing() {
       });
       setCheckoutLoading(false);
     }
-    // Não reseta loading no sucesso — o redirect já tira o user da tela
   };
 
   return (
@@ -196,8 +218,10 @@ export default function Billing() {
       <Dialog
         open={!!selectedPlan}
         onOpenChange={(open) => {
-          if (checkoutLoading) return;
-          if (!open) setSelectedPlan(null);
+          if (!open) {
+            setSelectedPlan(null);
+            setCheckoutLoading(false);
+          }
         }}
       >
         <DialogContent className="sm:max-w-md border-primary/20 bg-card">
@@ -244,9 +268,11 @@ export default function Billing() {
               <DialogFooter className="flex-col sm:flex-row gap-2 pt-2">
                 <Button
                   variant="outline"
-                  onClick={() => setSelectedPlan(null)}
+                  onClick={() => {
+                    setSelectedPlan(null);
+                    setCheckoutLoading(false);
+                  }}
                   className="sm:flex-1"
-                  disabled={checkoutLoading}
                 >
                   {t("common.cancel")}
                 </Button>
