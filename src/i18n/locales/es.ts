@@ -376,6 +376,35 @@ const es = {
     checkoutSuccessDesc: "Tu plan fue activado con éxito. Puedes comenzar a usarlo ahora.",
     checkoutCancelled: "Checkout cancelado",
     checkoutCancelledDesc: "No se realizó ningún cargo. Puedes intentarlo de nuevo cuando quieras.",
+    // ── Sprint 6: Client Portal MVP ──
+    tabAccount: "Mi Cuenta",
+    tabPlans: "Planes",
+
+    // Plan Overview Card
+    planCardTitle: "Tu plan actual",
+    changePlanButton: "Cambiar plan",
+    billingCycleLabel: "Ciclo actual",
+    daysRemaining: "en {{days}} días",
+    daysRemainingOne: "en 1 día",
+    daysRemainingZero: "termina hoy",
+    clicksUsedLabel: "clics usados",
+    usageWithinPlan: "Consumo dentro del plan",
+    perMonth: "/mes",
+
+    // Overage Card
+    overageAlertTitle: "Superaste el límite de tu plan",
+    overageClicksLabel: "clics extras",
+    overageCostLabel: "{{cost}} se cobrarán en el próximo cierre",
+    overageRateLabel: "Tarifa del plan: {{rate}} por clic excedente",
+    overageViewDetails: "Ver detalles del consumo",
+
+    // Limits Grid
+    limitsGridTitle: "Límites del plan",
+    domainsLabel: "Dominios",
+    campaignsLabel: "Campañas",
+    addSlotButton: "+ Añadir espacio",
+    limitsIncludesAddons: "(+ {{extra}} addon)",
+    limitsIncludesAddonsPlural: "(+ {{extra}} addons)",
   },
 
   settings: {

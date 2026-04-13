@@ -2,23 +2,44 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+// ─── CORS Allowlist ────────────────────────────────────────────────
+const ALLOWED_ORIGINS = [
+  "https://www.cloakerx.com",
+  "https://cloakerx.com",
+  "http://localhost:5173",
+  "http://localhost:8080",
+];
+
+const VERCEL_PREVIEW_REGEX = /^https:\/\/[a-z0-9-]+\.vercel\.app$/;
+
+function getCorsHeaders(origin: string | null) {
+  const isAllowed = origin && (
+    ALLOWED_ORIGINS.includes(origin) ||
+    VERCEL_PREVIEW_REGEX.test(origin)
+  );
+  return {
+    "Access-Control-Allow-Origin": isAllowed ? origin! : ALLOWED_ORIGINS[0],
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Vary": "Origin",
+  };
+}
 
 const ADDON_PRICES: Record<string, string> = {
   extra_domain:   "price_1TLZySLZEOji6sEJvsOtZ3sF",
   extra_campaign: "price_1TLZzoLZEOji6sEJ8QA7ggHU",
 };
 
-const json = (status: number, body: unknown) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-
 serve(async (req) => {
+  const origin = req.headers.get("origin");
+  const corsHeaders = getCorsHeaders(origin);
+
+  const json = (status: number, body: unknown) =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
@@ -79,7 +100,6 @@ serve(async (req) => {
     if (action === "remove") {
       if (!subscription_item_id) return json(400, { error: "subscription_item_id required" });
 
-      // Validar ownership
       const { data: addon } = await admin
         .from("subscription_addons")
         .select("id")

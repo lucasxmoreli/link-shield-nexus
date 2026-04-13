@@ -136,7 +136,6 @@ async function findUserId(
   return data.user_id;
 }
 
-// Extrai o item do plano base (primeiro item não-metered e não-addon)
 function findPlanItem(subscription: Stripe.Subscription): Stripe.SubscriptionItem | null {
   for (const item of subscription.items.data) {
     const isMetered = item.price.recurring?.usage_type === "metered";
@@ -148,7 +147,6 @@ function findPlanItem(subscription: Stripe.Subscription): Stripe.SubscriptionIte
   return null;
 }
 
-// Extrai o item metered (usage_type === 'metered')
 function findMeteredItem(subscription: Stripe.Subscription): Stripe.SubscriptionItem | null {
   for (const item of subscription.items.data) {
     if (item.price.recurring?.usage_type === "metered") return item;
@@ -228,27 +226,65 @@ async function handleSubscriptionUpdated(
     }
   }
 
-  // Grace period: past_due não suspende (cliente continua operando)
-  // Só suspende em unpaid/canceled/incomplete_expired
+  // Grace period: past_due não suspende
   const isSuspended = ["unpaid", "canceled", "incomplete_expired"].includes(subscription.status);
+
+  // ── DETECÇÃO DE VIRADA DE CICLO ──
+  // Busca o billing_cycle_start atual do profile ANTES do update
+  // pra comparar com o novo que veio do Stripe
+  const { data: currentProfile, error: fetchError } = await admin
+    .from("profiles")
+    .select("billing_cycle_start")
+    .eq("user_id", userId)
+    .single();
+
+  if (fetchError) {
+    console.error(`[subscription.updated] Falha ao buscar profile atual:`, fetchError);
+    // Não bloqueia — segue o fluxo normal sem reset
+  }
+
+  const newCycleStartISO = new Date(subscription.current_period_start * 1000).toISOString();
+  const oldCycleStartISO = currentProfile?.billing_cycle_start
+    ? new Date(currentProfile.billing_cycle_start).toISOString()
+    : null;
+
+  // Reset APENAS se:
+  // 1. Havia um billing_cycle_start antigo (conta não é novíssima)
+  // 2. E o novo é diferente do antigo (ciclo realmente virou)
+  const isCycleRenewal = oldCycleStartISO !== null && oldCycleStartISO !== newCycleStartISO;
+
+  // ── Monta payload do UPDATE ──
+  // Tudo num único objeto → um único statement SQL → zero race condition
+  const updatePayload: Record<string, unknown> = {
+    stripe_subscription_id: subscription.id,
+    stripe_price_id: priceId,
+    stripe_overage_item_id: meteredItem?.id ?? null,
+    plan_name: planConfig.plan_name,
+    max_clicks: planConfig.max_clicks,
+    max_domains: planConfig.max_domains,
+    subscription_status: subscription.status,
+    is_suspended: isSuspended,
+    billing_cycle_start: newCycleStartISO,
+    billing_cycle_end: new Date(subscription.current_period_end * 1000).toISOString(),
+  };
+
+  if (isCycleRenewal) {
+    updatePayload.current_clicks = 0;
+    console.log(
+      `[subscription.updated] CICLO RENOVADO para user ${userId}. ` +
+      `Reset de current_clicks. Antigo: ${oldCycleStartISO}, Novo: ${newCycleStartISO}`
+    );
+  }
 
   await admin
     .from("profiles")
-    .update({
-      stripe_subscription_id: subscription.id,
-      stripe_price_id: priceId,
-      stripe_overage_item_id: meteredItem?.id ?? null,
-      plan_name: planConfig.plan_name,
-      max_clicks: planConfig.max_clicks,
-      max_domains: planConfig.max_domains,
-      subscription_status: subscription.status,
-      is_suspended: isSuspended,
-      billing_cycle_start: new Date(subscription.current_period_start * 1000).toISOString(),
-      billing_cycle_end: new Date(subscription.current_period_end * 1000).toISOString(),
-    })
+    .update(updatePayload)
     .eq("user_id", userId);
 
-  console.log(`[subscription.updated] User ${userId} -> ${subscription.status} (suspended: ${isSuspended})`);
+  console.log(
+    `[subscription.updated] User ${userId} -> ${subscription.status} ` +
+    `(suspended: ${isSuspended}, cycle_renewed: ${isCycleRenewal})`
+  );
 }
 
 async function syncSubscriptionAddons(
@@ -277,7 +313,6 @@ async function syncSubscriptionAddons(
     }, { onConflict: "stripe_subscription_item_id" });
   }
 
-  // Marca addons removidos como cancelled
   if (activeItemIds.length > 0) {
     const itemsList = activeItemIds.map((id) => `"${id}"`).join(",");
     await admin.from("subscription_addons")
@@ -318,7 +353,6 @@ async function handleSubscriptionDeleted(
     })
     .eq("user_id", userId);
 
-  // Marca todos addons como cancelled
   await admin.from("subscription_addons")
     .update({ status: "cancelled" })
     .eq("user_id", userId)
@@ -375,8 +409,5 @@ async function handleInvoiceFailed(
     hosted_invoice_url: invoice.hosted_invoice_url,
   }, { onConflict: "stripe_invoice_id" });
 
-  // Grace period: não suspende aqui. O Stripe vai re-tentar por ~3 dias
-  // e, se falhar tudo, dispara customer.subscription.updated com status='unpaid'
-  // que é quando o handleSubscriptionUpdated suspende.
   console.warn(`[invoice.failed] User ${userId} -> ${invoice.id} (grace period ativo)`);
 }
