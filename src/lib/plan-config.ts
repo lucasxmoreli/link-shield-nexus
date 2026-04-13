@@ -31,6 +31,8 @@ export interface PlanData {
   maxCampaigns: number; // -1 = unlimited
   /** Preço em USD por clique excedente (overage / pay-as-you-go). 0 = nao cobra. */
   extraClickPrice: number;
+  /** Stripe Price ID — null para o plano Free. Pegue no Stripe Dashboard → Products → Prices. */
+  stripePriceId: string | null;
 }
 
 export const PLANS: PlanData[] = [
@@ -53,6 +55,7 @@ export const PLANS: PlanData[] = [
     maxDomains: 0,
     maxCampaigns: 0,
     extraClickPrice: 0,
+    stripePriceId: null,
   },
   {
     name: "BASIC PLAN",
@@ -74,6 +77,7 @@ export const PLANS: PlanData[] = [
     maxDomains: 3,
     maxCampaigns: 5,
     extraClickPrice: 0.01,
+    stripePriceId: "price_1TLVRnLZEOji6sEJnw9oiVW2", // ← TROQUE AQUI
   },
   {
     name: "PRO PLAN",
@@ -96,6 +100,7 @@ export const PLANS: PlanData[] = [
     maxDomains: 10,
     maxCampaigns: 20,
     extraClickPrice: 0.004,
+    stripePriceId: "price_1TLVSrLZEOji6sEJ8sF00dTT", // ← TROQUE AQUI
   },
   {
     name: "FREEDOM PLAN",
@@ -117,6 +122,7 @@ export const PLANS: PlanData[] = [
     maxDomains: 20,
     maxCampaigns: 50,
     extraClickPrice: 0.002,
+    stripePriceId: "price_1TLVTYLZEOji6sEJ0mzIvzme", // ← TROQUE AQUI
   },
   {
     name: "ENTERPRISE CONQUEST",
@@ -138,6 +144,7 @@ export const PLANS: PlanData[] = [
     maxDomains: 25,
     maxCampaigns: -1,
     extraClickPrice: 0.001,
+    stripePriceId: "price_1TLVULLZEOji6sEJ4VyuhzMF", // ← TROQUE AQUI
   },
 ];
 

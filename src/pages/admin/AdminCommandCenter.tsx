@@ -9,7 +9,6 @@ import type { ComponentType } from "react";
 // Imports reais dos nossos componentes extraídos
 import CommercialVisibilityTab from "./tabs/CommercialVisibilityTab";
 import InviteCodesTab from "./tabs/InviteCodesTab";
-import PromoCodesTab from "./tabs/PromoCodesTab";
 
 // =============================================================================
 // TAB CONFIG — array-driven, ready to grow
@@ -25,7 +24,6 @@ interface TabDef {
 const TABS: ReadonlyArray<TabDef> = [
   { id: "visibility", labelKey: "admin.tabVisibility", icon: Users, component: CommercialVisibilityTab },
   { id: "invites",    labelKey: "admin.tabInvites",    icon: Ticket, component: InviteCodesTab },
-  { id: "promos",     labelKey: "admin.tabPromos",     icon: Gift,   component: PromoCodesTab },
 ];
 
 const DEFAULT_TAB = TABS[0].id;
