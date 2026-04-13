@@ -28,14 +28,16 @@ export function formatUSD(amount: number): string {
  * Formata taxa unitária de overage com até 4 casas decimais (pra não truncar $0.001).
  */
 export function formatOverageRate(rate: number): string {
-  return new Intl.NumberFormat("en-US", {
+  const formatted = new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
-    minimumFractionDigits: 3,
+    minimumFractionDigits: 2,
     maximumFractionDigits: 4,
   }).format(rate);
-}
 
+  // Remove zeros trailing após a 2ª casa decimal
+  return formatted.replace(/(\.\d{2})0+$/, "$1");
+}
 /**
  * Formata data curta (dia + mês abreviado) no locale.
  */

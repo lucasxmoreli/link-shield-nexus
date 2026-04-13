@@ -444,6 +444,9 @@ const en = {
     invoiceStatusFailed: "Failed",
     invoiceStatusPending: "Pending",
     invoiceViewTooltip: "View invoice on Stripe",
+    // ── Sprint 6 Bloco C: Polimento ──
+    usageOverPlan: "Usage exceeds plan limit",
+    invoiceDescWithOverage: "{{plan}} · base + extra usage",
   },
 
   // Settings

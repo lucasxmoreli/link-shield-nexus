@@ -1,19 +1,19 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
-import { Receipt, ExternalLink, Loader2, FileText } from "lucide-react";
+import { Receipt, ExternalLink, Loader2 } from "lucide-react";
 import { formatUSD, formatShortDate } from "@/lib/billing-format";
 
 interface InvoiceRow {
@@ -29,6 +29,28 @@ interface InvoiceRow {
   paid_at: string | null;
   hosted_invoice_url: string | null;
   created_at: string;
+}
+
+/**
+ * Constrói descrição limpa a partir de plan_name cru do Stripe.
+ * Remove prefixos tipo "1 × ", sufixos "(at $X / month)", "- Traffic Analytics".
+ * Se a fatura tem overage, adiciona sufixo "· base + uso extra".
+ */
+function buildInvoiceDescription(inv: InvoiceRow, t: (key: string, opts?: any) => string): string {
+  const base = (inv.base_amount_cents || 0) / 100;
+  const total = (inv.total_amount_cents || 0) / 100;
+  const hasOverage = total > base + 0.01; // tolerância pra float
+
+  let cleanName = inv.plan_name || "Plan";
+  cleanName = cleanName.replace(/^\d+\s*×\s*/, "");               // remove "1 × "
+  cleanName = cleanName.replace(/\s*\(at.*\).*$/, "");             // remove "(at $X / month)"
+  cleanName = cleanName.replace(/\s*-\s*Traffic Analytics/i, "");  // remove "- Traffic Analytics"
+  cleanName = cleanName.trim();
+
+  if (hasOverage) {
+    return t("billing.invoiceDescWithOverage", { plan: cleanName });
+  }
+  return cleanName;
 }
 
 export function InvoicesTable() {
@@ -74,7 +96,6 @@ export function InvoicesTable() {
     );
   };
 
-  // Loading state
   if (isLoading) {
     return (
       <Card className="border-border bg-card">
@@ -88,7 +109,6 @@ export function InvoicesTable() {
     );
   }
 
-  // Empty state
   if (!invoices || invoices.length === 0) {
     return (
       <Card className="border-border bg-card">
@@ -120,7 +140,9 @@ export function InvoicesTable() {
             {t("billing.invoicesTitle")}
           </p>
           <span className="text-xs text-muted-foreground">
-            {t("billing.invoicesCount", { count: invoices.length })}
+            {invoices.length === 1
+              ? t("billing.invoicesCount", { count: 1 })
+              : t("billing.invoicesCountPlural", { count: invoices.length })}
           </span>
         </div>
 
@@ -149,6 +171,7 @@ export function InvoicesTable() {
               {invoices.map((inv) => {
                 const dateToShow = inv.paid_at || inv.created_at;
                 const totalDollars = (inv.total_amount_cents || 0) / 100;
+                const description = buildInvoiceDescription(inv, t);
 
                 return (
                   <TableRow key={inv.id} className="border-border hover:bg-muted/30">
@@ -156,14 +179,12 @@ export function InvoicesTable() {
                       {formatShortDate(dateToShow, locale)}
                     </TableCell>
                     <TableCell className="text-sm">
-                      <span className="font-medium text-foreground">{inv.plan_name}</span>
+                      <span className="font-medium text-foreground">{description}</span>
                     </TableCell>
                     <TableCell className="text-right font-mono text-sm font-semibold">
                       {formatUSD(totalDollars)}
                     </TableCell>
-                    <TableCell>
-                      {getStatusBadge(inv.status)}
-                    </TableCell>
+                    <TableCell>{getStatusBadge(inv.status)}</TableCell>
                     <TableCell className="text-right">
                       {inv.hosted_invoice_url ? (
                         <Button

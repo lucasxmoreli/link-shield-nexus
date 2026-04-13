@@ -432,6 +432,9 @@ const pt = {
     invoiceStatusFailed: "Falhou",
     invoiceStatusPending: "Pendente",
     invoiceViewTooltip: "Abrir fatura no Stripe",
+    // ── Sprint 6 Bloco C: Polimento ──
+    usageOverPlan: "Consumo acima do limite do plano",
+    invoiceDescWithOverage: "{{plan}} · base + uso extra",
   },
 
   settings: {

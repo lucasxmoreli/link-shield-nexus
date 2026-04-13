@@ -1,13 +1,13 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Check } from "lucide-react";
+import { Check, AlertTriangle } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { 
-  formatClicks, 
-  formatShortDate, 
-  daysUntil, 
-  calculateOverage 
+import {
+  formatClicks,
+  formatShortDate,
+  daysUntil,
+  calculateOverage,
 } from "@/lib/billing-format";
 import type { PlanData } from "@/lib/plan-config";
 
@@ -33,16 +33,18 @@ export function PlanOverviewCard({
 
   const usagePct = maxClicks > 0 ? Math.min(100, (currentClicks / maxClicks) * 100) : 0;
   const { overageClicks } = calculateOverage(currentClicks, maxClicks, plan.extraClickPrice);
-  const isWithinPlan = overageClicks === 0;
+  const isOverage = overageClicks > 0;
+  const realPct = maxClicks > 0 ? (currentClicks / maxClicks) * 100 : 0;
 
   const daysLeft = billingCycleEnd ? daysUntil(billingCycleEnd) : null;
-  const daysText = daysLeft === null 
-    ? "" 
-    : daysLeft === 0 
-    ? t("billing.daysRemainingZero")
-    : daysLeft === 1 
-    ? t("billing.daysRemainingOne")
-    : t("billing.daysRemaining", { days: daysLeft });
+  const daysText =
+    daysLeft === null
+      ? ""
+      : daysLeft === 0
+      ? t("billing.daysRemainingZero")
+      : daysLeft === 1
+      ? t("billing.daysRemainingOne")
+      : t("billing.daysRemaining", { days: daysLeft });
 
   return (
     <Card className="border-primary/20 bg-card">
@@ -61,16 +63,11 @@ export function PlanOverviewCard({
               <span className="text-sm ml-1">{t("billing.perMonth")}</span>
             </p>
           </div>
-          <Button 
-            variant="outline" 
-            onClick={onChangePlan}
-            className="shrink-0"
-          >
+          <Button variant="outline" onClick={onChangePlan} className="shrink-0">
             {t("billing.changePlanButton")}
           </Button>
         </div>
 
-        {/* Divider */}
         <div className="h-px bg-border my-6" />
 
         {/* Cycle info */}
@@ -83,36 +80,48 @@ export function PlanOverviewCard({
               <p className="text-sm font-mono text-foreground">
                 {formatShortDate(billingCycleStart, locale)} → {formatShortDate(billingCycleEnd, locale)}
                 {daysText && (
-                  <span className="text-muted-foreground ml-2">
-                    ({daysText})
-                  </span>
+                  <span className="text-muted-foreground ml-2">({daysText})</span>
                 )}
               </p>
             </div>
           </div>
         )}
 
-        {/* Progress bar */}
+        {/* Progress bar — vermelha em overage, padrão caso contrário */}
         <div className="space-y-2">
-          <Progress 
-            value={usagePct} 
-            className="h-3" 
+          <Progress
+            value={usagePct}
+            className={`h-3 ${isOverage ? "[&>div]:bg-destructive" : ""}`}
           />
           <div className="flex items-baseline justify-between text-sm">
             <span className="font-mono text-foreground">
               {formatClicks(currentClicks, locale)} / {formatClicks(maxClicks, locale)}
+              {isOverage && (
+                <span className="text-destructive ml-2 text-xs font-semibold">
+                  ({realPct.toFixed(0)}%)
+                </span>
+              )}
             </span>
-            <span className="text-muted-foreground">
-              {usagePct.toFixed(1)}%
-            </span>
+            {!isOverage && (
+              <span className="text-muted-foreground">{usagePct.toFixed(1)}%</span>
+            )}
           </div>
         </div>
 
-        {/* Status indicator */}
-        {isWithinPlan && maxClicks > 0 && (
-          <div className="mt-4 flex items-center gap-2 text-sm text-success">
-            <Check size={16} className="shrink-0" />
-            <span>{t("billing.usageWithinPlan")}</span>
+        {/* Status indicator: verde dentro do plano, vermelho em overage */}
+        {maxClicks > 0 && (
+          <div className="mt-4">
+            {isOverage ? (
+              <div className="flex items-center gap-2 text-sm text-destructive">
+                <AlertTriangle size={16} className="shrink-0" />
+                <span>{t("billing.usageOverPlan")}</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-sm text-success">
+                <Check size={16} className="shrink-0" />
+                <span>{t("billing.usageWithinPlan")}</span>
+              </div>
+            )}
           </div>
         )}
       </CardContent>
