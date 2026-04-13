@@ -351,7 +351,13 @@ export default function Billing() {
             </>
           )}
         </TabsContent>
-
+          
+          {/* ─── TAB: FATURAS ─── */}
+          <TabsContent value="faturas" className="space-y-4 mt-6">
+            <PaymentMethodCard />
+            <InvoicesTable />
+          </TabsContent>
+        
         {/* ─── TAB: PLANOS ─── */}
         <TabsContent value="plans" className="mt-6">
           <Tabs defaultValue={defaultPlanTab} className="w-full">
