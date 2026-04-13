@@ -1,9 +1,8 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { Check, X, Zap, Gift, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Check, X, Zap, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
@@ -73,8 +72,7 @@ export default function Billing() {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
   const [selectedPlan, setSelectedPlan] = useState<PlanData | null>(null);
-  const [promoCode, setPromoCode] = useState("");
-  const [redeeming, setRedeeming] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
@@ -86,6 +84,28 @@ export default function Billing() {
     enabled: !!user,
   });
 
+  // ── Detecta retorno do Stripe Checkout ──
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const checkout = params.get("checkout");
+
+    if (checkout === "success") {
+      toast({
+        title: t("billing.checkoutSuccess"),
+        description: t("billing.checkoutSuccessDesc"),
+      });
+      // Força refetch do profile pra mostrar plano novo imediatamente
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      window.history.replaceState({}, "", "/billing");
+    } else if (checkout === "cancelled") {
+      toast({
+        title: t("billing.checkoutCancelled"),
+        description: t("billing.checkoutCancelledDesc"),
+      });
+      window.history.replaceState({}, "", "/billing");
+    }
+  }, [toast, t, queryClient]);
+
   const userPlan = getPlanByName(profile?.plan_name);
   const userPlanIndex = PLANS.findIndex((p) => p.name === userPlan.name);
   const isScalePlan = SCALE_PLANS.some((p) => p.name === userPlan.name);
@@ -96,30 +116,42 @@ export default function Billing() {
     setSelectedPlan(plan);
   };
 
-  const handleConfirmUpgrade = () => {
+  const handleConfirmUpgrade = async () => {
     if (!selectedPlan) return;
-    toast({ title: t("billing.upgradeComingSoon"), description: t("billing.youSelected", { plan: selectedPlan.name }) });
-    setSelectedPlan(null);
-  };
 
-  const handleRedeemPromo = async () => {
-    if (!promoCode.trim()) return;
-    setRedeeming(true);
-    try {
-      const { data, error } = await supabase.rpc("redeem_promo_code", { p_code: promoCode.trim() });
-      if (error) throw error;
-      const result = data as { plan_name: string; billing_cycle_end: string };
-      const endDate = new Date(result.billing_cycle_end).toLocaleDateString();
-      toast({ title: t("billing.planUpgraded"), description: t("billing.validUntil", { plan: result.plan_name, date: endDate }) });
-      setPromoCode("");
-      queryClient.invalidateQueries({ queryKey: ["profile"] });
-      queryClient.invalidateQueries({ queryKey: ["domains"] });
-      queryClient.invalidateQueries({ queryKey: ["campaigns"] });
-    } catch (err: any) {
-      toast({ title: t("billing.redemptionFailed"), description: err.message || t("billing.invalidCode"), variant: "destructive" });
-    } finally {
-      setRedeeming(false);
+    // Plano Free não tem cobrança — apenas informa e fecha
+    if (!selectedPlan.stripePriceId) {
+      toast({
+        title: t("billing.freePlanInfo"),
+        description: t("billing.freePlanDescription"),
+      });
+      setSelectedPlan(null);
+      return;
     }
+
+    setCheckoutLoading(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("create-checkout-session", {
+        body: { price_id: selectedPlan.stripePriceId },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      if (!data?.url) throw new Error("Checkout URL not returned");
+
+      // Redirect imediato — Stripe assume o controle
+      window.location.href = data.url;
+    } catch (err: any) {
+      console.error("[checkout] Failed:", err);
+      toast({
+        title: t("billing.checkoutFailed"),
+        description: err.message || t("billing.checkoutFailedDesc"),
+        variant: "destructive",
+      });
+      setCheckoutLoading(false);
+    }
+    // Não reseta loading no sucesso — o redirect já tira o user da tela
   };
 
   return (
@@ -153,25 +185,21 @@ export default function Billing() {
         </TabsContent>
       </Tabs>
 
-      <div className="flex flex-col items-center gap-3 pt-4 border-t border-border">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Gift size={16} className="text-primary" />
-          <span>{t("billing.havePromo")}</span>
-        </div>
-        <div className="flex gap-2 w-full max-w-sm">
-          <Input placeholder={t("billing.enterCode")} value={promoCode} onChange={(e) => setPromoCode(e.target.value.toUpperCase())} onKeyDown={(e) => e.key === "Enter" && handleRedeemPromo()} className="uppercase tracking-widest font-mono text-center" />
-          <Button onClick={handleRedeemPromo} disabled={redeeming || !promoCode.trim()} className="shrink-0">
-            {redeeming ? <Loader2 size={16} className="animate-spin" /> : t("billing.redeem")}
-          </Button>
-        </div>
-        {profile?.billing_cycle_end && (
+      {profile?.billing_cycle_end && (
+        <div className="flex justify-center pt-4 border-t border-border">
           <p className="text-xs text-muted-foreground">
             {t("billing.currentPlanValid")} <span className="font-semibold text-foreground">{new Date(profile.billing_cycle_end).toLocaleDateString()}</span>
           </p>
-        )}
-      </div>
+        </div>
+      )}
 
-      <Dialog open={!!selectedPlan} onOpenChange={(open) => !open && setSelectedPlan(null)}>
+      <Dialog
+        open={!!selectedPlan}
+        onOpenChange={(open) => {
+          if (checkoutLoading) return;
+          if (!open) setSelectedPlan(null);
+        }}
+      >
         <DialogContent className="sm:max-w-md border-primary/20 bg-card">
           {selectedPlan && (
             <>
@@ -214,10 +242,30 @@ export default function Billing() {
                 )}
               </div>
               <DialogFooter className="flex-col sm:flex-row gap-2 pt-2">
-                <Button variant="outline" onClick={() => setSelectedPlan(null)} className="sm:flex-1">{t("common.cancel")}</Button>
-                <Button onClick={handleConfirmUpgrade} className={`sm:flex-1 font-semibold ${selectedPlan.highlighted ? "bg-orange-500 hover:bg-orange-600 text-white" : "bg-primary hover:bg-primary/90 text-primary-foreground"}`}>
-                  <Zap size={16} />
-                  {t("common.confirm")}
+                <Button
+                  variant="outline"
+                  onClick={() => setSelectedPlan(null)}
+                  className="sm:flex-1"
+                  disabled={checkoutLoading}
+                >
+                  {t("common.cancel")}
+                </Button>
+                <Button
+                  onClick={handleConfirmUpgrade}
+                  disabled={checkoutLoading}
+                  className={`sm:flex-1 font-semibold ${selectedPlan.highlighted ? "bg-orange-500 hover:bg-orange-600 text-white" : "bg-primary hover:bg-primary/90 text-primary-foreground"}`}
+                >
+                  {checkoutLoading ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin mr-2" />
+                      {t("billing.redirecting")}
+                    </>
+                  ) : (
+                    <>
+                      <Zap size={16} className="mr-2" />
+                      {selectedPlan.stripePriceId ? t("billing.proceedToCheckout") : t("common.confirm")}
+                    </>
+                  )}
                 </Button>
               </DialogFooter>
             </>
