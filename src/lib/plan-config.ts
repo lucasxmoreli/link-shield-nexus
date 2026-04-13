@@ -29,10 +29,12 @@ export interface PlanData {
   maxClicksLimit: number;
   maxDomains: number;
   maxCampaigns: number; // -1 = unlimited
-  /** Preço em USD por clique excedente (overage / pay-as-you-go). 0 = nao cobra. */
+  /** Preço em USD por clique excedente (overage). 0 = nao cobra. */
   extraClickPrice: number;
-  /** Stripe Price ID — null para o plano Free. Pegue no Stripe Dashboard → Products → Prices. */
+  /** Stripe Price ID da mensalidade fixa. null para o plano Free. */
   stripePriceId: string | null;
+  /** Stripe Price ID do item metered (overage). null para o plano Free. */
+  stripeMeteredPriceId: string | null;
 }
 
 export const PLANS: PlanData[] = [
@@ -56,6 +58,7 @@ export const PLANS: PlanData[] = [
     maxCampaigns: 0,
     extraClickPrice: 0,
     stripePriceId: null,
+    stripeMeteredPriceId: null,
   },
   {
     name: "BASIC PLAN",
@@ -77,7 +80,8 @@ export const PLANS: PlanData[] = [
     maxDomains: 3,
     maxCampaigns: 5,
     extraClickPrice: 0.01,
-    stripePriceId: "price_1TLVRnLZEOji6sEJnw9oiVW2", // ← TROQUE AQUI
+    stripePriceId: "price_1TLVRnLZEOji6sEJnw9oiVW2",
+    stripeMeteredPriceId: "price_1TLaNwLZEOji6sEJrtBFpRnn",
   },
   {
     name: "PRO PLAN",
@@ -100,7 +104,8 @@ export const PLANS: PlanData[] = [
     maxDomains: 10,
     maxCampaigns: 20,
     extraClickPrice: 0.004,
-    stripePriceId: "price_1TLVSrLZEOji6sEJ8sF00dTT", // ← TROQUE AQUI
+    stripePriceId: "price_1TLVSrLZEOji6sEJ8sF00dTT",
+    stripeMeteredPriceId: "price_1TLaHlLZEOji6sEJgKRRDuOh",
   },
   {
     name: "FREEDOM PLAN",
@@ -122,7 +127,8 @@ export const PLANS: PlanData[] = [
     maxDomains: 20,
     maxCampaigns: 50,
     extraClickPrice: 0.002,
-    stripePriceId: "price_1TLVTYLZEOji6sEJ0mzIvzme", // ← TROQUE AQUI
+    stripePriceId: "price_1TLVTYLZEOji6sEJ0mzIvzme",
+    stripeMeteredPriceId: "price_1TLaP0LZEOji6sEJdV7XPaJb",
   },
   {
     name: "ENTERPRISE CONQUEST",
@@ -144,30 +150,24 @@ export const PLANS: PlanData[] = [
     maxDomains: 25,
     maxCampaigns: -1,
     extraClickPrice: 0.001,
-    stripePriceId: "price_1TLVULLZEOji6sEJ4VyuhzMF", // ← TROQUE AQUI
+    stripePriceId: "price_1TLVULLZEOji6sEJ4VyuhzMF",
+    stripeMeteredPriceId: "price_1TLaR3LZEOji6sEJmagidXcF",
   },
 ];
 
-/** Get the user's plan config by plan_name */
 export function getPlanByName(planName: string | null | undefined): PlanData {
   const normalized = (planName || "free").toLowerCase();
   return PLANS.find((p) => p.name.toLowerCase() === normalized) || PLANS[0];
 }
 
-/** Get allowed traffic sources for a plan */
 export function getAllowedSources(plan: PlanData): TrafficSourceDef[] {
   return TRAFFIC_SOURCES.slice(0, plan.visibleSources);
 }
 
-/** Find a traffic source definition by key */
 export function getSourceByKey(key: string): TrafficSourceDef | undefined {
   return TRAFFIC_SOURCES.find((s) => s.key === key);
 }
 
-/**
- * Calcula o custo do excedente (overage / pay-as-you-go).
- * Retorna 0 se o usuario nao estourou o limite ou se o plano nao tem cobranca avulsa.
- */
 export function calculateOverageCost(
   currentClicks: number,
   maxClicks: number,

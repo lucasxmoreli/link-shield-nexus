@@ -1,33 +1,32 @@
-// =============================================================================
-// EDGE FUNCTION: stripe-webhook
-// =============================================================================
-// Recebe eventos do Stripe, valida assinatura criptografica e atualiza
-// profiles + cria invoices de forma idempotente.
-//
-// Requer secrets:
-//   STRIPE_SECRET_KEY
-//   STRIPE_WEBHOOK_SECRET (whsec_...)
-// =============================================================================
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
 
-// CORS basico (Stripe nao precisa, mas mantemos por consistencia)
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, stripe-signature",
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Mapeamento de price_id → plano interno
-// CRITICO: copie EXATAMENTE os mesmos price IDs do plan-config.ts
-// ─────────────────────────────────────────────────────────────────────────────
+// Mapa do price fixed → config interno do plano
 const PRICE_TO_PLAN: Record<string, { plan_name: string; max_clicks: number; max_domains: number }> = {
-  "price_1TLVRnLZEOji6sEJnw9oiVW2": { plan_name: "BASIC PLAN", max_clicks: 20000, max_domains: 3 },
-  "price_1TLVSrLZEOji6sEJ8sF00dTT": { plan_name: "PRO PLAN", max_clicks: 100000, max_domains: 10 },
-  "price_1TLVTYLZEOji6sEJ0mzIvzme": { plan_name: "FREEDOM PLAN", max_clicks: 300000, max_domains: 20 },
-  "price_1TLVULLZEOji6sEJ4VyuhzMF": { plan_name: "ENTERPRISE CONQUEST", max_clicks: 1000000, max_domains: 25 },
+  "price_1TLVRnLZEOji6sEJnw9oiVW2": { plan_name: "BASIC PLAN",          max_clicks:    20000, max_domains:  3 },
+  "price_1TLVSrLZEOji6sEJ8sF00dTT": { plan_name: "PRO PLAN",            max_clicks:   100000, max_domains: 10 },
+  "price_1TLVTYLZEOji6sEJ0mzIvzme": { plan_name: "FREEDOM PLAN",        max_clicks:   300000, max_domains: 20 },
+  "price_1TLVULLZEOji6sEJ4VyuhzMF": { plan_name: "ENTERPRISE CONQUEST", max_clicks:  1000000, max_domains: 25 },
+};
+
+// Mapa fixed → metered (auto-healing de subs antigas)
+const PLAN_METERED_MAP: Record<string, string> = {
+  "price_1TLVRnLZEOji6sEJnw9oiVW2": "price_1TLaNwLZEOji6sEJrtBFpRnn",
+  "price_1TLVSrLZEOji6sEJ8sF00dTT": "price_1TLaHlLZEOji6sEJgKRRDuOh",
+  "price_1TLVTYLZEOji6sEJ0mzIvzme": "price_1TLaP0LZEOji6sEJdV7XPaJb",
+  "price_1TLVULLZEOji6sEJ4VyuhzMF": "price_1TLaR3LZEOji6sEJmagidXcF",
+};
+
+// Mapa de addon prices → tipo
+const ADDON_PRICE_TO_TYPE: Record<string, "extra_domain" | "extra_campaign"> = {
+  "price_1TLZySLZEOji6sEJvsOtZ3sF": "extra_domain",
+  "price_1TLZzoLZEOji6sEJ8QA7ggHU": "extra_campaign",
 };
 
 const FREE_PLAN = { plan_name: "FREE", max_clicks: 0, max_domains: 0 };
@@ -48,12 +47,8 @@ serve(async (req) => {
     httpClient: Stripe.createFetchHttpClient(),
   });
 
-  // ── 1. Validar assinatura ──
   const signature = req.headers.get("stripe-signature");
-  if (!signature) {
-    console.warn("[stripe-webhook] Missing stripe-signature header");
-    return new Response("Missing signature", { status: 400 });
-  }
+  if (!signature) return new Response("Missing signature", { status: 400 });
 
   const rawBody = await req.text();
   let event: Stripe.Event;
@@ -65,11 +60,11 @@ serve(async (req) => {
     return new Response("Invalid signature", { status: 400 });
   }
 
-  // ── 2. Idempotencia: gravar event_id antes de processar ──
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const admin = createClient(supabaseUrl, serviceRoleKey);
 
+  // Idempotência
   const { error: dedupError } = await admin
     .from("stripe_events")
     .insert({
@@ -80,22 +75,22 @@ serve(async (req) => {
 
   if (dedupError) {
     if (dedupError.code === "23505") {
-      // UNIQUE violation — evento ja processado
-      console.log(`[stripe-webhook] Event ${event.id} already processed, skipping`);
+      console.log(`[stripe-webhook] Event ${event.id} already processed`);
       return new Response("Already processed", { status: 200 });
     }
     console.error("[stripe-webhook] Failed to record event:", dedupError);
     return new Response("Internal error", { status: 500 });
   }
 
-  // ── 3. Roteador de eventos ──
   try {
     switch (event.type) {
       case "checkout.session.completed":
         await handleCheckoutCompleted(stripe, admin, event.data.object as Stripe.Checkout.Session);
         break;
+      case "customer.subscription.created":
       case "customer.subscription.updated":
-        await handleSubscriptionUpdated(admin, event.data.object as Stripe.Subscription);
+        await handleSubscriptionUpdated(stripe, admin, event.data.object as Stripe.Subscription);
+        await syncSubscriptionAddons(admin, event.data.object as Stripe.Subscription);
         break;
       case "customer.subscription.deleted":
         await handleSubscriptionDeleted(admin, event.data.object as Stripe.Subscription);
@@ -111,7 +106,6 @@ serve(async (req) => {
     }
   } catch (handlerError) {
     console.error(`[stripe-webhook] Handler failed for ${event.type}:`, handlerError);
-    // Apaga o registro de idempotencia pra permitir retry do Stripe
     await admin.from("stripe_events").delete().eq("stripe_event_id", event.id);
     return new Response("Handler error", { status: 500 });
   }
@@ -123,29 +117,43 @@ serve(async (req) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// HANDLERS
-// ─────────────────────────────────────────────────────────────────────────────
 
 async function findUserId(
   admin: ReturnType<typeof createClient>,
   customerId: string,
   metadataUserId?: string
 ): Promise<string | null> {
-  // Prioridade 1: metadata (set pela create-checkout-session)
   if (metadataUserId) return metadataUserId;
-
-  // Prioridade 2: lookup por stripe_customer_id no profiles
   const { data, error } = await admin
     .from("profiles")
     .select("user_id")
     .eq("stripe_customer_id", customerId)
     .single();
-
   if (error || !data) {
     console.error(`[findUserId] No user found for customer ${customerId}`);
     return null;
   }
   return data.user_id;
+}
+
+// Extrai o item do plano base (primeiro item não-metered e não-addon)
+function findPlanItem(subscription: Stripe.Subscription): Stripe.SubscriptionItem | null {
+  for (const item of subscription.items.data) {
+    const isMetered = item.price.recurring?.usage_type === "metered";
+    const isAddon = !!ADDON_PRICE_TO_TYPE[item.price.id];
+    if (!isMetered && !isAddon && PRICE_TO_PLAN[item.price.id]) {
+      return item;
+    }
+  }
+  return null;
+}
+
+// Extrai o item metered (usage_type === 'metered')
+function findMeteredItem(subscription: Stripe.Subscription): Stripe.SubscriptionItem | null {
+  for (const item of subscription.items.data) {
+    if (item.price.recurring?.usage_type === "metered") return item;
+  }
+  return null;
 }
 
 async function handleCheckoutCompleted(
@@ -158,14 +166,13 @@ async function handleCheckoutCompleted(
   const userId = await findUserId(admin, customerId, session.metadata?.supabase_user_id);
   if (!userId) throw new Error(`No user for customer ${customerId}`);
 
-  // Buscar a subscription completa pra pegar o price_id real
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-  const priceId = subscription.items.data[0]?.price.id;
+  const planItem = findPlanItem(subscription);
+  const priceId = planItem?.price.id;
   const planConfig = priceId ? PRICE_TO_PLAN[priceId] : null;
+  if (!planConfig) throw new Error(`Unknown price_id: ${priceId}`);
 
-  if (!planConfig) {
-    throw new Error(`Unknown price_id: ${priceId}`);
-  }
+  const meteredItem = findMeteredItem(subscription);
 
   await admin
     .from("profiles")
@@ -173,6 +180,7 @@ async function handleCheckoutCompleted(
       stripe_customer_id: customerId,
       stripe_subscription_id: subscriptionId,
       stripe_price_id: priceId,
+      stripe_overage_item_id: meteredItem?.id ?? null,
       plan_name: planConfig.plan_name,
       max_clicks: planConfig.max_clicks,
       max_domains: planConfig.max_domains,
@@ -188,6 +196,7 @@ async function handleCheckoutCompleted(
 }
 
 async function handleSubscriptionUpdated(
+  stripe: Stripe,
   admin: ReturnType<typeof createClient>,
   subscription: Stripe.Subscription
 ) {
@@ -195,18 +204,40 @@ async function handleSubscriptionUpdated(
   const userId = await findUserId(admin, customerId, subscription.metadata?.supabase_user_id);
   if (!userId) throw new Error(`No user for customer ${customerId}`);
 
-  const priceId = subscription.items.data[0]?.price.id;
+  const planItem = findPlanItem(subscription);
+  const priceId = planItem?.price.id;
   const planConfig = priceId ? PRICE_TO_PLAN[priceId] : null;
-  if (!planConfig) throw new Error(`Unknown price_id: ${priceId}`);
+  if (!planConfig) {
+    console.warn(`[subscription.updated] Subscription sem plano conhecido, ignorando`);
+    return;
+  }
 
-  // Detecta se status mudou pra suspended
-  const isSuspended = ["past_due", "unpaid", "canceled", "incomplete_expired"].includes(subscription.status);
+  // Auto-healing: se a subscription não tem item metered, adiciona
+  let meteredItem = findMeteredItem(subscription);
+  if (!meteredItem && PLAN_METERED_MAP[priceId]) {
+    try {
+      console.log(`[auto-heal] Adicionando item metered em sub ${subscription.id}`);
+      const created = await stripe.subscriptionItems.create({
+        subscription: subscription.id,
+        price: PLAN_METERED_MAP[priceId],
+        proration_behavior: "none",
+      });
+      meteredItem = created as unknown as Stripe.SubscriptionItem;
+    } catch (err) {
+      console.error(`[auto-heal] Falhou ao adicionar metered:`, err);
+    }
+  }
+
+  // Grace period: past_due não suspende (cliente continua operando)
+  // Só suspende em unpaid/canceled/incomplete_expired
+  const isSuspended = ["unpaid", "canceled", "incomplete_expired"].includes(subscription.status);
 
   await admin
     .from("profiles")
     .update({
       stripe_subscription_id: subscription.id,
       stripe_price_id: priceId,
+      stripe_overage_item_id: meteredItem?.id ?? null,
       plan_name: planConfig.plan_name,
       max_clicks: planConfig.max_clicks,
       max_domains: planConfig.max_domains,
@@ -217,7 +248,51 @@ async function handleSubscriptionUpdated(
     })
     .eq("user_id", userId);
 
-  console.log(`[subscription.updated] User ${userId} -> status ${subscription.status}`);
+  console.log(`[subscription.updated] User ${userId} -> ${subscription.status} (suspended: ${isSuspended})`);
+}
+
+async function syncSubscriptionAddons(
+  admin: ReturnType<typeof createClient>,
+  subscription: Stripe.Subscription
+) {
+  const customerId = subscription.customer as string;
+  const userId = await findUserId(admin, customerId, subscription.metadata?.supabase_user_id);
+  if (!userId) return;
+
+  const activeItemIds: string[] = [];
+
+  for (const item of subscription.items.data) {
+    const addonType = ADDON_PRICE_TO_TYPE[item.price.id];
+    if (!addonType) continue;
+
+    activeItemIds.push(item.id);
+
+    await admin.from("subscription_addons").upsert({
+      user_id: userId,
+      stripe_subscription_item_id: item.id,
+      stripe_price_id: item.price.id,
+      addon_type: addonType,
+      quantity: item.quantity || 1,
+      status: "active",
+    }, { onConflict: "stripe_subscription_item_id" });
+  }
+
+  // Marca addons removidos como cancelled
+  if (activeItemIds.length > 0) {
+    const itemsList = activeItemIds.map((id) => `"${id}"`).join(",");
+    await admin.from("subscription_addons")
+      .update({ status: "cancelled" })
+      .eq("user_id", userId)
+      .eq("status", "active")
+      .not("stripe_subscription_item_id", "in", `(${itemsList})`);
+  } else {
+    await admin.from("subscription_addons")
+      .update({ status: "cancelled" })
+      .eq("user_id", userId)
+      .eq("status", "active");
+  }
+
+  console.log(`[sync-addons] User ${userId} -> ${activeItemIds.length} active`);
 }
 
 async function handleSubscriptionDeleted(
@@ -228,12 +303,12 @@ async function handleSubscriptionDeleted(
   const userId = await findUserId(admin, customerId, subscription.metadata?.supabase_user_id);
   if (!userId) throw new Error(`No user for customer ${customerId}`);
 
-  // Downgrade para FREE — preserva stripe_customer_id pra futuras compras
   await admin
     .from("profiles")
     .update({
       stripe_subscription_id: null,
       stripe_price_id: null,
+      stripe_overage_item_id: null,
       plan_name: FREE_PLAN.plan_name,
       max_clicks: FREE_PLAN.max_clicks,
       max_domains: FREE_PLAN.max_domains,
@@ -242,6 +317,12 @@ async function handleSubscriptionDeleted(
       billing_cycle_end: new Date().toISOString(),
     })
     .eq("user_id", userId);
+
+  // Marca todos addons como cancelled
+  await admin.from("subscription_addons")
+    .update({ status: "cancelled" })
+    .eq("user_id", userId)
+    .eq("status", "active");
 
   console.log(`[subscription.deleted] User ${userId} downgraded to FREE`);
 }
@@ -255,7 +336,6 @@ async function handleInvoicePaid(
   const userId = await findUserId(admin, customerId);
   if (!userId) throw new Error(`No user for customer ${customerId}`);
 
-  // Snapshot historico (idempotente via stripe_invoice_id UNIQUE)
   await admin.from("invoices").upsert({
     user_id: userId,
     stripe_invoice_id: invoice.id,
@@ -295,5 +375,8 @@ async function handleInvoiceFailed(
     hosted_invoice_url: invoice.hosted_invoice_url,
   }, { onConflict: "stripe_invoice_id" });
 
-  console.warn(`[invoice.failed] User ${userId} -> ${invoice.id}`);
+  // Grace period: não suspende aqui. O Stripe vai re-tentar por ~3 dias
+  // e, se falhar tudo, dispara customer.subscription.updated com status='unpaid'
+  // que é quando o handleSubscriptionUpdated suspende.
+  console.warn(`[invoice.failed] User ${userId} -> ${invoice.id} (grace period ativo)`);
 }
