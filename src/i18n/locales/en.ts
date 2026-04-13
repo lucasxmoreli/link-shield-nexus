@@ -447,6 +447,7 @@ const en = {
     // ── Sprint 6 Bloco C: Polimento ──
     usageOverPlan: "Usage exceeds plan limit",
     invoiceDescWithOverage: "{{plan}} · base + extra usage",
+    overageEstimatedCost: "Estimated extra cost: +{{clicks}} clicks ·",
   },
 
   // Settings

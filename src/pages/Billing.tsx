@@ -12,7 +12,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 import { PLANS, TRAFFIC_SOURCES, getPlanByName, type PlanData } from "@/lib/plan-config";
 import { PlanOverviewCard } from "@/components/billing/PlanOverviewCard";
-import { OverageCard } from "@/components/billing/OverageCard";
 import { LimitsGrid } from "@/components/billing/LimitsGrid";
 import { PaymentMethodCard } from "@/components/billing/PaymentMethodCard";
 import { InvoicesTable } from "@/components/billing/InvoicesTable";
@@ -325,11 +324,6 @@ export default function Billing() {
                 onChangePlan={handleChangePlan}
               />
 
-              <OverageCard
-                plan={userPlan}
-                currentClicks={profile.current_clicks ?? 0}
-                maxClicks={profile.max_clicks ?? 0}
-              />
 
               {profile.stripe_subscription_id && effectiveLimits && (
                 <LimitsGrid

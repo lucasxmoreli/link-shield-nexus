@@ -5,6 +5,7 @@ import { Check, AlertTriangle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
   formatClicks,
+  formatUSD,
   formatShortDate,
   daysUntil,
   calculateOverage,
@@ -32,9 +33,14 @@ export function PlanOverviewCard({
   const locale = i18n.language === "en" ? "en-US" : i18n.language === "es" ? "es-ES" : "pt-BR";
 
   const usagePct = maxClicks > 0 ? Math.min(100, (currentClicks / maxClicks) * 100) : 0;
-  const { overageClicks } = calculateOverage(currentClicks, maxClicks, plan.extraClickPrice);
-  const isOverage = overageClicks > 0;
   const realPct = maxClicks > 0 ? (currentClicks / maxClicks) * 100 : 0;
+
+  const { overageClicks, overageCost } = calculateOverage(
+    currentClicks,
+    maxClicks,
+    plan.extraClickPrice
+  );
+  const isOverage = overageClicks > 0;
 
   const daysLeft = billingCycleEnd ? daysUntil(billingCycleEnd) : null;
   const daysText =
@@ -108,13 +114,25 @@ export function PlanOverviewCard({
           </div>
         </div>
 
-        {/* Status indicator: verde dentro do plano, vermelho em overage */}
+        {/* Status indicator + detalhe financeiro consolidado */}
         {maxClicks > 0 && (
           <div className="mt-4">
             {isOverage ? (
-              <div className="flex items-center gap-2 text-sm text-destructive">
-                <AlertTriangle size={16} className="shrink-0" />
-                <span>{t("billing.usageOverPlan")}</span>
+              <div className="space-y-1.5">
+                {/* Alerta principal — sério, não gritante */}
+                <div className="flex items-center gap-2 text-sm text-destructive">
+                  <AlertTriangle size={16} className="shrink-0" />
+                  <span>{t("billing.usageOverPlan")}</span>
+                </div>
+                {/* Sublinha discreta com o custo estimado */}
+                <p className="text-xs text-muted-foreground pl-6">
+                  {t("billing.overageEstimatedCost", {
+                    clicks: formatClicks(overageClicks, locale),
+                  })}
+                  <span className="text-foreground font-mono font-semibold ml-1">
+                    {formatUSD(overageCost)}
+                  </span>
+                </p>
               </div>
             ) : (
               <div className="flex items-center gap-2 text-sm text-success">
