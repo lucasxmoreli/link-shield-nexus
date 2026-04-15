@@ -30,45 +30,27 @@ const AuthContext = createContext<AuthContextType>({
 
 /**
  * Verifica se o user está soft-deleted.
- * Se sim, força logout e redireciona pra tela explicativa.
- * Returns true se user OK, false se deletado (e já fez logout).
+ * Returns true se user OK ou erro (fail-open), false se deletado.
  */
-async function checkSoftDeleteAndRedirect(userId: string): Promise<boolean> {
+async function isUserSoftDeleted(userId: string): Promise<boolean> {
   try {
-    // Usa RPC ou query direta com .maybeSingle()
-    // RLS já bloqueia leitura de soft-deleted profiles, então usamos service-side check
-    // via uma query que ignora o filtro NOT is_deleted (precisa rpc ou função especial)
-    
-    // ALTERNATIVA SIMPLES: tenta ler o profile. Se RLS bloqueia (returns null),
-    // significa que pode estar deletado OU não existe. Vamos diferenciar.
     const { data: profile, error } = await supabase
       .from("profiles")
       .select("user_id, is_deleted")
       .eq("user_id", userId)
       .maybeSingle();
 
-    // Se profile retornou e is_deleted = true, força logout
-    if (profile?.is_deleted === true) {
-      console.warn("[useAuth] User is soft-deleted, forcing logout");
-      await supabase.auth.signOut();
-      window.location.href = "/account-deleted";
-      return false;
-    }
+    // Profile retornou explicitamente com is_deleted=true → deletado
+    if (profile?.is_deleted === true) return true;
 
-    // Se profile retornou null E não é erro de schema, pode ser que RLS bloqueou
-    // (ou seja, profile existe mas is_deleted=true). Nesse caso, também força logout.
-    if (!profile && !error) {
-      console.warn("[useAuth] Profile not visible (likely soft-deleted), forcing logout");
-      await supabase.auth.signOut();
-      window.location.href = "/account-deleted";
-      return false;
-    }
+    // Profile retornou null sem erro → RLS bloqueou (provavelmente soft-deleted)
+    if (!profile && !error) return true;
 
-    return true;
+    // Qualquer outro caso (profile válido OU erro de query) → NÃO bloqueia
+    return false;
   } catch (err) {
     console.error("[useAuth] Soft-delete check failed:", err);
-    // Falha aberta: deixa logar pra não trancar user por bug
-    return true;
+    return false; // fail-open
   }
 }
 
@@ -79,30 +61,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [adminViewAsEmail, setAdminViewAsEmail] = useState<string | null>(null);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        // Check soft-delete em SIGNED_IN ou TOKEN_REFRESHED
-        if (session?.user && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
-          const isOk = await checkSoftDeleteAndRedirect(session.user.id);
-          if (!isOk) return; // já redirecionou, não atualiza state
-        }
-        
-        setSession(session);
+    let mounted = true;
+
+    // Helper: aplica session com check de soft-delete (se houver user)
+    const applySession = async (newSession: Session | null) => {
+      if (!mounted) return;
+
+      // Se não tem user logado, só aplica direto (página /auth, landing, etc)
+      if (!newSession?.user) {
+        setSession(newSession);
         setLoading(false);
+        return;
+      }
+
+      // Tem user → checa soft-delete
+      const isDeleted = await isUserSoftDeleted(newSession.user.id);
+      
+      if (!mounted) return;
+
+      if (isDeleted) {
+        console.warn("[useAuth] User is soft-deleted, forcing logout");
+        await supabase.auth.signOut();
+        // Redireciona apenas se não estiver já na tela de account-deleted
+        if (window.location.pathname !== "/account-deleted") {
+          window.location.href = "/account-deleted";
+        }
+        // Não atualiza state — vai redirecionar
+        return;
+      }
+
+      // User OK
+      setSession(newSession);
+      setLoading(false);
+    };
+
+    // Listener de mudanças de auth (login, logout, refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, newSession) => {
+        applySession(newSession);
       }
     );
 
-    // Initial session check
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        const isOk = await checkSoftDeleteAndRedirect(session.user.id);
-        if (!isOk) return;
-      }
-      setSession(session);
-      setLoading(false);
+    // Check de session inicial (na primeira carga da página)
+    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      applySession(initialSession);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signOut = async () => {
