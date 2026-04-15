@@ -49,18 +49,28 @@ export function DangerZoneSection() {
       return data;
     },
     onSuccess: async () => {
+      // Mostra toast (vai persistir alguns segundos mesmo após navigate)
       toast({
         title: t("dangerZone.deleteSuccessTitle"),
         description: t("dangerZone.deleteSuccessDesc"),
       });
       setOpen(false);
-      
-      // Aguarda 1s pra user ver o toast, depois força logout
-      setTimeout(async () => {
-        await signOut();
-        window.location.href = "/account-deleted";
-      }, 1500);
-    },
+
+        // Backend já fez auth.admin.signOut("global") — frontend pode receber o evento
+        // SIGNED_OUT a qualquer momento via onAuthStateChange. Pra evitar race condition
+        // com guards de auth redirecionando pra /auth, navegamos IMEDIATAMENTE com replace.
+        // O toast continua visível no destino porque é renderizado no <Toaster /> global.
+        
+        // signOut local (defesa em profundidade)
+    try {
+       await signOut();
+     } catch (err) {
+       console.warn("[danger-zone] Local signOut failed (non-critical):", err);
+     }
+
+     // Replace em vez de href: não polui histórico e é mais rápido
+     window.location.replace("/account-deleted");
+},
     onError: (err: any) => {
       console.error("[danger-zone] Delete failed:", err);
       toast({
