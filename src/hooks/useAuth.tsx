@@ -82,18 +82,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (isDeleted) {
         console.warn("[useAuth] User is soft-deleted, forcing logout");
         await supabase.auth.signOut();
-        // Redireciona apenas se não estiver em rotas públicas relevantes
-        const publicRoutes = ["/account-deleted", "/auth", "/"];
-        if (!publicRoutes.includes(window.location.pathname)) {
+        // Só NÃO redireciona se já estiver em /account-deleted (evita loop).
+        // Em qualquer outra rota (/, /auth, /dashboard, etc), redireciona.
+        if (window.location.pathname !== "/account-deleted") {
           window.location.replace("/account-deleted");
         }
         return;
       }
-      // User OK
-      setSession(newSession);
-      setLoading(false);
-    };
-
     // Listener de mudanças de auth (login, logout, refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, newSession) => {
