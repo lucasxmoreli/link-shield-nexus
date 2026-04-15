@@ -82,14 +82,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (isDeleted) {
         console.warn("[useAuth] User is soft-deleted, forcing logout");
         await supabase.auth.signOut();
-        // Redireciona apenas se não estiver já na tela de account-deleted
-        if (window.location.pathname !== "/account-deleted") {
-          window.location.href = "/account-deleted";
+        // Redireciona apenas se não estiver em rotas públicas relevantes
+        const publicRoutes = ["/account-deleted", "/auth", "/"];
+        if (!publicRoutes.includes(window.location.pathname)) {
+          window.location.replace("/account-deleted");
         }
-        // Não atualiza state — vai redirecionar
         return;
       }
-
       // User OK
       setSession(newSession);
       setLoading(false);
