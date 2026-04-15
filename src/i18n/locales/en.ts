@@ -552,7 +552,44 @@ const en = {
     letsGo: "Let's Go",
     skipForNow: "Skip for now",
   },
+  dangerZone: {
+    sectionTitle: "Danger Zone",
+    sectionDesc: "Irreversible and destructive actions for your account.",
+    
+    consequencesTitle: "When you delete your account:",
+    consequence1: "Your subscription will be canceled immediately, with no refund",
+    consequence2: "All your domains and campaigns will be deactivated",
+    consequence3: "You'll have 30 days to reactivate by contacting support",
+    consequence4: "After 30 days, all your data will be permanently deleted",
+    
+    deleteButton: "Delete my account",
+    
+    dialogTitle: "Are you absolutely sure?",
+    dialogWarning: "This action cannot be undone through the interface. After deletion, only support can reactivate your account.",
+    dialogGracePeriod: "You'll have 30 days to contact support@cloakerx.com before everything is permanently erased.",
+    typeToConfirm: 'Type "{{text}}" to confirm',
+    confirmText: "DELETE MY ACCOUNT",
+    confirmTextMismatch: "Text doesn't match",
+    
+    cancel: "Cancel",
+    confirmDelete: "Yes, delete account",
+    deleting: "Deleting...",
+    
+    deleteSuccessTitle: "Account deleted",
+    deleteSuccessDesc: "You'll be signed out shortly.",
+    deleteFailedTitle: "Could not delete",
+    deleteFailedDesc: "Please try again or contact support.",
+  },
 
+  accountDeleted: {
+    title: "Account Deactivated",
+    description: "Your CloakerX account has been deactivated and is marked for permanent deletion in 30 days.",
+    howToRestore: "How to restore",
+    howToRestoreDesc: "Contact support within 30 days to reactivate your account. After this period, all data will be permanently removed.",
+    contactSupport: "Contact support",
+    backToHome: "Back to home",
+    gracePeriodNote: "Your account will be permanently deleted within 30 days.",
+},
   // Auth
   auth: {
     welcomeBack: "Welcome back",

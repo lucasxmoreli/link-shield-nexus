@@ -537,7 +537,44 @@ const es = {
     letsGo: "¡Vamos!",
     skipForNow: "Saltar por ahora",
   },
+  dangerZone: {
+    sectionTitle: "Zona de peligro",
+    sectionDesc: "Acciones irreversibles y destructivas para tu cuenta.",
+    
+    consequencesTitle: "Al eliminar tu cuenta:",
+    consequence1: "Tu suscripción será cancelada inmediatamente, sin reembolso",
+    consequence2: "Todos tus dominios y campañas serán desactivados",
+    consequence3: "Tendrás 30 días para reactivar contactando al soporte",
+    consequence4: "Después de 30 días, todos tus datos serán eliminados permanentemente",
+    
+    deleteButton: "Eliminar mi cuenta",
+    
+    dialogTitle: "¿Estás absolutamente seguro?",
+    dialogWarning: "Esta acción no se puede deshacer desde la interfaz. Después de eliminar, solo el soporte puede reactivar tu cuenta.",
+    dialogGracePeriod: "Tendrás 30 días para contactar a soporte@cloakerx.com antes de que todo sea borrado permanentemente.",
+    typeToConfirm: 'Escribe "{{text}}" para confirmar',
+    confirmText: "ELIMINAR MI CUENTA",
+    confirmTextMismatch: "El texto no coincide",
+    
+    cancel: "Cancelar",
+    confirmDelete: "Sí, eliminar cuenta",
+    deleting: "Eliminando...",
+    
+    deleteSuccessTitle: "Cuenta eliminada",
+    deleteSuccessDesc: "Serás desconectado en instantes.",
+    deleteFailedTitle: "No se pudo eliminar",
+    deleteFailedDesc: "Intenta de nuevo o contacta al soporte.",
+},
 
+  accountDeleted: {
+    title: "Cuenta desactivada",
+    description: "Tu cuenta CloakerX ha sido desactivada y está marcada para eliminación permanente en 30 días.",
+    howToRestore: "Cómo restaurar",
+    howToRestoreDesc: "Contacta al soporte dentro de 30 días para reactivar tu cuenta. Después de este período, todos los datos serán eliminados permanentemente.",
+    contactSupport: "Contactar soporte",
+    backToHome: "Volver al inicio",
+    gracePeriodNote: "Tu cuenta será eliminada permanentemente en hasta 30 días.",
+  },
   auth: {
     welcomeBack: "Bienvenido de nuevo",
     welcomeSubtitle: "Ingresa tus credenciales para acceder al panel.",

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { User, Lock, AlertTriangle } from "lucide-react";
 import { ProfileSection } from "@/components/profile/ProfileSection";
 import { PasswordSection } from "@/components/profile/PasswordSection";
+import { DangerZoneSection } from "@/components/profile/DangerZoneSection";
 
 type TabId = "profile" | "security" | "danger";
 
@@ -94,8 +95,8 @@ export default function AccountSettings() {
           {activeTab === "danger" && <TabContent
             title={t("profile.dangerTitle")}
             subtitle={t("profile.dangerSubtitle")}
-          >
-            <ComingSoonCard message={t("profile.dangerComingSoon")} />
+>
+            <DangerZoneSection />
           </TabContent>}
         </div>
       </div>
@@ -129,18 +130,3 @@ function TabContent({ title, subtitle, children }: TabContentProps) {
   );
 }
 
-interface ComingSoonCardProps {
-  message: string;
-}
-
-/**
- * Placeholder pra abas que ainda não têm conteúdo real (Danger Zone Bloco B).
- * Card sutil com mensagem centralizada.
- */
-function ComingSoonCard({ message }: ComingSoonCardProps) {
-  return (
-    <div className="rounded-lg border border-border/50 bg-card/50 p-8 text-center">
-      <p className="text-sm text-muted-foreground">{message}</p>
-    </div>
-  );
-}

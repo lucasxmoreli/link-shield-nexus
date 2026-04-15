@@ -28,6 +28,50 @@ const AuthContext = createContext<AuthContextType>({
   effectiveUserId: null,
 });
 
+/**
+ * Verifica se o user está soft-deleted.
+ * Se sim, força logout e redireciona pra tela explicativa.
+ * Returns true se user OK, false se deletado (e já fez logout).
+ */
+async function checkSoftDeleteAndRedirect(userId: string): Promise<boolean> {
+  try {
+    // Usa RPC ou query direta com .maybeSingle()
+    // RLS já bloqueia leitura de soft-deleted profiles, então usamos service-side check
+    // via uma query que ignora o filtro NOT is_deleted (precisa rpc ou função especial)
+    
+    // ALTERNATIVA SIMPLES: tenta ler o profile. Se RLS bloqueia (returns null),
+    // significa que pode estar deletado OU não existe. Vamos diferenciar.
+    const { data: profile, error } = await supabase
+      .from("profiles")
+      .select("user_id, is_deleted")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    // Se profile retornou e is_deleted = true, força logout
+    if (profile?.is_deleted === true) {
+      console.warn("[useAuth] User is soft-deleted, forcing logout");
+      await supabase.auth.signOut();
+      window.location.href = "/account-deleted";
+      return false;
+    }
+
+    // Se profile retornou null E não é erro de schema, pode ser que RLS bloqueou
+    // (ou seja, profile existe mas is_deleted=true). Nesse caso, também força logout.
+    if (!profile && !error) {
+      console.warn("[useAuth] Profile not visible (likely soft-deleted), forcing logout");
+      await supabase.auth.signOut();
+      window.location.href = "/account-deleted";
+      return false;
+    }
+
+    return true;
+  } catch (err) {
+    console.error("[useAuth] Soft-delete check failed:", err);
+    // Falha aberta: deixa logar pra não trancar user por bug
+    return true;
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
@@ -36,13 +80,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      async (event, session) => {
+        // Check soft-delete em SIGNED_IN ou TOKEN_REFRESHED
+        if (session?.user && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
+          const isOk = await checkSoftDeleteAndRedirect(session.user.id);
+          if (!isOk) return; // já redirecionou, não atualiza state
+        }
+        
         setSession(session);
         setLoading(false);
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Initial session check
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user) {
+        const isOk = await checkSoftDeleteAndRedirect(session.user.id);
+        if (!isOk) return;
+      }
       setSession(session);
       setLoading(false);
     });

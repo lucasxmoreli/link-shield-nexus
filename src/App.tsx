@@ -18,6 +18,7 @@ import Auth from "./pages/Auth";
 import CampaignRedirect from "./pages/CampaignRedirect";
 import Analytics from "./pages/Analytics";
 import NotFound from "./pages/NotFound";
+import AccountDeleted from "@/pages/AccountDeleted";
 
 const queryClient = new QueryClient();
 
@@ -62,6 +63,7 @@ const App = () => (
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/billing" element={<Billing />} />
             <Route path="/settings" element={<AccountSettings />} />
+            <Route path="/account-deleted" element={<AccountDeleted />} />
 
           {/* === Admin Command Center (unified) === */}
             <Route path="/admin" element={<AdminCommandCenter />} />

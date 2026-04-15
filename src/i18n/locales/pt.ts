@@ -546,6 +546,50 @@ const pt = {
     letsGo: "Vamos Lá",
     skipForNow: "Pular por agora",
   },
+  dangerZone: {
+    // Seção principal
+    sectionTitle: "Zona de Perigo",
+    sectionDesc: "Ações irreversíveis e destrutivas para sua conta.",
+    
+    // Lista de consequências
+    consequencesTitle: "Ao deletar sua conta:",
+    consequence1: "Sua assinatura será cancelada imediatamente, sem reembolso",
+    consequence2: "Todos os seus domínios e campanhas serão desativados",
+    consequence3: "Você terá 30 dias para reativar entrando em contato com o suporte",
+    consequence4: "Após 30 dias, todos os seus dados serão permanentemente excluídos",
+    
+    // Botão
+    deleteButton: "Deletar minha conta",
+    
+    // Dialog
+    dialogTitle: "Tem certeza absoluta?",
+    dialogWarning: "Esta ação não pode ser desfeita pela interface. Após deletar, apenas o suporte pode reativar sua conta.",
+    dialogGracePeriod: "Você terá 30 dias para entrar em contato com suporte@cloakerx.com antes que tudo seja apagado permanentemente.",
+    typeToConfirm: 'Digite "{{text}}" para confirmar',
+    confirmText: "DELETAR MINHA CONTA",
+    confirmTextMismatch: "O texto não confere",
+    
+    // Botões do dialog
+    cancel: "Cancelar",
+    confirmDelete: "Sim, deletar conta",
+    deleting: "Deletando...",
+    
+    // Toasts
+    deleteSuccessTitle: "Conta deletada",
+    deleteSuccessDesc: "Você será desconectado em instantes.",
+    deleteFailedTitle: "Não foi possível deletar",
+    deleteFailedDesc: "Tente novamente ou contate o suporte.",
+},
+
+accountDeleted: {
+    title: "Conta desativada",
+    description: "Sua conta CloakerX foi desativada e está marcada para exclusão permanente em 30 dias.",
+    howToRestore: "Como reativar",
+    howToRestoreDesc: "Entre em contato com o suporte dentro de 30 dias para reativar sua conta. Após esse período, todos os dados serão permanentemente removidos.",
+    contactSupport: "Contatar suporte",
+    backToHome: "Voltar à página inicial",
+    gracePeriodNote: "Sua conta será permanentemente excluída em até 30 dias.",
+},
 
   auth: {
     welcomeBack: "Bem-vindo de volta",
