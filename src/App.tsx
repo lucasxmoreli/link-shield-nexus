@@ -50,29 +50,34 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
+            {/* ─── PUBLIC ROUTES (no auth required) ─── */}
             <Route path="/" element={<Landing />} />
             <Route path="/auth" element={<AuthRoute />} />
-            <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/domains" element={<Domains />} />
-            <Route path="/campaigns" element={<Campaigns />} />
-            <Route path="/campaigns/new" element={<CampaignEdit />} />
-            <Route path="/campaigns/:id/edit" element={<CampaignEdit />} />
-            <Route path="/campaigns/:id/clone" element={<CampaignEdit />} />
-            <Route path="/requests" element={<Requests />} />
-            <Route path="/analytics" element={<Analytics />} />
-            <Route path="/billing" element={<Billing />} />
-            <Route path="/settings" element={<AccountSettings />} />
             <Route path="/account-deleted" element={<AccountDeleted />} />
-
-          {/* === Admin Command Center (unified) === */}
-            <Route path="/admin" element={<AdminCommandCenter />} />
-
-          {/* === Legacy redirects — kept for bookmarks, removed in a future cleanup === */}
-            <Route path="/invite-codes" element={<Navigate to="/admin?tab=invites" replace />} />
-            <Route path="/admin-old" element={<Navigate to="/admin" replace />} />
-            </Route>
             <Route path="/c/:hash" element={<CampaignRedirect />} />
+
+            {/* ─── PROTECTED ROUTES (require auth) ─── */}
+            <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/domains" element={<Domains />} />
+              <Route path="/campaigns" element={<Campaigns />} />
+              <Route path="/campaigns/new" element={<CampaignEdit />} />
+              <Route path="/campaigns/:id/edit" element={<CampaignEdit />} />
+              <Route path="/campaigns/:id/clone" element={<CampaignEdit />} />
+              <Route path="/requests" element={<Requests />} />
+              <Route path="/analytics" element={<Analytics />} />
+              <Route path="/billing" element={<Billing />} />
+              <Route path="/settings" element={<AccountSettings />} />
+
+              {/* === Admin Command Center (unified) === */}
+              <Route path="/admin" element={<AdminCommandCenter />} />
+
+              {/* === Legacy redirects === */}
+              <Route path="/invite-codes" element={<Navigate to="/admin?tab=invites" replace />} />
+              <Route path="/admin-old" element={<Navigate to="/admin" replace />} />
+            </Route>
+
+            {/* ─── 404 FALLBACK ─── */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
