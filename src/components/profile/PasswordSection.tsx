@@ -8,29 +8,13 @@ import { useTranslation } from "react-i18next";
 import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Eye, EyeOff } from "lucide-react";
-
-const MIN_PASSWORD_LENGTH = 8;
-
-type StrengthLevel = 0 | 1 | 2 | 3;
-
-/**
- * Calcula força da senha baseado em regras de Validação Média (decisão CEO):
- * - 0 = vazio
- * - 1 = fraca (menor que o mínimo)
- * - 2 = média (tem o mínimo mas falta upper ou lower)
- * - 3 = forte (tem mínimo + upper + lower)
- */
-function calculateStrength(password: string): StrengthLevel {
-  if (password.length === 0) return 0;
-  if (password.length < MIN_PASSWORD_LENGTH) return 1;
-
-  const hasUpper = /[A-Z]/.test(password);
-  const hasLower = /[a-z]/.test(password);
-
-  if (hasUpper && hasLower) return 3;
-  if (hasUpper || hasLower) return 2;
-  return 1;
-}
+import {
+  calculatePasswordStrength,
+  isPasswordAcceptable,
+  getPasswordStrengthPct,
+  getPasswordStrengthColor,
+} from "@/lib/password-validation";
+import { PasswordCriteriaList } from "@/components/profile/PasswordCriteriaList";
 
 export function PasswordSection() {
   const { toast } = useToast();
@@ -40,37 +24,31 @@ export function PasswordSection() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [validationError, setValidationError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const strength = calculateStrength(newPassword);
-  const strengthPct = (strength / 3) * 100;
+  const strength = calculatePasswordStrength(newPassword);
+  const strengthPct = getPasswordStrengthPct(newPassword);
+  const strengthColors = getPasswordStrengthColor(strength);
+  const passwordAcceptable = isPasswordAcceptable(newPassword);
 
-  // Mapeamento de força → label e cor
-  const strengthConfig: Record<StrengthLevel, { label: string; color: string; textColor: string }> = {
-    0: { label: "", color: "", textColor: "" },
-    1: { label: t("profile.passwordStrengthWeak"), color: "bg-destructive", textColor: "text-destructive" },
-    2: { label: t("profile.passwordStrengthMedium"), color: "bg-yellow-500", textColor: "text-yellow-500" },
-    3: { label: t("profile.passwordStrengthStrong"), color: "bg-success", textColor: "text-success" },
-  };
+  // Label da força (mapeamento i18n)
+  const strengthLabel =
+    strength === "empty" ? "" :
+    strength === "weak" ? t("password.strengthWeak") :
+    strength === "medium" ? t("password.strengthMedium") :
+    t("password.strengthStrong");
 
   // Validação completa antes de submeter
   const validate = (): string | null => {
-    if (newPassword.length < MIN_PASSWORD_LENGTH) {
-      return t("profile.passwordTooShort");
-    }
-    if (!/[A-Z]/.test(newPassword)) {
-      return t("profile.passwordNeedsUppercase");
-    }
-    if (!/[a-z]/.test(newPassword)) {
-      return t("profile.passwordNeedsLowercase");
+    if (!isPasswordAcceptable(newPassword)) {
+      return t("password.notAcceptable");
     }
     if (newPassword !== confirmPassword) {
-      return t("profile.passwordsDoNotMatch");
+      return t("password.doNotMatch");
     }
     return null;
   };
 
-  // Mutation para atualizar senha via Supabase Auth nativo
   const updateMutation = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.auth.updateUser({
@@ -83,10 +61,9 @@ export function PasswordSection() {
         title: t("profile.passwordUpdatedTitle"),
         description: t("profile.passwordUpdatedDesc"),
       });
-      // Limpa os campos após sucesso
       setNewPassword("");
       setConfirmPassword("");
-      setValidationError(null);
+      setSubmitError(null);
     },
     onError: (err: any) => {
       console.error("[password] Update failed:", err);
@@ -101,18 +78,23 @@ export function PasswordSection() {
   const handleUpdate = () => {
     const error = validate();
     if (error) {
-      setValidationError(error);
+      setSubmitError(error);
       return;
     }
-    setValidationError(null);
+    setSubmitError(null);
     updateMutation.mutate();
   };
 
-  // Botão habilita apenas com ambos preenchidos e sem mutation rodando
+  // Botão habilita SE: senha aceitável + senhas iguais + sem mutation rodando
   const canUpdate =
-    newPassword.length > 0 &&
+    passwordAcceptable &&
+    newPassword === confirmPassword &&
     confirmPassword.length > 0 &&
     !updateMutation.isPending;
+
+  // Detecta mismatch em tempo real (só mostra quando user já digitou na confirmação)
+  const showMismatch =
+    confirmPassword.length > 0 && newPassword !== confirmPassword;
 
   return (
     <Card className="border-border bg-card">
@@ -139,7 +121,7 @@ export function PasswordSection() {
                 value={newPassword}
                 onChange={(e) => {
                   setNewPassword(e.target.value);
-                  if (validationError) setValidationError(null);
+                  if (submitError) setSubmitError(null);
                 }}
                 placeholder={t("profile.newPasswordPlaceholder")}
                 className="pr-10"
@@ -157,25 +139,28 @@ export function PasswordSection() {
               </button>
             </div>
 
-            {/* Barra de força — aparece só quando tem algo digitado */}
+            {/* Barra de força — aparece quando user começa a digitar */}
             {newPassword.length > 0 && (
               <div className="space-y-1 pt-1">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">
-                    {t("profile.passwordStrengthLabel")}
+                    {t("password.strengthLabel")}
                   </span>
-                  <span className={`font-medium ${strengthConfig[strength].textColor}`}>
-                    {strengthConfig[strength].label}
+                  <span className={`font-medium ${strengthColors.text}`}>
+                    {strengthLabel}
                   </span>
                 </div>
                 <div className="h-1 bg-muted rounded-full overflow-hidden">
                   <div
-                    className={`h-full transition-all duration-300 ${strengthConfig[strength].color}`}
+                    className={`h-full transition-all duration-300 ${strengthColors.bg}`}
                     style={{ width: `${strengthPct}%` }}
                   />
                 </div>
               </div>
             )}
+
+            {/* ★ Checklist dinâmico (a grande sacada) */}
+            <PasswordCriteriaList password={newPassword} />
           </div>
 
           {/* Confirmar nova senha */}
@@ -190,7 +175,7 @@ export function PasswordSection() {
                 value={confirmPassword}
                 onChange={(e) => {
                   setConfirmPassword(e.target.value);
-                  if (validationError) setValidationError(null);
+                  if (submitError) setSubmitError(null);
                 }}
                 placeholder={t("profile.confirmPasswordPlaceholder")}
                 className="pr-10"
@@ -207,11 +192,17 @@ export function PasswordSection() {
                 {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
+            {/* Erro de mismatch em tempo real */}
+            {showMismatch && (
+              <p className="text-xs text-destructive">
+                {t("password.doNotMatch")}
+              </p>
+            )}
           </div>
 
-          {/* Error message */}
-          {validationError && (
-            <p className="text-xs text-destructive">{validationError}</p>
+          {/* Submit error (raro, só se a validação client passar mas server reclamar) */}
+          {submitError && !showMismatch && (
+            <p className="text-xs text-destructive">{submitError}</p>
           )}
 
           {/* Update button */}

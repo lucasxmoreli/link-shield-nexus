@@ -7,6 +7,13 @@ import { Shield, Loader2, ArrowLeft, Eye, EyeOff, Mail, Lock, Ticket, AlertCircl
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { LanguageSelector } from "@/components/LanguageSelector";
+import {
+  calculatePasswordStrength,
+  isPasswordAcceptable,
+  getPasswordStrengthPct,
+  getPasswordStrengthColor,
+} from "@/lib/password-validation";
+import { PasswordCriteriaList } from "@/components/profile/PasswordCriteriaList";
 
 type AuthView = "login" | "invite" | "register";
 
@@ -21,6 +28,18 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { t } = useTranslation();
+
+  // Calcula força da senha (usado só no Register)
+  const strength = calculatePasswordStrength(password);
+  const strengthPct = getPasswordStrengthPct(password);
+  const strengthColors = getPasswordStrengthColor(strength);
+  const passwordAcceptable = isPasswordAcceptable(password);
+
+  const strengthLabel =
+    strength === "empty" ? "" :
+    strength === "weak" ? t("password.strengthWeak") :
+    strength === "medium" ? t("password.strengthMedium") :
+    t("password.strengthStrong");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,6 +72,13 @@ export default function Auth() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Defesa adicional client-side (botão já bloqueia, mas paranoia é boa)
+    if (!passwordAcceptable) {
+      toast.error(t("password.notAcceptable"));
+      return;
+    }
+
     setLoading(true);
     try {
       const { data, error: fnError } = await supabase.functions.invoke("register", {
@@ -65,6 +91,8 @@ export default function Auth() {
       } else {
         toast.success(t("auth.accountCreated"));
         setView("login");
+        // Limpa senha após sucesso (segurança)
+        setPassword("");
       }
     } catch {
       toast.error(t("auth.registrationFailed"));
@@ -86,7 +114,7 @@ export default function Auth() {
     }
     return (
       <button
-        onClick={() => { setView("login"); setInviteError(""); }}
+        onClick={() => { setView("login"); setInviteError(""); setPassword(""); }}
         className="text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
         {t("auth.alreadyHaveAccount")}{" "}
@@ -107,6 +135,9 @@ export default function Auth() {
   };
 
   const { title, subtitle } = renderTitle();
+
+  // Botão Register habilita apenas com senha aceitável + email preenchido
+  const canRegister = !loading && passwordAcceptable && email.trim().length > 0;
 
   return (
     <div className="min-h-screen flex bg-background">
@@ -167,6 +198,7 @@ export default function Auth() {
               <p className="text-muted-foreground text-sm">{subtitle}</p>
             </div>
 
+            {/* ─── LOGIN ─── */}
             {view === "login" && (
               <form onSubmit={handleLogin} className="space-y-5">
                 <div className="space-y-1.5">
@@ -201,6 +233,7 @@ export default function Auth() {
               </form>
             )}
 
+            {/* ─── INVITE CODE ─── */}
             {view === "invite" && (
               <form onSubmit={handleValidateInvite} className="space-y-5">
                 <div className="space-y-1.5">
@@ -223,6 +256,7 @@ export default function Auth() {
               </form>
             )}
 
+            {/* ─── REGISTER (com checklist) ─── */}
             {view === "register" && (
               <form onSubmit={handleRegister} className="space-y-5">
                 <div className="space-y-1.5">
@@ -236,14 +270,49 @@ export default function Auth() {
                   <label className="text-sm font-medium text-foreground">{t("auth.passwordLabel")}</label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input type={showPassword ? "text" : "password"} placeholder={t("auth.passwordPlaceholder")} value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} className="pl-10 pr-10 h-11 bg-secondary/50 border-border focus:border-primary/50 transition-colors" />
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      placeholder={t("auth.passwordPlaceholder")}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      minLength={6}
+                      className="pl-10 pr-10 h-11 bg-secondary/50 border-border focus:border-primary/50 transition-colors"
+                    />
                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" tabIndex={-1}>
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
-                  <p className="text-xs text-muted-foreground">{t("auth.minChars")}</p>
+
+                  {/* Barra de força */}
+                  {password.length > 0 && (
+                    <div className="space-y-1 pt-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">
+                          {t("password.strengthLabel")}
+                        </span>
+                        <span className={`font-medium ${strengthColors.text}`}>
+                          {strengthLabel}
+                        </span>
+                      </div>
+                      <div className="h-1 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className={`h-full transition-all duration-300 ${strengthColors.bg}`}
+                          style={{ width: `${strengthPct}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ★ Checklist dinâmico de critérios */}
+                  <PasswordCriteriaList password={password} />
                 </div>
-                <Button type="submit" className="w-full h-11 text-sm font-semibold" disabled={loading}>
+
+                <Button
+                  type="submit"
+                  className="w-full h-11 text-sm font-semibold"
+                  disabled={!canRegister}
+                >
                   {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                   {t("auth.createAccountButton")}
                 </Button>

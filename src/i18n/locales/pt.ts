@@ -516,6 +516,22 @@ const pt = {
     dangerSubtitle: "Ações irreversíveis e destrutivas para sua conta.",
     dangerComingSoon: "Configurações da zona de perigo em breve",
 },
+  password: {
+    // Critérios do checklist
+    criteriaMinLength: "Mínimo 6 caracteres",
+    criteriaHasLetter: "Pelo menos 1 letra",
+    criteriaHasNumber: "Pelo menos 1 número",
+
+    // Força da senha
+    strengthLabel: "Força",
+    strengthWeak: "Fraca",
+    strengthMedium: "Média",
+    strengthStrong: "Forte",
+
+    // Mensagens de validação
+    notAcceptable: "Senha não atende aos critérios mínimos",
+    doNotMatch: "As senhas não coincidem",
+},
   onboarding: {
     welcomeTitle: "Bem-vindo ao CloakerX!",
     welcomeDesc: "Complete estes 3 passos para começar a proteger seu tráfego.",

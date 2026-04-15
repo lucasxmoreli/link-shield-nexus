@@ -510,6 +510,19 @@ const es = {
     dangerSubtitle: "Acciones irreversibles y destructivas para tu cuenta.",
     dangerComingSoon: "Configuración de la zona de peligro próximamente",
 },
+  password: {
+    criteriaMinLength: "Mínimo 6 caracteres",
+    criteriaHasLetter: "Al menos 1 letra",
+    criteriaHasNumber: "Al menos 1 número",
+
+    strengthLabel: "Fuerza",
+    strengthWeak: "Débil",
+    strengthMedium: "Media",
+    strengthStrong: "Fuerte",
+
+    notAcceptable: "La contraseña no cumple los requisitos mínimos",
+    doNotMatch: "Las contraseñas no coinciden",
+},
   onboarding: {
     welcomeTitle: "¡Bienvenido a CloakerX!",
     welcomeDesc: "Completa estos 3 pasos para comenzar a proteger tu tráfico.",
