@@ -16,7 +16,7 @@
 //   4. Retorna {deleted: N, errors: [...]}
 // =============================================================================
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const GRACE_PERIOD_DAYS = 30;
 

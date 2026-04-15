@@ -17,10 +17,10 @@
 // =============================================================================
 
 // @deno-types="https://esm.sh/@supabase/supabase-js@2.45.0"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
+import { createClient } from "jsr:@supabase/supabase-js@2";
+import Stripe from "npm:stripe@17.5.0";
 
-const CONFIRMATION_TEXT = "DELETAR MINHA CONTA";
+const CONFIRMATION_TEXT = "DELETE_MY_ACCOUNT";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -87,7 +87,7 @@ Deno.serve(async (req: Request) => {
 
     if (body.confirmation !== CONFIRMATION_TEXT) {
       return jsonResponse({
-        error: `Confirmation text must be exactly: "${CONFIRMATION_TEXT}"`,
+       error: "Invalid confirmation token",
       }, 400);
     }
 
@@ -130,8 +130,8 @@ Deno.serve(async (req: Request) => {
     if (profile.stripe_subscription_id) {
       try {
         const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, {
-          apiVersion: "2023-10-16",
-          httpClient: Stripe.createFetchHttpClient(),
+            apiVersion: "2024-06-20",
+            httpClient: Stripe.createFetchHttpClient(),
         });
 
         // prorate: false = cancela imediato sem reembolso
