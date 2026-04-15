@@ -498,6 +498,17 @@ const es = {
     passwordsDoNotMatch: "Las contraseñas no coinciden",
     showPassword: "Mostrar contraseña",
     hidePassword: "Ocultar contraseña",
+    tabProfile: "Perfil",
+    tabSecurity: "Seguridad",
+    tabDanger: "Zona de peligro",
+
+    profileTitle: "Perfil",
+    profileSubtitle: "Actualiza tu información de perfil y preferencias de email.",
+    securityTitle: "Seguridad",
+    securitySubtitle: "Gestiona tu contraseña y preferencias de seguridad.",
+    dangerTitle: "Zona de peligro",
+    dangerSubtitle: "Acciones irreversibles y destructivas para tu cuenta.",
+    dangerComingSoon: "Configuración de la zona de peligro próximamente",
 },
   onboarding: {
     welcomeTitle: "¡Bienvenido a CloakerX!",

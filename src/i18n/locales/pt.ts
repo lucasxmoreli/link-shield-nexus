@@ -502,6 +502,19 @@ const pt = {
     passwordsDoNotMatch: "As senhas não coincidem",
     showPassword: "Mostrar senha",
     hidePassword: "Ocultar senha",
+    // ── Tabs (Layout duas colunas) ──
+    tabProfile: "Perfil",
+    tabSecurity: "Segurança",
+    tabDanger: "Zona de perigo",
+
+    // Subtítulos das tabs
+    profileTitle: "Perfil",
+    profileSubtitle: "Atualize suas informações de perfil e preferências de email.",
+    securityTitle: "Segurança",
+    securitySubtitle: "Gerencie sua senha e preferências de segurança.",
+    dangerTitle: "Zona de perigo",
+    dangerSubtitle: "Ações irreversíveis e destrutivas para sua conta.",
+    dangerComingSoon: "Configurações da zona de perigo em breve",
 },
   onboarding: {
     welcomeTitle: "Bem-vindo ao CloakerX!",

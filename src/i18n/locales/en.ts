@@ -513,6 +513,17 @@ const en = {
     passwordsDoNotMatch: "Passwords do not match",
     showPassword: "Show password",
     hidePassword: "Hide password",
+    tabProfile: "Profile",
+    tabSecurity: "Security",
+    tabDanger: "Danger Zone",
+
+    profileTitle: "Profile",
+    profileSubtitle: "Update your profile information and email preferences.",
+    securityTitle: "Security",
+    securitySubtitle: "Manage your password and security preferences.",
+    dangerTitle: "Danger Zone",
+    dangerSubtitle: "Irreversible and destructive actions for your account.",
+    dangerComingSoon: "Danger zone settings coming soon",
 },
 
   onboarding: {
