@@ -30,7 +30,7 @@ const AuthContext = createContext<AuthContextType>({
 
 /**
  * Verifica se o user está soft-deleted.
- * Returns true se user OK ou erro (fail-open), false se deletado.
+ * Returns true se deletado, false se OK ou erro (fail-open).
  */
 async function isUserSoftDeleted(userId: string): Promise<boolean> {
   try {
@@ -76,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Tem user → checa soft-delete
       const isDeleted = await isUserSoftDeleted(newSession.user.id);
-      
+
       if (!mounted) return;
 
       if (isDeleted) {
@@ -89,6 +89,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         return;
       }
+
+      // User OK → aplica session normalmente
+      setSession(newSession);
+      setLoading(false);
+    };
+
     // Listener de mudanças de auth (login, logout, refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, newSession) => {
