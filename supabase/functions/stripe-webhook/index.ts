@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
+import { createClient } from "jsr:@supabase/supabase-js@2";
+import Stripe from "npm:stripe@17.5.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,11 +8,11 @@ const corsHeaders = {
 };
 
 // Mapa do price fixed → config interno do plano
-const PRICE_TO_PLAN: Record<string, { plan_name: string; max_clicks: number; max_domains: number }> = {
-  "price_1TLVRnLZEOji6sEJnw9oiVW2": { plan_name: "BASIC PLAN",          max_clicks:    20000, max_domains:  3 },
-  "price_1TLVSrLZEOji6sEJ8sF00dTT": { plan_name: "PRO PLAN",            max_clicks:   100000, max_domains: 10 },
-  "price_1TLVTYLZEOji6sEJ0mzIvzme": { plan_name: "FREEDOM PLAN",        max_clicks:   300000, max_domains: 20 },
-  "price_1TLVULLZEOji6sEJ4VyuhzMF": { plan_name: "ENTERPRISE CONQUEST", max_clicks:  1000000, max_domains: 25 },
+const PRICE_TO_PLAN: Record<string, { plan_name: string; max_clicks: number; max_domains: number; max_campaigns: number }> = {
+  "price_1TLVRnLZEOji6sEJnw9oiVW2": { plan_name: "BASIC PLAN",          max_clicks:    20000, max_domains:  3, max_campaigns:  5 },
+  "price_1TLVSrLZEOji6sEJ8sF00dTT": { plan_name: "PRO PLAN",            max_clicks:   100000, max_domains: 10, max_campaigns: 20 },
+  "price_1TLVTYLZEOji6sEJ0mzIvzme": { plan_name: "FREEDOM PLAN",        max_clicks:   300000, max_domains: 20, max_campaigns: 50 },
+  "price_1TLVULLZEOji6sEJ4VyuhzMF": { plan_name: "ENTERPRISE CONQUEST", max_clicks:  1000000, max_domains: 25, max_campaigns: -1 },
 };
 
 // Mapa fixed → metered (auto-healing de subs antigas)
@@ -29,7 +29,7 @@ const ADDON_PRICE_TO_TYPE: Record<string, "extra_domain" | "extra_campaign"> = {
   "price_1TLZzoLZEOji6sEJ8QA7ggHU": "extra_campaign",
 };
 
-const FREE_PLAN = { plan_name: "FREE", max_clicks: 0, max_domains: 0 };
+const FREE_PLAN = { plan_name: "FREE", max_clicks: 0, max_domains: 0, max_campaigns: 0 };
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -43,7 +43,7 @@ serve(async (req) => {
   }
 
   const stripe = new Stripe(stripeKey, {
-    apiVersion: "2023-10-16",
+    apiVersion: "2024-06-20",
     httpClient: Stripe.createFetchHttpClient(),
   });
 
@@ -182,6 +182,7 @@ async function handleCheckoutCompleted(
       plan_name: planConfig.plan_name,
       max_clicks: planConfig.max_clicks,
       max_domains: planConfig.max_domains,
+      max_campaigns: planConfig.max_campaigns,
       current_clicks: 0,
       subscription_status: subscription.status,
       is_suspended: false,
@@ -255,13 +256,14 @@ async function handleSubscriptionUpdated(
 
   // ── Monta payload do UPDATE ──
   // Tudo num único objeto → um único statement SQL → zero race condition
-  const updatePayload: Record<string, unknown> = {
+ const updatePayload: Record<string, unknown> = {
     stripe_subscription_id: subscription.id,
     stripe_price_id: priceId,
     stripe_overage_item_id: meteredItem?.id ?? null,
     plan_name: planConfig.plan_name,
     max_clicks: planConfig.max_clicks,
     max_domains: planConfig.max_domains,
+    max_campaigns: planConfig.max_campaigns,
     subscription_status: subscription.status,
     is_suspended: isSuspended,
     billing_cycle_start: newCycleStartISO,
@@ -347,6 +349,7 @@ async function handleSubscriptionDeleted(
       plan_name: FREE_PLAN.plan_name,
       max_clicks: FREE_PLAN.max_clicks,
       max_domains: FREE_PLAN.max_domains,
+      max_campaigns: FREE_PLAN.max_campaigns,
       subscription_status: "canceled",
       is_suspended: true,
       billing_cycle_end: new Date().toISOString(),

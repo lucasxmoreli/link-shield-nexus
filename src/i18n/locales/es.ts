@@ -520,7 +520,7 @@ const es = {
     strengthMedium: "Media",
     strengthStrong: "Fuerte",
 
-    notAcceptable: "La contraseña no cumple los requisitos mínimos",
+    notAcceptable: "Todos los criterios deben estar en verde",
     doNotMatch: "Las contraseñas no coinciden",
 },
   onboarding: {

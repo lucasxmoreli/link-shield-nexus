@@ -535,7 +535,7 @@ const en = {
     strengthMedium: "Medium",
     strengthStrong: "Strong",
 
-    notAcceptable: "Password does not meet minimum requirements",
+    notAcceptable: "All criteria must be green",
     doNotMatch: "Passwords do not match",
 },
   onboarding: {

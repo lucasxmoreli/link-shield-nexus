@@ -529,8 +529,9 @@ const pt = {
     strengthStrong: "Forte",
 
     // Mensagens de validação
-    notAcceptable: "Senha não atende aos critérios mínimos",
+    notAcceptable: "Todos os critérios precisam estar verdes",
     doNotMatch: "As senhas não coincidem",
+    
 },
   onboarding: {
     welcomeTitle: "Bem-vindo ao CloakerX!",
