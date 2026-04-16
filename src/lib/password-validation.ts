@@ -50,7 +50,7 @@ export function calculatePasswordStrength(password: string): PasswordStrength {
  */
 export function isPasswordAcceptable(password: string): boolean {
   const strength = calculatePasswordStrength(password);
-  return strength === "medium" || strength === "strong";
+  return strength === "strong";
 }
 
 /**
