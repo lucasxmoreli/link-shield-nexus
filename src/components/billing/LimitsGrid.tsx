@@ -21,8 +21,8 @@ import { Plus, Infinity as InfinityIcon, Loader2, CreditCard, AlertCircle } from
 // ─────────────────────────────────────────────────────────────
 
 const ADDON_PRICING: Record<string, { priceLabel: string; period: string }> = {
-  extra_domain:   { priceLabel: "$5.00", period: "/mo" },
-  extra_campaign: { priceLabel: "$5.00", period: "/mo" },
+  extra_domain:   { priceLabel: "$2.50", period: "/mo" },
+  extra_campaign: { priceLabel: "$2.50", period: "/mo" },
 };
 
 // ─────────────────────────────────────────────────────────────
