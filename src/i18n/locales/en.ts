@@ -474,6 +474,17 @@ const en = {
     usageOverPlan: "Usage exceeds plan limit",
     invoiceDescWithOverage: "{{plan}} · base + extra usage",
     overageEstimatedCost: "Estimated extra cost: +{{clicks}} clicks ·",
+    // ── Addon Confirmation Dialog ──
+    addonConfirmTitle: "Confirm slot addition",
+    addonConfirmDesc: "You are adding 1 extra {{addon}} slot to your subscription.",
+    addonDomainLabel: "Domain",
+    addonCampaignLabel: "Campaign",
+    addonRecurringCost: "Monthly recurring cost",
+    addonProrationWarning: "A prorated charge may be applied immediately to your credit card for the remaining days in the current billing cycle. Starting next cycle, the full amount will be charged monthly.",
+    addonCancel: "Cancel",
+    addonConfirmButton: "Confirm payment",
+    addonProcessing: "Processing...",
+    addonGenericError: "Could not add the slot. Please try again.",
   },
 
   // Settings

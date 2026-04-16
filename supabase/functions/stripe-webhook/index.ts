@@ -25,8 +25,8 @@ const PLAN_METERED_MAP: Record<string, string> = {
 
 // Mapa de addon prices → tipo
 const ADDON_PRICE_TO_TYPE: Record<string, "extra_domain" | "extra_campaign"> = {
-  "price_1TLZySLZEOji6sEJvsOtZ3sF": "extra_domain",
-  "price_1TLZzoLZEOji6sEJ8QA7ggHU": "extra_campaign",
+  "price_1TMwsxLZEOji6sEJZj5yvPct": "extra_domain",
+  "price_1TMwudLZEOji6sEJLY129lHV": "extra_campaign",
 };
 
 const FREE_PLAN = { plan_name: "FREE", max_clicks: 0, max_domains: 0, max_campaigns: 0 };

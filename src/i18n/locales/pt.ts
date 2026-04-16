@@ -462,6 +462,17 @@ const pt = {
     usageOverPlan: "Consumo acima do limite do plano",
     invoiceDescWithOverage: "{{plan}} · base + uso extra",
     overageEstimatedCost: "Custo extra estimado: +{{clicks}} cliques ·",
+    // ── Addon Confirmation Dialog ──
+    addonConfirmTitle: "Confirmar adição de slot",
+    addonConfirmDesc: "Você está adicionando 1 slot extra de {{addon}} à sua assinatura.",
+    addonDomainLabel: "Domínio",
+    addonCampaignLabel: "Campanha",
+    addonRecurringCost: "Custo recorrente mensal",
+    addonProrationWarning: "Uma cobrança proporcional pode ser aplicada imediatamente no seu cartão de crédito, referente aos dias restantes do ciclo atual. A partir do próximo ciclo, o valor cheio será cobrado mensalmente.",
+    addonCancel: "Cancelar",
+    addonConfirmButton: "Confirmar pagamento",
+    addonProcessing: "Processando...",
+    addonGenericError: "Não foi possível adicionar o slot. Tente novamente.",
   },
 
   settings: {

@@ -277,6 +277,7 @@ export default function Billing() {
         description: err.message || t("billing.checkoutFailedDesc"),
         variant: "destructive",
       });
+      throw err; // Propaga pro Dialog do LimitsGrid mostrar erro inline
     } finally {
       setAddonLoading(null);
     }
