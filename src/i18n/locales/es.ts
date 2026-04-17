@@ -190,13 +190,6 @@ const es = {
     safePageSectionDesc: "La página mostrada a bots, revisores y tráfico no segmentado.",
     safePageUrl: "URL de Página Segura",
     safePagePlaceholder: "https://blog.ejemplo.com/...",
-    method: "Método",
-    redirect: "Redirección (302)",
-    redirectDesc: "El visitante es redirigido a la URL. La URL de destino aparece en la barra del navegador. Más rápido y compatible con cualquier página.",
-    contentFetch: "Búsqueda de Contenido (Masking)",
-    contentFetchDesc: "El motor descarga el contenido de la página y lo sirve en tu dominio. La URL real de la oferta nunca aparece en el navegador. ⚠️ Úsalo solo si la página de oferta permite acceso externo (evita Kiwify, Hotmart y páginas con protección anti-bot).",
-    safeMethodHint: "💡 Recomendado: Usa Redirección para la safe page. La Búsqueda de Contenido en la safe page raramente es necesaria.",
-    offerMethodHint: "💡 Recomendado: Usa Redirección para la mayoría de las ofertas. Usa Búsqueda de Contenido (Masking) solo si quieres ocultar completamente la URL de la oferta y estás seguro de que la página permite acceso externo.",
 
     offerPageSection: "💰 Página de Oferta",
     offerPageSectionDesc: "La página real de conversión. Solo se muestra a visitantes reales y segmentados.",

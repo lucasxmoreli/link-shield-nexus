@@ -1,11 +1,12 @@
 import { useTranslation } from "react-i18next";
-import { Zap, Info } from "lucide-react";
+import { Zap } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 
+// Após a descontinuação do Masking, o bloco da Offer Page mantém apenas
+// a URL primária e o A/B Storm — a entrega é sempre Redirect 302.
 interface OfferPageConfigProps {
   offerUrl: string;
   onOfferUrlChange: (v: string) => void;
@@ -15,8 +16,6 @@ interface OfferPageConfigProps {
   offerPageB: string;
   onOfferPageBChange: (v: string) => void;
   onOfferPageBBlur: (v: string) => void;
-  offerMethod: string;
-  onOfferMethodChange: (v: string) => void;
 }
 
 export default function OfferPageConfig({
@@ -28,8 +27,6 @@ export default function OfferPageConfig({
   offerPageB,
   onOfferPageBChange,
   onOfferPageBBlur,
-  offerMethod,
-  onOfferMethodChange,
 }: OfferPageConfigProps) {
   const { t } = useTranslation();
 
@@ -96,37 +93,6 @@ export default function OfferPageConfig({
           </div>
         </CollapsibleContent>
       </Collapsible>
-      <div className="space-y-2">
-        <Label className="text-xs text-muted-foreground">{t("campaignEdit.method")}</Label>
-        <RadioGroup value={offerMethod} onValueChange={onOfferMethodChange} className="flex flex-col sm:flex-row gap-3">
-          <label
-            className={`flex-1 flex items-start gap-3 cursor-pointer rounded-lg border px-4 py-3 text-sm transition-colors ${offerMethod === "redirect" ? "border-primary bg-primary/10" : "border-border bg-secondary"}`}
-          >
-            <RadioGroupItem value="redirect" className="mt-0.5" />
-            <div>
-              <p className={`font-medium ${offerMethod === "redirect" ? "text-primary" : "text-foreground"}`}>
-                {t("campaignEdit.redirect")}
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5">{t("campaignEdit.redirectDesc")}</p>
-            </div>
-          </label>
-          <label
-            className={`flex-1 flex items-start gap-3 cursor-pointer rounded-lg border px-4 py-3 text-sm transition-colors ${offerMethod === "content_fetch" ? "border-primary bg-primary/10" : "border-border bg-secondary"}`}
-          >
-            <RadioGroupItem value="content_fetch" className="mt-0.5" />
-            <div>
-              <p className={`font-medium ${offerMethod === "content_fetch" ? "text-primary" : "text-foreground"}`}>
-                {t("campaignEdit.contentFetch")}
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5">{t("campaignEdit.contentFetchDesc")}</p>
-            </div>
-          </label>
-        </RadioGroup>
-        <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/30 p-3">
-          <Info className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
-          <p className="text-xs text-muted-foreground">{t("campaignEdit.offerMethodHint")}</p>
-        </div>
-      </div>
     </section>
   );
 }

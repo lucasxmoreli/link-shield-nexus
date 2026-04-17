@@ -1,3 +1,20 @@
+// ───────────────────────────────────────────────────────────────────────
+// Fallback do SPA para a rota /c/:hash.
+//
+// O roteamento real do visitante é executado ANTES do SPA por um serviço
+// externo (Cloudflare Worker / backend de redirecionamento), que resolve
+// o hash, aplica o fingerprint/targeting e responde com um 302 para
+// safe_url ou offer_url.
+//
+// Após a descontinuação do Masking (abr/2026), o engine NÃO deve mais
+// fazer fetch() do HTML de destino nem ler safe_page_method /
+// offer_page_method. Toda resposta aprovada DEVE ser sempre:
+//
+//     return Response.redirect(targetUrl, 302);
+//
+// Este componente só é renderizado quando o Worker deixa passar a
+// requisição para o SPA (campanha inexistente / inativa / bloqueada).
+// ───────────────────────────────────────────────────────────────────────
 export default function CampaignRedirect() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-background px-4 text-center">

@@ -52,17 +52,14 @@ export default function CampaignEdit() {
 
       <SafePageConfig
         safeUrl={form.safeUrl} onSafeUrlChange={setters.setSafeUrl} onSafeUrlBlur={normalizers.normalizeSafeUrl}
-        safeMethod={form.safeMethod} onSafeMethodChange={setters.setSafeMethod}
       />
 
       <OfferPageConfig
         offerUrl={form.offerUrl} onOfferUrlChange={setters.setOfferUrl} onOfferUrlBlur={normalizers.normalizeOfferUrl}
         abStormEnabled={form.abStormEnabled} onAbStormEnabledChange={setters.setAbStormEnabled}
         offerPageB={form.offerPageB} onOfferPageBChange={setters.setOfferPageB} onOfferPageBBlur={normalizers.normalizeOfferPageB}
-        offerMethod={form.offerMethod} onOfferMethodChange={setters.setOfferMethod}
       />
 
-      <SecurityConfig strictMode={form.strictMode} onStrictModeChange={setters.setStrictMode} />
 
       <WebhookPostbackConfig
         postbackBaseUrl={form.postbackBaseUrl} onPostbackBaseUrlChange={setters.setPostbackBaseUrl}

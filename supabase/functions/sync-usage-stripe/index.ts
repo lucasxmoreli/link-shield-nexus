@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import Stripe from "https://esm.sh/stripe@16.12.0?target=deno";
+import { createClient } from "jsr:@supabase/supabase-js@2";
+import Stripe from "npm:stripe@17.5.0";
 
 // ─── CORS Allowlist (menos crítico aqui — auth via CRON_SECRET) ────
 const ALLOWED_ORIGINS = [

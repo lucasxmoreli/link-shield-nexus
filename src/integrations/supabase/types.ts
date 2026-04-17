@@ -53,11 +53,9 @@ export type Database = {
           is_active: boolean | null
           name: string
           offer_page_b: string | null
-          offer_page_method: string
           offer_url: string
           postback_method: string
           postback_url: string | null
-          safe_page_method: string
           safe_url: string
           strict_mode: boolean
           tags: string[] | null
@@ -74,11 +72,9 @@ export type Database = {
           is_active?: boolean | null
           name: string
           offer_page_b?: string | null
-          offer_page_method?: string
           offer_url: string
           postback_method?: string
           postback_url?: string | null
-          safe_page_method?: string
           safe_url: string
           strict_mode?: boolean
           tags?: string[] | null
@@ -95,11 +91,9 @@ export type Database = {
           is_active?: boolean | null
           name?: string
           offer_page_b?: string | null
-          offer_page_method?: string
           offer_url?: string
           postback_method?: string
           postback_url?: string | null
-          safe_page_method?: string
           safe_url?: string
           strict_mode?: boolean
           tags?: string[] | null

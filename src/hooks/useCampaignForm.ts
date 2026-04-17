@@ -64,19 +64,17 @@ export function useCampaignForm() {
   const [domain, setDomain] = useState("");
   const [trafficSource, setTrafficSource] = useState("");
   const [safeUrl, setSafeUrl] = useState("");
-  const [safeMethod, setSafeMethod] = useState("redirect");
   const [offerMode, setOfferMode] = useState<"single" | "ab">("single");
   const [offerUrl, setOfferUrl] = useState("");
   const [offerPageB, setOfferPageB] = useState("");
   const [abStormEnabled, setAbStormEnabled] = useState(false);
-  const [offerMethod, setOfferMethod] = useState("redirect");
   const [abOffers, setAbOffers] = useState<OfferEntry[]>([
     { url: "", weight: 50 },
     { url: "", weight: 50 },
   ]);
   const [targetCountries, setTargetCountries] = useState<string[]>([]);
   const [targetDevices, setTargetDevices] = useState<string[]>([]);
-  const [strictMode, setStrictMode] = useState(false);
+  const [strictMode, setStrictMode] = useState(true);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [countrySearch, setCountrySearch] = useState("");
@@ -105,12 +103,10 @@ export function useCampaignForm() {
       const bUrl = campaign.offer_page_b ?? "";
       setOfferPageB(bUrl);
       setAbStormEnabled(!!bUrl);
-      setSafeMethod(campaign.safe_page_method ?? "redirect");
-      setOfferMethod(campaign.offer_page_method ?? "redirect");
       setTargetCountries(campaign.target_countries ?? []);
       setTargetDevices(campaign.target_devices ?? []);
       setTags(campaign.tags ?? []);
-      setStrictMode(campaign.strict_mode ?? false);
+      setStrictMode(campaign.strict_mode ?? true);
 
       const raw = campaign.postback_url ?? "";
       if (raw.includes("?")) {
@@ -222,8 +218,8 @@ export function useCampaignForm() {
             ? ensureAbsoluteUrl(offerUrl)
             : abOffers.map((o) => ensureAbsoluteUrl(o.url)).join(","),
         offer_page_b: abStormEnabled && offerPageB.trim() ? ensureAbsoluteUrl(offerPageB.trim()) : null,
-        safe_page_method: safeMethod,
-        offer_page_method: offerMethod,
+        // O engine agora opera exclusivamente via Redirect 302 — não enviamos
+        // mais safe_page_method / offer_page_method no payload.
         target_countries: targetCountries,
         target_devices: targetDevices,
         tags,
@@ -275,21 +271,18 @@ export function useCampaignForm() {
       return;
     }
 
-    // Domain conflict check
+    // Domain conflict check — como todas as URLs agora são servidas via
+    // redirect 302, basta checar todas as URLs de destino contra o domínio.
     if (domain) {
       try {
         const urlsToCheck: string[] = [];
-        if (safeMethod === "redirect") {
-          const s = ensureAbsoluteUrl(safeUrl);
-          if (s) urlsToCheck.push(s);
-        }
-        if (offerMethod === "redirect") {
-          const o = ensureAbsoluteUrl(offerUrl);
-          if (o) urlsToCheck.push(o);
-          if (abStormEnabled && offerPageB.trim()) {
-            const b = ensureAbsoluteUrl(offerPageB);
-            if (b) urlsToCheck.push(b);
-          }
+        const s = ensureAbsoluteUrl(safeUrl);
+        if (s) urlsToCheck.push(s);
+        const o = ensureAbsoluteUrl(offerUrl);
+        if (o) urlsToCheck.push(o);
+        if (abStormEnabled && offerPageB.trim()) {
+          const b = ensureAbsoluteUrl(offerPageB);
+          if (b) urlsToCheck.push(b);
         }
         if (checkDomainConflict(domain, urlsToCheck)) {
           setConflictDialogOpen(true);
@@ -304,7 +297,7 @@ export function useCampaignForm() {
     saveMutation.mutate();
   }, [
     safeUrl, offerUrl, offerPageB, abStormEnabled, domain,
-    safeMethod, offerMethod, areDestinationUrlsValid,
+    areDestinationUrlsValid,
     normalizeSafeUrl, normalizeOfferUrl, normalizeOfferPageB,
     saveMutation, t,
   ]);
@@ -336,12 +329,10 @@ export function useCampaignForm() {
       domain,
       trafficSource,
       safeUrl,
-      safeMethod,
       offerMode,
       offerUrl,
       offerPageB,
       abStormEnabled,
-      offerMethod,
       abOffers,
       targetCountries,
       targetDevices,
@@ -361,12 +352,10 @@ export function useCampaignForm() {
       setDomain,
       setTrafficSource,
       setSafeUrl,
-      setSafeMethod,
       setOfferMode,
       setOfferUrl,
       setOfferPageB,
       setAbStormEnabled: handleAbStormToggle,
-      setOfferMethod,
       setAbOffers,
       setTargetCountries,
       setTargetDevices,

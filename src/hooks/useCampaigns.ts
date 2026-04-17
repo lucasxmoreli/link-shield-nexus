@@ -12,8 +12,6 @@ export interface CampaignRow {
   safe_url: string;
   offer_url: string;
   offer_page_b: string | null;
-  safe_page_method: string;
-  offer_page_method: string;
   target_countries: string[] | null;
   target_devices: string[] | null;
   tags: string[] | null;

@@ -26,8 +26,8 @@ function getCorsHeaders(origin: string | null) {
 }
 
 const ADDON_PRICES: Record<string, string> = {
-  extra_domain:   "price_1TLZySLZEOji6sEJvsOtZ3sF",
-  extra_campaign: "price_1TLZzoLZEOji6sEJ8QA7ggHU",
+  extra_domain:   "price_1TMwsxLZEOji6sEJZj5yvPct",
+  extra_campaign: "price_1TMwudLZEOji6sEJLY129lHV",
 };
 
 serve(async (req) => {

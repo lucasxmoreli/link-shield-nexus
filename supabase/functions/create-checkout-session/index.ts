@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
+import { createClient } from "jsr:@supabase/supabase-js@2";
+import Stripe from "npm:stripe@17.5.0";
 
 // ─── CORS Allowlist ────────────────────────────────────────────────
 const ALLOWED_ORIGINS = [
@@ -76,7 +76,7 @@ serve(async (req) => {
     }
 
     const stripe = new Stripe(stripeKey, {
-      apiVersion: "2023-10-16",
+      apiVersion: "2024-06-20",
       httpClient: Stripe.createFetchHttpClient(),
     });
 
