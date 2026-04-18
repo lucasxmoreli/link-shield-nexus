@@ -81,6 +81,17 @@ const THREAT_MAP: Array<{ match: (reason: string) => boolean; display: ThreatDis
       badgeClass: "bg-yellow-500/15 text-yellow-400 border-yellow-500/25",
     },
   },
+  {
+    // Trava 10 — bot de auditoria TikTok/Meta/Google (macros cruas ou UA de infra)
+    match: (r) => r.includes("bot_macro_detected") || r.includes("bot_ua_signature"),
+    display: {
+      label: "Robô de Plataforma",
+      icon: Bot,
+      color: "hsl(280, 70%, 60%)",
+      bgClass: "bg-purple-500/15",
+      badgeClass: "bg-purple-500/15 text-purple-400 border-purple-500/25",
+    },
+  },
 ];
 
 const FALLBACK_DISPLAY: ThreatDisplay = {
