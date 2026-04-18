@@ -72,7 +72,7 @@ export default function Auth() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Defesa adicional client-side (botão já bloqueia, mas paranoia é boa)
     if (!passwordAcceptable) {
       toast.error(t("password.notAcceptable"));
@@ -84,20 +84,47 @@ export default function Auth() {
       const { data, error: fnError } = await supabase.functions.invoke("register", {
         body: { email, password, invite_code: validatedCode },
       });
+
       if (fnError) {
         toast.error(fnError.message || t("auth.registrationFailed"));
-      } else if (data?.error) {
+        setLoading(false);
+        return;
+      }
+      if (data?.error) {
         toast.error(data.error);
-      } else {
+        setLoading(false);
+        return;
+      }
+
+      // ── Conta criada. Auto-login imediato pra eliminar fricção do onboarding. ──
+      // A edge function já confirma o e-mail (email_confirm: true), então
+      // signInWithPassword aqui funciona na mesma chamada — sem round-trip
+      // de confirmação por e-mail.
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (signInError) {
+        // Fallback defensivo: conta existe mas sign-in travou (caso raríssimo).
+        // Não deixa o usuário sem saída — manda pra login com a senha já em mente.
+        console.error("[register] auto-login falhou:", signInError.message);
         toast.success(t("auth.accountCreated"));
         setView("login");
-        // Limpa senha após sucesso (segurança)
         setPassword("");
+        setLoading(false);
+        return;
       }
+
+      // ── Sucesso total: limpa senha da memória e manda pro dashboard. ──
+      toast.success(t("auth.accountCreated"));
+      setPassword("");
+      navigate("/dashboard");
     } catch {
       toast.error(t("auth.registrationFailed"));
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const headerAction = () => {
