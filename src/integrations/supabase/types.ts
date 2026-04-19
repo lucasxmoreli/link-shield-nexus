@@ -193,6 +193,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          activation_status: string | null
           billing_cycle_end: string | null
           billing_cycle_start: string | null
           created_at: string
@@ -214,6 +215,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          // activation_status is GENERATED ALWAYS — never insertable.
           billing_cycle_end?: string | null
           billing_cycle_start?: string | null
           created_at?: string
@@ -235,6 +237,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          // activation_status is GENERATED ALWAYS — never updatable.
           billing_cycle_end?: string | null
           billing_cycle_start?: string | null
           created_at?: string

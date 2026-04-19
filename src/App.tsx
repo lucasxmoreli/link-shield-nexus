@@ -20,6 +20,7 @@ import Analytics from "./pages/Analytics";
 import NotFound from "./pages/NotFound";
 import AccountDeleted from "@/pages/AccountDeleted";
 import UpdatePassword from "./pages/UpdatePassword";
+import { RequireActivation } from "@/routes/RequireActivation";
 
 const queryClient = new QueryClient();
 
@@ -61,13 +62,17 @@ const App = () => (
             {/* ─── PROTECTED ROUTES (require auth) ─── */}
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
               <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/domains" element={<Domains />} />
-              <Route path="/campaigns" element={<Campaigns />} />
-              <Route path="/campaigns/new" element={<CampaignEdit />} />
-              <Route path="/campaigns/:id/edit" element={<CampaignEdit />} />
-              <Route path="/campaigns/:id/clone" element={<CampaignEdit />} />
-              <Route path="/requests" element={<Requests />} />
-              <Route path="/analytics" element={<Analytics />} />
+
+              {/* ── Gated by activation_status === 'ACTIVE' ── */}
+              <Route path="/domains" element={<RequireActivation><Domains /></RequireActivation>} />
+              <Route path="/campaigns" element={<RequireActivation><Campaigns /></RequireActivation>} />
+              <Route path="/campaigns/new" element={<RequireActivation><CampaignEdit /></RequireActivation>} />
+              <Route path="/campaigns/:id/edit" element={<RequireActivation><CampaignEdit /></RequireActivation>} />
+              <Route path="/campaigns/:id/clone" element={<RequireActivation><CampaignEdit /></RequireActivation>} />
+              <Route path="/requests" element={<RequireActivation><Requests /></RequireActivation>} />
+              <Route path="/analytics" element={<RequireActivation><Analytics /></RequireActivation>} />
+
+              {/* ── Always reachable (billing must stay open for pre-activation users) ── */}
               <Route path="/billing" element={<Billing />} />
               <Route path="/settings" element={<AccountSettings />} />
 

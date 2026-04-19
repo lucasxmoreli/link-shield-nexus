@@ -1,7 +1,18 @@
+// =============================================================================
+// create-checkout-session
+// -----------------------------------------------------------------------------
+// Receives a Stripe `price_id` from the frontend, validates the JWT and the
+// user's activation state, ensures a Stripe customer exists for the profile,
+// then creates a Stripe Checkout Session (subscription mode) bundling the
+// fixed plan price + its paired metered overage price.
+//
+// Returns: { session_id, url } — the frontend redirects to `url`.
+// =============================================================================
+
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import Stripe from "npm:stripe@17.5.0";
 
-// ─── CORS Allowlist ────────────────────────────────────────────────
+// ── CORS allowlist ───────────────────────────────────────────────────────────
 const ALLOWED_ORIGINS = [
   "https://www.cloakerx.com",
   "https://cloakerx.com",
@@ -24,7 +35,7 @@ function getCorsHeaders(origin: string | null) {
   };
 }
 
-// Mapa fixed → metered. Deve espelhar o plan-config.ts do frontend.
+// Fixed → metered price mapping. Must mirror plan-config.ts on the frontend.
 const PLAN_METERED_MAP: Record<string, string> = {
   "price_1TLVRnLZEOji6sEJnw9oiVW2": "price_1TLaNwLZEOji6sEJrtBFpRnn", // BASIC
   "price_1TLVSrLZEOji6sEJ8sF00dTT": "price_1TLaHlLZEOji6sEJgKRRDuOh", // PRO
@@ -52,12 +63,14 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
+    // Validate JWT with the user-scoped client.
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
     const { data: { user }, error: authError } = await userClient.auth.getUser();
     if (authError || !user) return json(401, { error: "Unauthorized" });
 
+    // Parse and validate the requested price_id.
     const { price_id } = await req.json();
     if (!price_id || typeof price_id !== "string" || !price_id.startsWith("price_")) {
       return json(400, { error: "Invalid price_id" });
@@ -79,10 +92,12 @@ Deno.serve(async (req) => {
       httpClient: Stripe.createFetchHttpClient(),
     });
 
+    // Load profile with the admin client (bypasses RLS for this server-side check).
+    // We pull `activation_status` to enforce the double-charge guard.
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
     const { data: profile, error: profileError } = await adminClient
       .from("profiles")
-      .select("user_id, email, stripe_customer_id")
+      .select("user_id, email, stripe_customer_id, activation_status")
       .eq("user_id", user.id)
       .single();
 
@@ -91,8 +106,21 @@ Deno.serve(async (req) => {
       return json(404, { error: "Profile not found" });
     }
 
-    let customerId = profile.stripe_customer_id;
+    // ── Double-charge guard ──────────────────────────────────────────────────
+    // If the workspace is already ACTIVE, the user must use the customer
+    // portal to switch plans, not create a brand-new subscription. Returning
+    // 409 Conflict makes the frontend redirect to /billing where the existing
+    // subscription is managed.
+    if (profile.activation_status === "ACTIVE") {
+      console.warn(`[create-checkout-session] User ${user.id} is already ACTIVE; refusing to create a new session.`);
+      return json(409, {
+        error: "Workspace already activated. Use the customer portal to change plans.",
+        code: "ALREADY_ACTIVE",
+      });
+    }
 
+    // Ensure a Stripe customer exists for this profile (lazy-create on first checkout).
+    let customerId = profile.stripe_customer_id;
     if (!customerId) {
       const customer = await stripe.customers.create({
         email: profile.email || user.email,
@@ -114,6 +142,7 @@ Deno.serve(async (req) => {
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
+      client_reference_id: user.id,
       mode: "subscription",
       line_items: [
         { price: price_id, quantity: 1 },
