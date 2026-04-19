@@ -13,7 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-import { getSourceByKey, getPlanByName } from "@/lib/plan-config";
+import { getSourceByKey } from "@/lib/plan-config";
 import CampaignFinalLinkModal, { type CampaignFinalLinkData } from "@/components/campaigns/CampaignFinalLinkModal";
 
 export default function Campaigns() {
@@ -34,8 +34,11 @@ export default function Campaigns() {
     enabled: !!user,
   });
 
-  const planConfig = getPlanByName(profile?.plan_name);
-  const isFreePlan = planConfig.isFree;
+  // Ground truth for the paywall: only ACTIVE workspaces (i.e. profiles with
+  // a valid Stripe subscription) can create/toggle campaigns. Everything else
+  // — INVITED, PAST_DUE, CANCELED — is treated as "free/locked" and routed
+  // to /billing through the existing empty-state UI.
+  const isFreePlan = profile?.activation_status !== "ACTIVE";
 
   const { data: campaigns = [], isLoading } = useQuery({
     queryKey: ["campaigns", user?.id],

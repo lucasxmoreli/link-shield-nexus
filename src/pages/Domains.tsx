@@ -49,10 +49,15 @@ export default function Domains() {
     enabled: !!user,
   });
 
+  // Ground truth for the paywall: only ACTIVE workspaces can add domains.
+  // We keep `planConfig`/`maxDomains`/`usagePercent` for the visual progress
+  // bar, but `isLimitReached` is gated by `isActive` so INVITED / PAST_DUE /
+  // CANCELED workspaces always hit the locked empty-state CTA.
+  const isActive = profile?.activation_status === "ACTIVE";
   const planConfig = getPlanByName(profile?.plan_name);
   const maxDomains = planConfig.maxDomains;
   const currentDomains = domains.length;
-  const isLimitReached = maxDomains <= 0 || currentDomains >= maxDomains;
+  const isLimitReached = !isActive || maxDomains <= 0 || currentDomains >= maxDomains;
   const usagePercent = maxDomains > 0 ? Math.round((currentDomains / maxDomains) * 100) : 0;
 
   const verifiedDomains = domains.filter((d) => d.is_verified);

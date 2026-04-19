@@ -90,7 +90,7 @@ interface EffectiveLimits {
 }
 
 export default function Billing() {
-  const { user } = useAuth();
+  const { user, refreshActivationStatus } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { t } = useTranslation();
@@ -144,7 +144,12 @@ export default function Billing() {
       });
       queryClient.invalidateQueries({ queryKey: ["profile"] });
       queryClient.invalidateQueries({ queryKey: ["effective_limits"] });
-      // Remove o query param sem disparar navigate
+      // Force-refresh the activation gate so the workspace flips to ACTIVE
+      // immediately (no logout/login needed). Fire-and-forget; the query
+      // invalidations above will rerender the UI as soon as the new profile
+      // arrives.
+      void refreshActivationStatus();
+      // Strip the query params without triggering a navigate
       const params = new URLSearchParams(searchParams);
       params.delete("checkout");
       params.delete("session_id");
