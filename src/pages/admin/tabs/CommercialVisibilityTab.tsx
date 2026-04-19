@@ -4,6 +4,7 @@ import { useAdmin } from "@/hooks/useAdmin";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { supabaseUntyped } from "@/integrations/supabase/untyped";
 import { useTranslation } from "react-i18next";
 import {
   Users, Megaphone, MousePointerClick, ShieldAlert, Crown, Ban, RotateCcw, Eye,
@@ -99,7 +100,7 @@ export default function CommercialVisibilityTab() {
     queryFn: async (): Promise<AdminStats> => {
       const { data, error } = await supabase.rpc("admin_get_stats");
       if (error) throw error;
-      return data as AdminStats;
+      return (data as unknown) as AdminStats;
     },
     enabled: isAdmin,
   });
@@ -149,7 +150,7 @@ export default function CommercialVisibilityTab() {
 
   const resetBillingMutation = useMutation({
     mutationFn: async (userId: string) => {
-      const { error } = await supabase.rpc("admin_reset_billing" as never, { p_user_id: userId });
+      const { error } = await supabaseUntyped.rpc("admin_reset_billing", { p_user_id: userId });
       if (error) throw error;
     },
     onSuccess: () => {

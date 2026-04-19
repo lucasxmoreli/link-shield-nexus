@@ -10,7 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseUntyped } from "@/integrations/supabase/untyped";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { Receipt, ExternalLink, Loader2 } from "lucide-react";
@@ -61,13 +61,14 @@ export function InvoicesTable() {
   const { data: invoices, isLoading } = useQuery({
     queryKey: ["invoices", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // `invoices` ainda não consta no types.ts gerado — usa escape hatch.
+      const { data, error } = await supabaseUntyped
         .from("invoices")
         .select("*")
         .order("created_at", { ascending: false })
         .limit(20);
       if (error) throw error;
-      return data as InvoiceRow[];
+      return (data as unknown) as InvoiceRow[];
     },
     enabled: !!user,
     staleTime: 5 * 60 * 1000,

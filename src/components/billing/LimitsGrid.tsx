@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseUntyped } from "@/integrations/supabase/untyped";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { Plus, Infinity as InfinityIcon, Loader2, CreditCard, AlertCircle } from "lucide-react";
@@ -74,9 +74,10 @@ export function LimitsGrid({
   const { data: counts } = useQuery({
     queryKey: ["usage_counts", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_usage_counts");
+      // `get_usage_counts` ainda não consta no types.ts gerado — usa escape hatch.
+      const { data, error } = await supabaseUntyped.rpc("get_usage_counts");
       if (error) throw error;
-      return (data as Array<{ domains_count: number; campaigns_count: number }>)?.[0]
+      return ((data as unknown) as Array<{ domains_count: number; campaigns_count: number }>)?.[0]
         ?? { domains_count: 0, campaigns_count: 0 };
     },
     enabled: !!user,

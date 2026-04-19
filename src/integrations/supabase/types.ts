@@ -197,13 +197,18 @@ export type Database = {
           billing_cycle_start: string | null
           created_at: string
           current_clicks: number | null
+          deleted_at: string | null
+          display_name: string | null
           email: string | null
           id: string
+          is_deleted: boolean
           is_suspended: boolean
           language: string
           max_clicks: number | null
           max_domains: number | null
           plan_name: string | null
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
           subscription_status: string | null
           updated_at: string
           user_id: string
@@ -213,13 +218,18 @@ export type Database = {
           billing_cycle_start?: string | null
           created_at?: string
           current_clicks?: number | null
+          deleted_at?: string | null
+          display_name?: string | null
           email?: string | null
           id?: string
+          is_deleted?: boolean
           is_suspended?: boolean
           language?: string
           max_clicks?: number | null
           max_domains?: number | null
           plan_name?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
           subscription_status?: string | null
           updated_at?: string
           user_id: string
@@ -229,13 +239,18 @@ export type Database = {
           billing_cycle_start?: string | null
           created_at?: string
           current_clicks?: number | null
+          deleted_at?: string | null
+          display_name?: string | null
           email?: string | null
           id?: string
+          is_deleted?: boolean
           is_suspended?: boolean
           language?: string
           max_clicks?: number | null
           max_domains?: number | null
           plan_name?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
           subscription_status?: string | null
           updated_at?: string
           user_id?: string

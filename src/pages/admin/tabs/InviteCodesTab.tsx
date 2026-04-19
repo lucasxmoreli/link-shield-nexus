@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { supabaseUntyped } from "@/integrations/supabase/untyped";
 import { useTranslation } from "react-i18next";
 import { Plus, Copy, Loader2, Check, X, RefreshCw, Trash2, Power, PowerOff, Users, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -94,9 +95,9 @@ export default function InviteCodesTab() {
   const { data: codes = [], isLoading } = useQuery({
     queryKey: ["invite_codes"],
     queryFn: async (): Promise<InviteCodeRow[]> => {
-      const { data, error } = await supabase.rpc("admin_list_invite_codes");
+      const { data, error } = await supabaseUntyped.rpc("admin_list_invite_codes");
       if (error) throw error;
-      return (data as InviteCodeRow[]) || [];
+      return ((data as unknown) as InviteCodeRow[]) || [];
     },
   });
 
@@ -107,11 +108,11 @@ export default function InviteCodesTab() {
     queryKey: ["invite_redemptions", drilldownCodeId],
     queryFn: async (): Promise<RedemptionRow[]> => {
       if (!drilldownCodeId) return [];
-      const { data, error } = await supabase.rpc("admin_list_invite_redemptions", {
+      const { data, error } = await supabaseUntyped.rpc("admin_list_invite_redemptions", {
         p_code_id: drilldownCodeId,
       });
       if (error) throw error;
-      return (data as RedemptionRow[]) || [];
+      return ((data as unknown) as RedemptionRow[]) || [];
     },
     enabled: !!drilldownCodeId,
   });
@@ -121,7 +122,7 @@ export default function InviteCodesTab() {
   // ──────────────────────────────────────────────────────────────────────────
   const createMutation = useMutation({
     mutationFn: async (input: { code: string; max_uses: number }) => {
-      const { data, error } = await supabase.rpc("admin_create_invite_code", {
+      const { data, error } = await supabaseUntyped.rpc("admin_create_invite_code", {
         p_code: input.code,
         p_max_uses: input.max_uses,
       });
@@ -146,7 +147,7 @@ export default function InviteCodesTab() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.rpc("admin_delete_invite_code", { p_id: id });
+      const { error } = await supabaseUntyped.rpc("admin_delete_invite_code", { p_id: id });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -159,7 +160,7 @@ export default function InviteCodesTab() {
 
   const toggleMutation = useMutation({
     mutationFn: async (input: { id: string; active: boolean }) => {
-      const { error } = await supabase.rpc("admin_toggle_invite_code", {
+      const { error } = await supabaseUntyped.rpc("admin_toggle_invite_code", {
         p_id: input.id,
         p_active: input.active,
       });

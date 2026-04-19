@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
+import { supabaseUntyped } from "@/integrations/supabase/untyped";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
@@ -100,6 +101,9 @@ export default function Billing() {
   const [addonLoading, setAddonLoading] = useState<"extra_domain" | "extra_campaign" | null>(null);
 
   // ── Query: Profile ──
+  // Colunas stripe_customer_id, stripe_subscription_id e is_deleted ainda
+  // não estão no types.ts gerado. Augmento local via intersection até o
+  // próximo `supabase gen types typescript`.
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
     queryFn: async () => {
@@ -109,7 +113,10 @@ export default function Billing() {
         .eq("user_id", user!.id)
         .maybeSingle();
       if (error) throw error;
-      return data;
+      return data as typeof data & {
+        stripe_customer_id?: string | null;
+        stripe_subscription_id?: string | null;
+      };
     },
     enabled: !!user,
   });
@@ -118,9 +125,9 @@ export default function Billing() {
   const { data: effectiveLimits } = useQuery({
     queryKey: ["effective_limits", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_effective_limits");
+      const { data, error } = await supabaseUntyped.rpc("get_effective_limits");
       if (error) throw error;
-      return (data as EffectiveLimits[])?.[0] ?? null;
+      return ((data as unknown) as EffectiveLimits[])?.[0] ?? null;
     },
     enabled: !!user && !!profile?.stripe_subscription_id, // só busca se tem sub ativa
     staleTime: 60 * 1000,

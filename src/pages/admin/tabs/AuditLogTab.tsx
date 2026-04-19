@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { supabaseUntyped } from "@/integrations/supabase/untyped";
 import { useTranslation } from "react-i18next";
 import { Loader2, Search, Filter, X, Eye, RefreshCw, FileJson } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -100,9 +101,9 @@ export default function AuditLogTab() {
   const { data: facets = [] } = useQuery({
     queryKey: ["audit_log_facets"],
     queryFn: async (): Promise<FacetRow[]> => {
-      const { data, error } = await supabase.rpc("admin_list_audit_log_facets");
+      const { data, error } = await supabaseUntyped.rpc("admin_list_audit_log_facets");
       if (error) throw error;
-      return (data as FacetRow[]) || [];
+      return ((data as unknown) as FacetRow[]) || [];
     },
     staleTime: 60_000,
   });
@@ -123,7 +124,7 @@ export default function AuditLogTab() {
     queryKey: ["audit_log", actionFilter, adminFilter, dateRange, searchActive, offset],
     queryFn: async (): Promise<AuditLogRow[]> => {
       const { from, to } = dateRangeToFromTo(dateRange);
-      const { data, error } = await supabase.rpc("admin_list_audit_log_filtered", {
+      const { data, error } = await supabaseUntyped.rpc("admin_list_audit_log_filtered", {
         p_action: actionFilter === "all" ? null : actionFilter,
         p_admin_email: adminFilter === "all" ? null : adminFilter,
         p_search: searchActive || null,
@@ -133,7 +134,7 @@ export default function AuditLogTab() {
         p_offset: offset,
       });
       if (error) throw error;
-      return (data as AuditLogRow[]) || [];
+      return ((data as unknown) as AuditLogRow[]) || [];
     },
   });
 
