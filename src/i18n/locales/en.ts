@@ -646,6 +646,9 @@ const en = {
     inviteConsumed: "Invite code was already consumed. Please contact the administrator.",
     accountCreated: "Account created! Welcome to CloakerX.",
     registrationFailed: "Registration failed. Please try again.",
+    forgotPassword: "Forgot your password?",
+    forgotPasswordInvalidEmail: "Please enter a valid email above first.",
+    forgotPasswordSent: "If this email is registered, a reset link is on its way.",
     accessRestricted: "Access is restricted. If you don't have an invite code, contact the administrator.",
     invisibleProtection: "Invisible protection.",
     realResults: "Real results.",
@@ -653,6 +656,22 @@ const en = {
     detection: "Detection",
     detectionFull: "Bot Detection",
     latency: "Latency",
+  },
+
+  // Update password (recovery flow)
+  updatePassword: {
+    title: "Set a new password",
+    subtitle: "Choose a strong password to regain access to your account.",
+    sidebarTitle: "Secure your account",
+    sidebarDescription: "One last step. Set a new password and jump back into protecting your campaigns.",
+    newPasswordLabel: "New Password",
+    confirmPasswordLabel: "Confirm New Password",
+    submitButton: "Update Password",
+    passwordsMatch: "Passwords match",
+    passwordsDoNotMatch: "Passwords do not match",
+    updateSuccess: "Password updated. Redirecting you to your dashboard…",
+    updateFailed: "Unable to update password. The reset link may have expired.",
+    validatingSession: "Validating reset link…",
   },
 
   // Landing

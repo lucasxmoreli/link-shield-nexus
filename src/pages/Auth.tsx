@@ -53,6 +53,37 @@ export default function Auth() {
     setLoading(false);
   };
 
+  // ── Dispara o e-mail de reset password via Supabase Auth. ──
+  // A redirectTo é ABSOLUTA e precisa bater com a URL configurada no painel
+  // Supabase (Authentication → URL Configuration → Redirect URLs).
+  const handleForgotPassword = async () => {
+    const trimmedEmail = email.trim().toLowerCase();
+    if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      toast.error(t("auth.forgotPasswordInvalidEmail"));
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
+        redirectTo: `${window.location.origin}/update-password`,
+      });
+
+      // Enumeration defense: sucesso genérico mesmo se o e-mail não existir.
+      // O Supabase já não retorna erro de "user not found" aqui, mas mantemos
+      // a mensagem neutra por precaução.
+      if (error) {
+        console.error("[forgot-password] resetPasswordForEmail failed:", error.message);
+      }
+      toast.success(t("auth.forgotPasswordSent"));
+    } catch (err) {
+      console.error("[forgot-password] unexpected error:", err);
+      toast.success(t("auth.forgotPasswordSent"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleValidateInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -249,6 +280,17 @@ export default function Auth() {
                   {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                   {t("auth.signInButton")}
                 </Button>
+
+                {/* Forgot password — usa o e-mail já digitado no campo acima. */}
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  disabled={loading}
+                  className="block w-full text-center text-sm text-muted-foreground hover:text-primary transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                >
+                  {t("auth.forgotPassword")}
+                </button>
+
                 <button
                   type="button"
                   onClick={() => { setView("invite"); setInviteError(""); }}

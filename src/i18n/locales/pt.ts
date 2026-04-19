@@ -647,6 +647,9 @@ accountDeleted: {
     inviteConsumed: "O código de convite já foi consumido. Entre em contato com o administrador.",
     accountCreated: "Conta criada! Bem-vindo ao CloakerX.",
     registrationFailed: "Falha no registro. Tente novamente.",
+    forgotPassword: "Esqueceu sua senha?",
+    forgotPasswordInvalidEmail: "Digite um e-mail válido no campo acima primeiro.",
+    forgotPasswordSent: "Se este e-mail estiver cadastrado, um link de redefinição já está a caminho.",
     accessRestricted: "O acesso é restrito. Se você não tem um código de convite, entre em contato com o administrador.",
     invisibleProtection: "Proteção invisível.",
     realResults: "Resultados reais.",
@@ -654,6 +657,22 @@ accountDeleted: {
     detection: "Detecção",
     detectionFull: "Detecção de Bots",
     latency: "Latência",
+  },
+
+  // Update password (fluxo de recuperação)
+  updatePassword: {
+    title: "Defina uma nova senha",
+    subtitle: "Escolha uma senha forte para recuperar o acesso à sua conta.",
+    sidebarTitle: "Proteja sua conta",
+    sidebarDescription: "Último passo. Defina uma nova senha e volte já a proteger suas campanhas.",
+    newPasswordLabel: "Nova Senha",
+    confirmPasswordLabel: "Confirmar Nova Senha",
+    submitButton: "Atualizar Senha",
+    passwordsMatch: "As senhas coincidem",
+    passwordsDoNotMatch: "As senhas não coincidem",
+    updateSuccess: "Senha atualizada. Redirecionando ao seu painel…",
+    updateFailed: "Não foi possível atualizar a senha. O link pode ter expirado.",
+    validatingSession: "Validando link de redefinição…",
   },
 
   landing: {

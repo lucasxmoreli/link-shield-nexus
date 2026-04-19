@@ -630,6 +630,9 @@ const es = {
     inviteConsumed: "El código de invitación ya fue consumido. Contacta al administrador.",
     accountCreated: "¡Cuenta creada! Bienvenido a CloakerX.",
     registrationFailed: "Error en el registro. Inténtalo de nuevo.",
+    forgotPassword: "¿Olvidaste tu contraseña?",
+    forgotPasswordInvalidEmail: "Ingresa un correo válido arriba primero.",
+    forgotPasswordSent: "Si este correo está registrado, enviaremos un enlace de recuperación.",
     accessRestricted: "El acceso es restringido. Si no tienes un código de invitación, contacta al administrador.",
     invisibleProtection: "Protección invisible.",
     realResults: "Resultados reales.",
@@ -658,6 +661,22 @@ const es = {
     lastSignIn: "Último inicio de sesión",
     deleteCodeTitle: "¿Eliminar código de invitación?",
     deleteCodeDescription: "¿Seguro que quieres eliminar el código \"{{code}}\"? Esta acción es irreversible y elimina todos los registros de canje asociados.",
+  },
+
+  // Update password (flujo de recuperación)
+  updatePassword: {
+    title: "Define una nueva contraseña",
+    subtitle: "Elige una contraseña fuerte para recuperar el acceso a tu cuenta.",
+    sidebarTitle: "Protege tu cuenta",
+    sidebarDescription: "Último paso. Define una nueva contraseña y vuelve a proteger tus campañas.",
+    newPasswordLabel: "Nueva Contraseña",
+    confirmPasswordLabel: "Confirmar Nueva Contraseña",
+    submitButton: "Actualizar Contraseña",
+    passwordsMatch: "Las contraseñas coinciden",
+    passwordsDoNotMatch: "Las contraseñas no coinciden",
+    updateSuccess: "Contraseña actualizada. Redirigiendo a tu panel…",
+    updateFailed: "No se pudo actualizar la contraseña. El enlace puede haber expirado.",
+    validatingSession: "Validando enlace de recuperación…",
   },
 
   landing: {

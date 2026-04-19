@@ -19,6 +19,7 @@ import CampaignRedirect from "./pages/CampaignRedirect";
 import Analytics from "./pages/Analytics";
 import NotFound from "./pages/NotFound";
 import AccountDeleted from "@/pages/AccountDeleted";
+import UpdatePassword from "./pages/UpdatePassword";
 
 const queryClient = new QueryClient();
 
@@ -54,6 +55,7 @@ const App = () => (
             <Route path="/" element={<Landing />} />
             <Route path="/auth" element={<AuthRoute />} />
             <Route path="/account-deleted" element={<AccountDeleted />} />
+            <Route path="/update-password" element={<UpdatePassword />} />
             <Route path="/c/:hash" element={<CampaignRedirect />} />
 
             {/* ─── PROTECTED ROUTES (require auth) ─── */}
