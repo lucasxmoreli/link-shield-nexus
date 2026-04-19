@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 import { subDays, startOfDay, getHours, format } from "date-fns";
 
 import { MetricsSidebar } from "@/components/dashboard/MetricsSidebar";
-import { TrafficFlowChart } from "@/components/dashboard/TrafficFlowChart";
+import { TrafficFlowChart, type ChartMode } from "@/components/dashboard/TrafficFlowChart";
 import { LiveStreamList } from "@/components/dashboard/LiveStreamList";
 import { OnboardingWizard } from "@/components/dashboard/OnboardingWizard";
 
@@ -132,10 +132,137 @@ export default function Dashboard() {
     return metrics.analyzed + shadow.dedup + shadow.prefetch + shadow.ghost;
   }, [metrics, shadowStats]);
 
+  // ─── PERÍODO ANTERIOR (trend real) ───────────────────────────────
+  // Espelha o filtro atual, deslocado pra trás pelo mesmo tamanho.
+  // Ex.: dateRange="7" → current = últimos 7d, previous = 7d anteriores.
+  // "all" não tem comparativo sensato → trends escondidos.
+  const previousLogs = useMemo(() => {
+    if (dateRange === "all") return [];
+    const now = new Date();
+    const periodLength = parseInt(dateRange); // 1, 2, 7, 30
+    const currentStart = subDays(startOfDay(now), periodLength - 1);
+    const previousStart = subDays(currentStart, periodLength);
+    return logs.filter((l) => {
+      const d = new Date(l.created_at);
+      return d >= previousStart && d < currentStart;
+    });
+  }, [logs, dateRange]);
+
+  const previousMetrics = useMemo(() => {
+    const analyzed = previousLogs.length;
+    const approved = previousLogs.filter((l) => l.status_final === "Aprovado").length;
+    const blocked = previousLogs.filter((l) => l.status_final !== "Aprovado").length;
+    return { analyzed, approved, blocked };
+  }, [previousLogs]);
+
+  // Query espelho pra shadow stats do período anterior. Necessária porque
+  // campaign_stats é agregada por dia e filtrada server-side — não dá pra
+  // derivar do array de logs já carregado.
+  const { data: previousShadowStats } = useQuery<ShadowStats>({
+    queryKey: ["campaign_stats_shadow_prev", effectiveUserId, dateRange],
+    queryFn: async () => {
+      if (dateRange === "all") return { dedup: 0, prefetch: 0, ghost: 0 };
+      const { data: userCampaigns } = await supabase
+        .from("campaigns")
+        .select("id")
+        .eq("user_id", effectiveUserId!);
+      const campaignIds = (userCampaigns || []).map((c: any) => c.id);
+      if (campaignIds.length === 0)
+        return { dedup: 0, prefetch: 0, ghost: 0 };
+
+      const now = new Date();
+      const periodLength = parseInt(dateRange);
+      const currentStart = subDays(startOfDay(now), periodLength - 1);
+      const previousStart = subDays(currentStart, periodLength);
+      const previousStartStr = previousStart.toISOString().split("T")[0];
+      const currentStartStr = currentStart.toISOString().split("T")[0];
+
+      const { data, error } = await supabase
+        .from("campaign_stats" as any)
+        .select("dedup_clicks, prefetch_clicks, ghost_clicks")
+        .in("campaign_id", campaignIds)
+        .gte("date", previousStartStr)
+        .lt("date", currentStartStr);
+
+      if (error) return { dedup: 0, prefetch: 0, ghost: 0 };
+      const rows = (data || []) as any[];
+      return {
+        dedup: rows.reduce((acc: number, r: any) => acc + (r.dedup_clicks || 0), 0),
+        prefetch: rows.reduce((acc: number, r: any) => acc + (r.prefetch_clicks || 0), 0),
+        ghost: rows.reduce((acc: number, r: any) => acc + (r.ghost_clicks || 0), 0),
+      };
+    },
+    enabled: !!effectiveUserId && dateRange !== "all",
+  });
+
+  const previousTotalRequests = useMemo(() => {
+    const shadow = previousShadowStats || { dedup: 0, prefetch: 0, ghost: 0 };
+    return (
+      previousMetrics.analyzed + shadow.dedup + shadow.prefetch + shadow.ghost
+    );
+  }, [previousMetrics, previousShadowStats]);
+
+  const safePageHitsValue = useMemo(
+    () =>
+      (shadowStats?.ghost || 0) +
+      (shadowStats?.prefetch || 0) +
+      (shadowStats?.dedup || 0),
+    [shadowStats]
+  );
+
+  const previousSafePageHits = useMemo(() => {
+    const shadow = previousShadowStats || { dedup: 0, prefetch: 0, ghost: 0 };
+    return shadow.dedup + shadow.prefetch + shadow.ghost;
+  }, [previousShadowStats]);
+
+  // Pacote de trends pra MetricsSidebar. Undefined → trends escondidos
+  // (caso do filtro "Todo o Período" — comparar "tudo" com "tudo anterior"
+  // é tautológico, o nada).
+  const trends = useMemo(() => {
+    if (dateRange === "all") return undefined;
+    return {
+      totalRequests: {
+        current: totalRequests,
+        previous: previousTotalRequests,
+      },
+      botsBlocked: {
+        current: metrics.blocked,
+        previous: previousMetrics.blocked,
+      },
+      safePageHits: {
+        current: safePageHitsValue,
+        previous: previousSafePageHits,
+      },
+      realTraffic: {
+        current: metrics.approved,
+        previous: previousMetrics.approved,
+      },
+    };
+  }, [
+    dateRange,
+    totalRequests,
+    previousTotalRequests,
+    metrics,
+    previousMetrics,
+    safePageHitsValue,
+    previousSafePageHits,
+  ]);
+
   const isToday = dateRange === "1";
 
+  // Modo do gráfico: default segue o dateRange (Hoje → hourly), mas o usuário
+  // pode sobrepor via botões. Quando o dateRange muda, volta ao default —
+  // isso mantém o comportamento previsível sem prender o usuário numa escolha
+  // que pode não fazer sentido no novo período.
+  const [chartMode, setChartMode] = useState<ChartMode>(isToday ? "hourly" : "daily");
+  useEffect(() => {
+    setChartMode(isToday ? "hourly" : "daily");
+  }, [isToday]);
+
+  const isHourlyChart = chartMode === "hourly";
+
   const chartData = useMemo(() => {
-    if (isToday) {
+    if (isHourlyChart) {
       return Array.from({ length: 24 }, (_, hour) => {
         const hourLogs = filteredLogs.filter(
           (l) => getHours(new Date(l.created_at)) === hour
@@ -160,7 +287,7 @@ export default function Dashboard() {
         label: format(new Date(dayStr + "T00:00:00"), "MMM d"),
         ...v,
       }));
-  }, [filteredLogs, isToday]);
+  }, [filteredLogs, isHourlyChart]);
 
   const timeAgoText = useMemo(() => {
     const diffSec = Math.floor((Date.now() - lastUpdated.getTime()) / 1000);
@@ -233,19 +360,17 @@ export default function Dashboard() {
           <MetricsSidebar
             totalRequests={totalRequests}
             botsBlocked={metrics.blocked}
-            safePageHits={
-              (shadowStats?.ghost || 0) +
-              (shadowStats?.prefetch || 0) +
-              (shadowStats?.dedup || 0)
-            }
+            safePageHits={safePageHitsValue}
             realTraffic={metrics.approved}
             isLoading={isLoading}
+            trends={trends}
           />
 
           <div className="space-y-5 min-w-0">
             <TrafficFlowChart
               data={chartData}
-              isToday={isToday}
+              mode={chartMode}
+              onModeChange={setChartMode}
               isLoading={isLoading}
             />
             <LiveStreamList logs={filteredLogs} isLoading={isLoading} />

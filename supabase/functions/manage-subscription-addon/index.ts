@@ -1,4 +1,3 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import Stripe from "npm:stripe@17.5.0";
 
@@ -30,7 +29,7 @@ const ADDON_PRICES: Record<string, string> = {
   extra_campaign: "price_1TMwudLZEOji6sEJLY129lHV",
 };
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   const origin = req.headers.get("origin");
   const corsHeaders = getCorsHeaders(origin);
 

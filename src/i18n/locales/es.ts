@@ -97,6 +97,7 @@ const es = {
     totalRequestsSub: "todas las fuentes hoy",
     shieldActive: "Escudo Activo",
     shieldStats: "99.98% uptime · 47ms promedio",
+    trendNew: "NUEVO",
     trafficFlow: "Flujo de Tráfico",
     hourly: "Hora",
     daily: "Día",
@@ -310,6 +311,28 @@ const es = {
     cfSslTitle: "SSL Gratuito y Protección DDoS",
     cfSslDesc: "Cloudflare proporciona un certificado SSL gratuito y protección DDoS automática sin costo adicional para ti.",
     cfWarning: "Los dominios sin Cloudflare activa (nube naranja) pueden no funcionar con CloakerX.",
+    awaitingSetup: "Esperando configuración",
+    activeDomains: "Dominios activos",
+    emptyStateTitle: "Aún no has conectado ningún dominio.",
+    emptyStateSubtitle: "Agrega un dominio personalizado arriba para comenzar a servir tráfico cloaked.",
+    domainAddedConfigureDns: "Dominio agregado. Configura los registros DNS abajo.",
+    verifiedSslActive: "Dominio verificado y SSL activo.",
+    cnameNotPointing: "El CNAME aún no apunta a cname.cloakerx.com.",
+    waitingSsl: "Esperando SSL",
+  },
+
+  roiHero: {
+    moneySaved: "Dinero Ahorrado",
+    botsByCpc: "bots ×",
+    estimatedTag: "estimado",
+    cpcEstimated: "CPC Estimado",
+    revenueLabel: "Ingresos",
+    costLabel: "Costo",
+    noCostData: "Datos de costo no disponibles",
+    tooltipEstimated:
+      "Valor estimado — clics bloqueados multiplicados por tu CPC promedio. Ajusta el valor al lado para reflejar tu costo real.",
+    tooltipCalculated:
+      "Calculado automáticamente en base al costo real registrado por tu tracking dividido por los clics aprobados.",
   },
 
   requests: {

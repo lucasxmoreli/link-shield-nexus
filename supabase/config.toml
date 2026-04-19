@@ -1,4 +1,4 @@
-project_id = "pvgkyyvicsexediwttwv"
+project_id = "jhjympznbobcgdltnjfk"
 
 [functions.filter]
 verify_jwt = false
@@ -19,4 +19,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.delete-custom-hostname]
+verify_jwt = false
+
+[functions.stripe-webhook]
 verify_jwt = false

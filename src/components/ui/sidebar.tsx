@@ -16,7 +16,11 @@ const SIDEBAR_COOKIE_NAME = "sidebar:state";
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
 const SIDEBAR_WIDTH = "16rem";
 const SIDEBAR_WIDTH_MOBILE = "18rem";
-const SIDEBAR_WIDTH_ICON = "3rem";
+// Collapsed sidebar: 5rem (80px / equivalente a w-20).
+// Antes era 3rem (w-12) e deixava os ícones espremidos contra a borda.
+// Com 5rem o ícone de 32px fica centralizado com ~24px de respiro em cada
+// lado, preservando tap targets confortáveis (>44px efetivo com padding).
+const SIDEBAR_WIDTH_ICON = "5rem";
 const SIDEBAR_KEYBOARD_SHORTCUT = "b";
 
 type SidebarContext = {

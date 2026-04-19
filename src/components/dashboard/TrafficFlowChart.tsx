@@ -16,19 +16,29 @@ interface ChartDataPoint {
   blocked: number;
 }
 
+export type ChartMode = "hourly" | "daily";
+
 interface TrafficFlowChartProps {
   data: ChartDataPoint[];
-  isToday: boolean;
+  /**
+   * Modo ativo (hourly agrega por hora, daily agrega por dia).
+   * Quem passa este prop normalmente deriva o default do dateRange
+   * (ex.: "Hoje" → hourly), mas o usuário pode alternar via botões.
+   */
+  mode: ChartMode;
+  onModeChange: (mode: ChartMode) => void;
   isLoading: boolean;
 }
 
 export function TrafficFlowChart({
   data,
-  isToday,
+  mode,
+  onModeChange,
   isLoading,
 }: TrafficFlowChartProps) {
   const { t } = useTranslation();
   const hasData = data.some((d) => d.approved > 0 || d.blocked > 0);
+  const isHourly = mode === "hourly";
 
   if (isLoading) {
     return (
@@ -46,10 +56,18 @@ export function TrafficFlowChart({
         <h3 className="text-sm font-semibold tracking-tight">
           {t("dashboard.trafficFlow")}
         </h3>
-        <div className="flex items-center bg-[#1a1a1a] rounded-md p-0.5">
+        <div
+          role="tablist"
+          aria-label={t("dashboard.trafficFlow")}
+          className="flex items-center bg-[#1a1a1a] rounded-md p-0.5"
+        >
           <button
+            type="button"
+            role="tab"
+            aria-selected={isHourly}
+            onClick={() => onModeChange("hourly")}
             className={`px-2.5 py-1 text-[10px] font-medium rounded transition-colors ${
-              isToday
+              isHourly
                 ? "bg-[#222222] text-foreground"
                 : "text-muted-foreground hover:text-foreground"
             }`}
@@ -57,8 +75,12 @@ export function TrafficFlowChart({
             {t("dashboard.hourly")}
           </button>
           <button
+            type="button"
+            role="tab"
+            aria-selected={!isHourly}
+            onClick={() => onModeChange("daily")}
             className={`px-2.5 py-1 text-[10px] font-medium rounded transition-colors ${
-              !isToday
+              !isHourly
                 ? "bg-[#222222] text-foreground"
                 : "text-muted-foreground hover:text-foreground"
             }`}
@@ -101,7 +123,7 @@ export function TrafficFlowChart({
                 fontSize={10}
                 tickLine={false}
                 axisLine={false}
-                interval={isToday ? 3 : "preserveStartEnd"}
+                interval={isHourly ? 3 : "preserveStartEnd"}
                 tick={{ fill: "rgba(255,255,255,0.25)" }}
               />
               <YAxis

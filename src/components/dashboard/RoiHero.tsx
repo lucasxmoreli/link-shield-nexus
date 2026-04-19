@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { DollarSign, TrendingUp, Info } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -13,6 +14,7 @@ interface RoiHeroProps {
 const DEFAULT_CPC = 0.25;
 
 export function RoiHero({ blocked, approved, totalCost, totalRevenue }: RoiHeroProps) {
+  const { t } = useTranslation();
   const [manualCpc, setManualCpc] = useState<number>(DEFAULT_CPC);
 
   // Se tem dados reais de cost, usa automático. Senão, usa o input manual.
@@ -51,7 +53,7 @@ export function RoiHero({ blocked, approved, totalCost, totalRevenue }: RoiHeroP
               <DollarSign className="h-4 w-4 text-emerald-400" />
             </div>
             <span className="text-[10px] font-semibold uppercase tracking-widest text-emerald-400/80">
-              Dinheiro Economizado
+              {t("roiHero.moneySaved")}
             </span>
             <TooltipProvider delayDuration={200}>
               <Tooltip>
@@ -60,8 +62,8 @@ export function RoiHero({ blocked, approved, totalCost, totalRevenue }: RoiHeroP
                 </TooltipTrigger>
                 <TooltipContent side="right" className="max-w-[260px] text-xs leading-relaxed">
                   {isEstimated
-                    ? "Valor estimado baseado nos cliques bloqueados multiplicados pelo seu CPC médio. Ajuste o valor ao lado para refletir seu custo real."
-                    : "Calculado automaticamente com base no custo real registrado pelo seu tracking dividido pelos cliques aprovados."}
+                    ? t("roiHero.tooltipEstimated")
+                    : t("roiHero.tooltipCalculated")}
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -70,14 +72,18 @@ export function RoiHero({ blocked, approved, totalCost, totalRevenue }: RoiHeroP
             ${savedEstimate.toFixed(2)}
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            {blocked.toLocaleString()} bots × ${activeCpc.toFixed(3)} CPC
-            {isEstimated && <span className="text-primary/60 ml-1">(estimado)</span>}
+            {blocked.toLocaleString()} {t("roiHero.botsByCpc")} ${activeCpc.toFixed(3)} CPC
+            {isEstimated && (
+              <span className="text-primary/60 ml-1">({t("roiHero.estimatedTag")})</span>
+            )}
           </p>
 
           {/* CPC Manual Input — só aparece quando não tem dados reais */}
           {isEstimated && (
             <div className="mt-3 flex items-center gap-2">
-              <span className="text-[10px] text-muted-foreground whitespace-nowrap">CPC Estimado:</span>
+              <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                {t("roiHero.cpcEstimated")}:
+              </span>
               <div className="relative w-24">
                 <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
                 <Input
@@ -106,8 +112,8 @@ export function RoiHero({ blocked, approved, totalCost, totalRevenue }: RoiHeroP
           </p>
           <p className="text-xs text-muted-foreground mt-1">
             {totalCost > 0
-              ? `Receita: $${totalRevenue.toFixed(2)} · Custo: $${totalCost.toFixed(2)}`
-              : "Dados de custo não disponíveis"}
+              ? `${t("roiHero.revenueLabel")}: $${totalRevenue.toFixed(2)} · ${t("roiHero.costLabel")}: $${totalCost.toFixed(2)}`
+              : t("roiHero.noCostData")}
           </p>
         </div>
       </div>

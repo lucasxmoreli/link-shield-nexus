@@ -76,7 +76,7 @@ export default function Domains() {
       qc.invalidateQueries({ queryKey: ["domains"] });
       setOpen(false);
       setUrl("");
-      toast.success("Domínio adicionado. Configure os registros DNS abaixo.");
+      toast.success(t("domains.domainAddedConfigureDns"));
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -111,11 +111,13 @@ export default function Domains() {
     qc.invalidateQueries({ queryKey: ["domains"] });
 
     if (data?.verified) {
-      toast.success("Domínio verificado e SSL ativo");
+      toast.success(t("domains.verifiedSslActive"));
     } else if (!data?.cname_ok) {
-      toast.error("CNAME ainda não está apontando para cname.cloakerx.com");
+      toast.error(t("domains.cnameNotPointing"));
     } else if (!data?.ssl_active) {
-      toast.info(`Aguardando SSL: ${data?.ssl_status || "pending"}`);
+      toast.info(
+        `${t("domains.waitingSsl")}: ${data?.ssl_status || t("domains.pending")}`
+      );
     }
   };
 
@@ -192,7 +194,7 @@ export default function Domains() {
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">
-              Aguardando configuração
+              {t("domains.awaitingSetup")}
             </h2>
             <Badge variant="outline" className="border-amber-500/30 text-amber-400 text-[10px]">
               {pendingDomains.length}
@@ -213,7 +215,7 @@ export default function Domains() {
       {(verifiedDomains.length > 0 || isLoading) && (
         <div className="space-y-3">
           <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">
-            Domínios ativos
+            {t("domains.activeDomains")}
           </h2>
           <Card className="border-border bg-card">
             <CardContent className="p-0 overflow-x-auto">
@@ -272,8 +274,13 @@ export default function Domains() {
       {/* Empty state */}
       {!isLoading && domains.length === 0 && (
         <Card className="border-border bg-card">
-          <CardContent className="py-12 text-center">
-            <p className="text-sm text-muted-foreground">{t("campaigns.noCampaigns")}</p>
+          <CardContent className="py-12 text-center space-y-1">
+            <p className="text-sm text-foreground font-medium">
+              {t("domains.emptyStateTitle")}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {t("domains.emptyStateSubtitle")}
+            </p>
           </CardContent>
         </Card>
       )}

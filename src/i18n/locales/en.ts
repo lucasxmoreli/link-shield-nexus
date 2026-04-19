@@ -100,6 +100,7 @@ const en = {
     totalRequestsSub: "all sources today",
     shieldActive: "Shield Active",
     shieldStats: "99.98% uptime · 47ms avg",
+    trendNew: "NEW",
     trafficFlow: "Traffic Flow",
     hourly: "Hourly",
     daily: "Daily",
@@ -321,6 +322,30 @@ const en = {
     cfSslTitle: "Free SSL & DDoS Protection",
     cfSslDesc: "Cloudflare provides a free SSL certificate and automatic DDoS protection at no additional cost to you.",
     cfWarning: "Domains without active Cloudflare (orange cloud) may not work with CloakerX.",
+    // Domains page section labels + empty state + toasts
+    awaitingSetup: "Awaiting setup",
+    activeDomains: "Active domains",
+    emptyStateTitle: "No domains connected yet.",
+    emptyStateSubtitle: "Add a custom domain above to start serving cloaked traffic.",
+    domainAddedConfigureDns: "Domain added. Configure the DNS records below.",
+    verifiedSslActive: "Domain verified and SSL active.",
+    cnameNotPointing: "CNAME is not pointing to cname.cloakerx.com yet.",
+    waitingSsl: "Waiting for SSL",
+  },
+
+  // ROI Hero card (Analytics)
+  roiHero: {
+    moneySaved: "Money Saved",
+    botsByCpc: "bots ×",
+    estimatedTag: "estimated",
+    cpcEstimated: "Estimated CPC",
+    revenueLabel: "Revenue",
+    costLabel: "Cost",
+    noCostData: "Cost data unavailable",
+    tooltipEstimated:
+      "Estimated value — blocked clicks multiplied by your average CPC. Adjust the value next to it to reflect your actual cost.",
+    tooltipCalculated:
+      "Calculated automatically from the real cost tracked by your pipeline divided by approved clicks.",
   },
 
   // Requests Log

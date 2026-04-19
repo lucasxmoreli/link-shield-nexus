@@ -16,7 +16,6 @@
 // IMPORTANTE: idempotente — se chamar 2x, não quebra (já deletado retorna 200).
 // =============================================================================
 
-// @deno-types="https://esm.sh/@supabase/supabase-js@2.45.0"
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import Stripe from "npm:stripe@17.5.0";
 
