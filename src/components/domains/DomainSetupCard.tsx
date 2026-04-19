@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import type { DomainRow } from "@/hooks/useDomains";
+import { DnsFlowDiagram } from "@/components/domains/DnsFlowDiagram";
 
 const CNAME_TARGET = "cname.cloakerx.com";
 
@@ -228,6 +229,14 @@ export function DomainSetupCard({ domain, onVerify, onDelete }: DomainSetupCardP
 
         {/* DNS Records */}
         <div className="p-4 space-y-3">
+          {/* Visual flow diagram — Sprint 2 item 2.3 */}
+          <DnsFlowDiagram
+            domain={domain.url}
+            cnameOk={Boolean(domain.is_verified)}
+            sslStatus={domain.ssl_status}
+            isVerified={Boolean(domain.is_verified && domain.ssl_status === "active")}
+          />
+
           {/* Record 1: Main CNAME (routing) — MUST be proxied */}
           <div className="rounded-md border border-white/[0.06] bg-white/[0.02] p-3 space-y-2.5">
             <div className="flex items-center gap-2">

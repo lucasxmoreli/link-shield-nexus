@@ -319,6 +319,23 @@ const pt = {
     verifiedSslActive: "Domínio verificado e SSL ativo.",
     cnameNotPointing: "CNAME ainda não está apontando para cname.cloakerx.com.",
     waitingSsl: "Aguardando SSL",
+    flowDiagram: {
+      title: "Caminho do tráfego",
+      subtitle: "Assim que o DNS propagar, cada etapa acende em verde.",
+      ariaLabel: "Diagrama do fluxo de DNS do seu domínio até o motor CloakerX",
+      nodeVisitor: "Visitante",
+      nodeVisitorSub: "Clique no link",
+      nodeDomain: "Seu domínio",
+      nodeCname: "Registro CNAME",
+      nodeCloudflare: "Cloudflare",
+      nodeCloudflareSub: "SSL + Anti-DDoS",
+      nodeEngine: "CloakerX",
+      nodeEngineSub: "Cloaking + Métricas",
+      summaryVerified: "✓ Tudo pronto. Seu domínio está ativo e roteando tráfego normalmente.",
+      summaryCnameMissing: "Configure o CNAME no seu provedor de DNS (registros abaixo). A propagação leva de 1 a 15 minutos.",
+      summarySslPending: "CNAME resolvido. Cloudflare está emitindo o certificado SSL — isso pode levar até 15 minutos.",
+      summaryWaiting: "Aguardando primeira verificação. Clique em \"Verificar agora\" após configurar os registros DNS.",
+    },
   },
 
   roiHero: {

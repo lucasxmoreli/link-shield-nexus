@@ -1,3 +1,22 @@
+// =============================================================================
+// EDGE FUNCTION: sync-usage-stripe
+// =============================================================================
+// Sprint 1 — Item 4.2: corrigido double-billing em cron concorrente.
+//
+// Fluxo POR USER (agora seguro contra race):
+//   1. Chama RPC `reserve_usage_report` → advisory lock transacional
+//      atomiza leitura do HWM + inserção da claim.
+//   2. Se RPC retornar claim_id + delta > 0, chama Stripe com o delta.
+//   3. UPDATE na claim com o stripe_identifier (success) ou com erro (failed).
+//
+// Invariantes:
+//   • Se dois crons rodarem ao mesmo tempo, um pega o lock e cria a claim;
+//     o outro vê o novo HWM e retorna 'already_reported'.
+//   • Se Stripe falhar, a claim fica marcada 'failed' mas o HWM permanece —
+//     a próxima execução verá delta = overage - HWM_da_claim_failed = 0
+//     e vai pular (evitando spam de retry). Ajuste manual resolve casos edge.
+// =============================================================================
+
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import Stripe from "npm:stripe@17.5.0";
 
@@ -31,12 +50,21 @@ function getCorsHeaders(origin: string | null) {
 
 const METER_EVENT_NAME = "cloakerx_clicks";
 
+interface ReserveResult {
+  claim_id: string | null;
+  delta_to_report: number;
+  hwm_before: number;
+  overage_now: number;
+  skipped_reason: string | null;
+}
+
 Deno.serve(async (req) => {
   const origin = req.headers.get("origin");
   const corsHeaders = getCorsHeaders(origin);
 
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  // ─── Auth via CRON_SECRET ──────────────────────────────────────────
   const cronSecret = Deno.env.get("CRON_SECRET");
   const authHeader = req.headers.get("Authorization");
   if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
@@ -56,6 +84,7 @@ Deno.serve(async (req) => {
     httpClient: Stripe.createFetchHttpClient(),
   });
 
+  // ─── Busca candidatos a reporte ───────────────────────────────────
   const { data: profiles, error } = await admin
     .from("profiles")
     .select("user_id, current_clicks, max_clicks, stripe_customer_id, billing_cycle_end, is_suspended")
@@ -73,62 +102,62 @@ Deno.serve(async (req) => {
   console.log(`[sync-usage] ========== START ==========`);
   console.log(`[sync-usage] Total profiles retornados pela query: ${profiles?.length ?? 0}`);
 
-  let reported = 0, skipped = 0, failed = 0;
+  let reported = 0, skipped = 0, failed = 0, lockedOut = 0;
 
   for (const p of profiles || []) {
     console.log(`[sync-usage] --- Profile ${p.user_id} ---`);
-    console.log(`[sync-usage] current_clicks: ${p.current_clicks}`);
-    console.log(`[sync-usage] max_clicks: ${p.max_clicks}`);
-    console.log(`[sync-usage] is_suspended: ${p.is_suspended}`);
-    console.log(`[sync-usage] stripe_customer_id: ${p.stripe_customer_id}`);
-    console.log(`[sync-usage] billing_cycle_end: ${p.billing_cycle_end}`);
 
     if (p.is_suspended) {
-      console.log(`[sync-usage] >>> SKIP motivo: is_suspended=true`);
+      console.log(`[sync-usage] >>> SKIP: is_suspended=true`);
       skipped++;
       continue;
     }
 
-    const currentClicks = p.current_clicks ?? 0;
-    const maxClicks = p.max_clicks ?? 0;
-    const overageNow = Math.max(0, currentClicks - maxClicks);
+    // ─────────────────────────────────────────────────────────────
+    // FASE 1: reserva atômica via RPC (advisory lock transacional)
+    // ─────────────────────────────────────────────────────────────
+    const { data: reserveRows, error: reserveErr } = await admin.rpc("reserve_usage_report", {
+      p_user_id: p.user_id,
+      p_period_end: p.billing_cycle_end,
+      p_current_clicks: p.current_clicks ?? 0,
+      p_max_clicks: p.max_clicks ?? 0,
+    });
 
-    console.log(`[sync-usage] overageNow calculado: ${overageNow} (${currentClicks} - ${maxClicks})`);
+    if (reserveErr) {
+      console.error(`[sync-usage] RPC reserve_usage_report falhou pro user ${p.user_id}:`, reserveErr);
+      failed++;
+      continue;
+    }
 
-    if (overageNow === 0) {
-      console.log(`[sync-usage] >>> SKIP motivo: overageNow=0 (current=${currentClicks}, max=${maxClicks})`);
+    // RPC retorna SETOF → pega primeira linha
+    const reserve: ReserveResult | undefined = Array.isArray(reserveRows) ? reserveRows[0] : reserveRows;
+
+    if (!reserve) {
+      console.error(`[sync-usage] RPC retornou vazio pro user ${p.user_id}`);
+      failed++;
+      continue;
+    }
+
+    console.log(
+      `[sync-usage] reserve: claim=${reserve.claim_id} delta=${reserve.delta_to_report} ` +
+      `hwm=${reserve.hwm_before} overage=${reserve.overage_now} reason=${reserve.skipped_reason}`,
+    );
+
+    if (reserve.skipped_reason === "locked_by_another_run") {
+      lockedOut++;
+      continue;
+    }
+
+    if (!reserve.claim_id || reserve.delta_to_report <= 0) {
+      // no_overage | already_reported — fluxo normal, só pular
       skipped++;
       continue;
     }
 
-    const { data: lastReport, error: lastReportError } = await admin
-      .from("usage_report_log")
-      .select("clicks_reported")
-      .eq("user_id", p.user_id)
-      .gte("period_end", p.billing_cycle_end ?? "1970-01-01")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (lastReportError) {
-      console.log(`[sync-usage] ERRO ao ler usage_report_log:`, lastReportError);
-    }
-
-    console.log(`[sync-usage] lastReport retornado: ${JSON.stringify(lastReport)}`);
-
-    const alreadyReported = lastReport?.clicks_reported ?? 0;
-    const deltaToReport = overageNow - alreadyReported;
-
-    console.log(`[sync-usage] alreadyReported: ${alreadyReported}`);
-    console.log(`[sync-usage] deltaToReport: ${deltaToReport}`);
-
-    if (deltaToReport <= 0) {
-      console.log(`[sync-usage] >>> SKIP motivo: deltaToReport<=0 (overage=${overageNow}, reported=${alreadyReported})`);
-      skipped++;
-      continue;
-    }
-
-    console.log(`[sync-usage] >>> REPORTING ${deltaToReport} clicks to Stripe...`);
+    // ─────────────────────────────────────────────────────────────
+    // FASE 2: chamar Stripe (já temos claim reservada no banco)
+    // ─────────────────────────────────────────────────────────────
+    console.log(`[sync-usage] >>> REPORTING ${reserve.delta_to_report} clicks to Stripe (claim ${reserve.claim_id})`);
 
     try {
       // IMPORTANTE: chave "click" (não "value") porque o Meter no Stripe
@@ -136,31 +165,61 @@ Deno.serve(async (req) => {
       const meterEvent = await stripe.billing.meterEvents.create({
         event_name: METER_EVENT_NAME,
         payload: {
-          click: String(deltaToReport),
+          click: String(reserve.delta_to_report),
           stripe_customer_id: p.stripe_customer_id!,
         },
       });
 
-      await admin.from("usage_report_log").insert({
-        user_id: p.user_id,
-        period_end: p.billing_cycle_end,
-        clicks_reported: overageNow,
-        stripe_response: { identifier: meterEvent.identifier, value: deltaToReport },
-      });
+      // ─── FASE 3: marca claim como success ───────────────────────
+      await admin
+        .from("usage_report_log")
+        .update({
+          stripe_response: {
+            status: "success",
+            identifier: meterEvent.identifier,
+            value: reserve.delta_to_report,
+            reported_at: new Date().toISOString(),
+          },
+        })
+        .eq("id", reserve.claim_id);
 
       reported++;
       console.log(`[sync-usage] >>> REPORTED OK. Stripe identifier: ${meterEvent.identifier}`);
-    } catch (err) {
+    } catch (err: any) {
+      // Stripe falhou — marca claim como failed mas MANTÉM o HWM.
+      // Próximo cron verá o HWM e não vai tentar de novo automaticamente
+      // (evita retry loop batendo no Stripe). Requer investigação manual.
       failed++;
       console.error(`[sync-usage] >>> FAILED for user ${p.user_id}:`, err);
+
+      await admin
+        .from("usage_report_log")
+        .update({
+          stripe_response: {
+            status: "failed",
+            error: err?.message ?? "Unknown Stripe error",
+            delta_attempted: reserve.delta_to_report,
+            failed_at: new Date().toISOString(),
+          },
+        })
+        .eq("id", reserve.claim_id);
     }
   }
 
   console.log(`[sync-usage] ========== END ==========`);
-  console.log(`[sync-usage] Summary: reported=${reported}, skipped=${skipped}, failed=${failed}, total=${profiles?.length ?? 0}`);
+  console.log(
+    `[sync-usage] Summary: reported=${reported}, skipped=${skipped}, ` +
+    `failed=${failed}, lockedOut=${lockedOut}, total=${profiles?.length ?? 0}`,
+  );
 
   return new Response(
-    JSON.stringify({ reported, skipped, failed, total: profiles?.length ?? 0 }),
-    { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    JSON.stringify({
+      reported,
+      skipped,
+      failed,
+      locked_out: lockedOut,
+      total: profiles?.length ?? 0,
+    }),
+    { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
   );
 });

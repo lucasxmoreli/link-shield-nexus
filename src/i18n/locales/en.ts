@@ -331,6 +331,23 @@ const en = {
     verifiedSslActive: "Domain verified and SSL active.",
     cnameNotPointing: "CNAME is not pointing to cname.cloakerx.com yet.",
     waitingSsl: "Waiting for SSL",
+    flowDiagram: {
+      title: "Traffic path",
+      subtitle: "Each step lights up green once DNS propagates.",
+      ariaLabel: "Diagram of the DNS flow from your domain to the CloakerX engine",
+      nodeVisitor: "Visitor",
+      nodeVisitorSub: "Clicks the link",
+      nodeDomain: "Your domain",
+      nodeCname: "CNAME record",
+      nodeCloudflare: "Cloudflare",
+      nodeCloudflareSub: "SSL + Anti-DDoS",
+      nodeEngine: "CloakerX",
+      nodeEngineSub: "Cloaking + Metrics",
+      summaryVerified: "✓ All set. Your domain is active and routing traffic.",
+      summaryCnameMissing: "Configure the CNAME at your DNS provider (records below). Propagation takes 1 to 15 minutes.",
+      summarySslPending: "CNAME resolved. Cloudflare is issuing the SSL certificate — this can take up to 15 minutes.",
+      summaryWaiting: "Waiting for the first verification. Click \"Verify now\" after setting up the DNS records.",
+    },
   },
 
   // ROI Hero card (Analytics)
