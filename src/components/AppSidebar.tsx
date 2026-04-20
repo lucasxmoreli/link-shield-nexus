@@ -24,7 +24,7 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const { signOut } = useAuth();
   const { isAdmin } = useAdmin();
-  const { profile, planConfig, planName, isLoading: profileLoading } = useProfile();
+  const { profile, planConfig, planName, isActive, isLoading: profileLoading } = useProfile();
   const { t } = useTranslation();
 
   const baseItems = [
@@ -46,7 +46,9 @@ export function AppSidebar() {
   // ── Cockpit de Consumo ──
   const currentClicks = profile?.current_clicks ?? 0;
   const maxClicks = profile?.max_clicks ?? 0;
-  const isFreePlan = planConfig.isFree;
+  // Paywall ground truth: only ACTIVE workspaces see a real quota. Non-active
+  // states (INVITED / PAST_DUE / CANCELED) always render the "upgrade" CTA.
+  const isLocked = !isActive;
   const hasQuota = maxClicks > 0;
   const usagePercent = hasQuota ? Math.round((currentClicks / maxClicks) * 100) : 0;
   const isOverlimit = hasQuota && currentClicks > maxClicks;
@@ -189,8 +191,8 @@ export function AppSidebar() {
                   </div>
                 )}
 
-                {/* Free plan: CTA upgrade */}
-                {isFreePlan && !hasQuota && (
+                {/* Locked workspace (INVITED / PAST_DUE / CANCELED): CTA upgrade */}
+                {isLocked && !hasQuota && (
                   <div className="flex items-center gap-1.5">
                     <Zap className="h-3 w-3 text-white/20" />
                     <span className="text-[11px] font-mono text-white/30">upgrade required</span>

@@ -18,6 +18,10 @@ export interface ProfileData {
   language: string;
   created_at: string;
   updated_at: string;
+  // Derived column (see migration 20260419150000_fix_activation_status_rule).
+  // Ground truth for the workspace paywall: only "ACTIVE" unlocks gated
+  // features; everything else (INVITED / PAST_DUE / CANCELED) is locked.
+  activation_status: string | null;
 }
 
 export function useProfile() {
@@ -40,7 +44,10 @@ export function useProfile() {
 
   const planConfig: PlanData = getPlanByName(profile?.plan_name);
   const planName = profile?.plan_name ?? "Free";
-  const isFreePlan = planConfig.isFree;
+  // Paywall ground truth — do NOT derive from `plan_name` (inconsistent
+  // across seeds/legacy rows). The DB-generated `activation_status` column
+  // is the single source of truth for whether the workspace is unlocked.
+  const isActive = profile?.activation_status === "ACTIVE";
 
-  return { profile, planConfig, planName, isFreePlan, isLoading, error };
+  return { profile, planConfig, planName, isActive, isLoading, error };
 }
