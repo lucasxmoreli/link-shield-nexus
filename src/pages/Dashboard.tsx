@@ -4,7 +4,8 @@ import { RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
-import { subDays, startOfDay, getHours, format } from "date-fns";
+import { subDays, getHours, format, eachDayOfInterval } from "date-fns";
+import { spDateString, spStartOfDay } from "@/lib/timezone";
 
 import { MetricsSidebar } from "@/components/dashboard/MetricsSidebar";
 import { TrafficFlowChart, type ChartMode } from "@/components/dashboard/TrafficFlowChart";
@@ -36,12 +37,38 @@ interface ShadowStats {
   ghost: number;
 }
 
+// Shape de uma row em daily_campaign_stats — não está nos types gerados
+// do Supabase ainda (rodar `supabase gen types` resolve), por isso o cast
+// manual aqui evita poluir o componente com `as any` espalhado.
+interface DailyStatRow {
+  date: string;             // [PR-3b.5] "YYYY-MM-DD" agora ancorado em America/Sao_Paulo
+  total_clicks: number;
+  unique_clicks: number;
+  bot_clicks: number;
+  approved_clicks: number;  // [PR-3b.5] action_taken='offer_page' (tráfego REAL)
+  safe_page_clicks: number; // [PR-3b.5] action_taken='safe_page' (bloqueado por geo/device/strict)
+  conversions: number;
+  total_cost: number;
+  total_revenue: number;
+}
+
 /**
  * Dashboard V2 — Command Center (Asymmetrical Split)
  *
  * LAYOUT RULE: This component uses w-full only.
  * The parent (AppLayout) manages sidebar space.
  * ZERO fixed left margins (ml-*, margin-left).
+ *
+ * ─── PR-3b Fase 3: Hybrid Data Fetching ───────────────────────────
+ * Antes: buscava TODA `dashboard_analytics_view` e agregava no client.
+ *        Travava em 1M+ cliques.
+ * Agora:
+ *   • dateRange === "1" (Hoje)  → raw logs SÓ do dia (curto, OK no client)
+ *   • dateRange != "1"          → daily_campaign_stats (pré-agregado, leve)
+ *   • LiveStream                → SEMPRE raw de hoje (é "live", não histórico)
+ * Trade-off conhecido: dados de "hoje" em filtros 7d/30d ficam até 1h
+ * defasados (refresh do cron horário). Aceitável — quem quer real-time
+ * fica em "Hoje".
  */
 export default function Dashboard() {
   const { user, effectiveUserId } = useAuth();
@@ -49,19 +76,28 @@ export default function Dashboard() {
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const { t } = useTranslation();
 
+  const isToday = dateRange === "1";
+
+  // ─── QUERY 1: Raw logs de HOJE ────────────────────────────────────
+  // Sempre ativa, independente do filtro:
+  //   • Powera o LiveStream (que é, por definição, real-time)
+  //   • Powera metrics/chart quando isToday === true
+  // Volume: 1 dia → seguro pro client, mesmo em contas grandes.
   const {
-    data: logs = [],
-    isLoading,
-    refetch,
+    data: todayRaw = [],
+    isLoading: isLoadingToday,
+    refetch: refetchToday,
   } = useQuery({
-    queryKey: ["dashboard_analytics_view", effectiveUserId],
+    queryKey: ["dashboard_raw_today", effectiveUserId],
     queryFn: async () => {
+      const todayStart = spStartOfDay().toISOString();
       const { data, error } = await supabase
         .from("dashboard_analytics_view" as any)
         .select(
           "action_taken, status_final, motivo_limpo, created_at, device_type, ip_address, country_code, risk_score"
         )
         .eq("user_id", effectiveUserId!)
+        .gte("created_at", todayStart)
         .order("created_at", { ascending: false });
       if (error) throw error;
       setLastUpdated(new Date());
@@ -71,6 +107,81 @@ export default function Dashboard() {
     refetchInterval: 30_000,
   });
 
+  // ─── QUERY 2: Agregado de daily_campaign_stats (período histórico) ──
+  // Só roda quando NÃO é "Hoje". Devolve poucas linhas (1 por dia × campanhas
+  // ativas), então a soma client-side é O(N) com N pequeno.
+  //
+  // ATENÇÃO: a tabela daily_campaign_stats tem o campo `date` ancorado em
+  // UTC (ver migration 20260419170000). Aqui usamos spDateString() pra
+  // calcular as bordas do range — isso causa um descasamento de até 3h
+  // entre "dia SP" e "dia UTC" no agregado. Para fechar esse gap de forma
+  // correta, a função aggregate_daily_stats() precisa ser migrada para
+  // ancorar em SP. TODO: PR-3b.4 — uniformizar timezone do agregado.
+  const {
+    data: aggStats = [],
+    isLoading: isLoadingAgg,
+    refetch: refetchAgg,
+  } = useQuery({
+    queryKey: ["daily_campaign_stats", effectiveUserId, dateRange],
+    queryFn: async () => {
+      let query = supabase
+        .from("daily_campaign_stats" as any)
+        .select(
+          // [PR-3b.5] +approved_clicks, +safe_page_clicks (deslump)
+          "date, total_clicks, unique_clicks, bot_clicks, approved_clicks, safe_page_clicks, conversions, total_cost, total_revenue"
+        )
+        .eq("user_id", effectiveUserId!)
+        .order("date", { ascending: true });
+
+      if (dateRange !== "all") {
+        const days = parseInt(dateRange);
+        const today = spDateString();
+        const start = spDateString(subDays(new Date(), days - 1));
+        query = query.gte("date", start).lte("date", today);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      setLastUpdated(new Date());
+      return (data || []) as unknown as DailyStatRow[];
+    },
+    enabled: !!effectiveUserId && !isToday,
+    refetchInterval: 30_000,
+  });
+
+  // ─── QUERY 3: Período anterior do agregado (para trends) ────────────
+  // Espelha a janela atual deslocada pra trás. Sempre vem do agregado
+  // (mesmo quando o atual é "Hoje" — ontem já está fechado pelo cron).
+  const { data: prevAggStats = [] } = useQuery({
+    queryKey: ["daily_campaign_stats_prev", effectiveUserId, dateRange],
+    queryFn: async () => {
+      if (dateRange === "all") return [];
+      const periodLength = parseInt(dateRange);
+      const now = new Date();
+      const currentStart = subDays(now, periodLength - 1);
+      const previousStart = subDays(currentStart, periodLength);
+      const previousEnd = subDays(currentStart, 1);
+
+      const { data, error } = await supabase
+        .from("daily_campaign_stats" as any)
+        // [PR-3b.5] +approved_clicks, +safe_page_clicks pra previousMetrics calcular trends corretos
+        .select("total_clicks, bot_clicks, approved_clicks, safe_page_clicks")
+        .eq("user_id", effectiveUserId!)
+        .gte("date", spDateString(previousStart))
+        .lte("date", spDateString(previousEnd));
+
+      if (error) throw error;
+      return (data || []) as unknown as Pick<
+        DailyStatRow,
+        "total_clicks" | "bot_clicks" | "approved_clicks" | "safe_page_clicks"
+      >[];
+    },
+    enabled: !!effectiveUserId && dateRange !== "all",
+  });
+
+  // ─── QUERY 4: Shadow stats (dedup/prefetch/ghost) ───────────────────
+  // Mantida intacta — já vem de campaign_stats (tabela diferente, não da
+  // requests_log) e o volume é O(dias × campanhas), trivial.
   const { data: shadowStats } = useQuery<ShadowStats>({
     queryKey: ["campaign_stats_shadow", effectiveUserId, dateRange],
     queryFn: async () => {
@@ -88,11 +199,8 @@ export default function Dashboard() {
         .in("campaign_id", campaignIds);
 
       if (dateRange !== "all") {
-        const now = new Date();
         const days = dateRange === "1" ? 0 : parseInt(dateRange) - 1;
-        const startDate = subDays(startOfDay(now), days)
-          .toISOString()
-          .split("T")[0];
+        const startDate = spDateString(subDays(new Date(), days));
         query = query.gte("date", startDate);
       }
 
@@ -108,56 +216,7 @@ export default function Dashboard() {
     enabled: !!effectiveUserId,
   });
 
-  const filteredLogs = useMemo(() => {
-    if (dateRange === "all") return logs;
-    const now = new Date();
-    if (dateRange === "1") {
-      const todayStart = startOfDay(now);
-      return logs.filter((l) => new Date(l.created_at) >= todayStart);
-    }
-    const days = parseInt(dateRange);
-    const startDate = subDays(startOfDay(now), days - 1);
-    return logs.filter((l) => new Date(l.created_at) >= startDate);
-  }, [logs, dateRange]);
-
-  const metrics = useMemo(() => {
-    const analyzed = filteredLogs.length;
-    const approved = filteredLogs.filter((l) => l.status_final === "Aprovado").length;
-    const blocked = filteredLogs.filter((l) => l.status_final !== "Aprovado").length;
-    return { analyzed, approved, blocked };
-  }, [filteredLogs]);
-
-  const totalRequests = useMemo(() => {
-    const shadow = shadowStats || { dedup: 0, prefetch: 0, ghost: 0 };
-    return metrics.analyzed + shadow.dedup + shadow.prefetch + shadow.ghost;
-  }, [metrics, shadowStats]);
-
-  // ─── PERÍODO ANTERIOR (trend real) ───────────────────────────────
-  // Espelha o filtro atual, deslocado pra trás pelo mesmo tamanho.
-  // Ex.: dateRange="7" → current = últimos 7d, previous = 7d anteriores.
-  // "all" não tem comparativo sensato → trends escondidos.
-  const previousLogs = useMemo(() => {
-    if (dateRange === "all") return [];
-    const now = new Date();
-    const periodLength = parseInt(dateRange); // 1, 2, 7, 30
-    const currentStart = subDays(startOfDay(now), periodLength - 1);
-    const previousStart = subDays(currentStart, periodLength);
-    return logs.filter((l) => {
-      const d = new Date(l.created_at);
-      return d >= previousStart && d < currentStart;
-    });
-  }, [logs, dateRange]);
-
-  const previousMetrics = useMemo(() => {
-    const analyzed = previousLogs.length;
-    const approved = previousLogs.filter((l) => l.status_final === "Aprovado").length;
-    const blocked = previousLogs.filter((l) => l.status_final !== "Aprovado").length;
-    return { analyzed, approved, blocked };
-  }, [previousLogs]);
-
-  // Query espelho pra shadow stats do período anterior. Necessária porque
-  // campaign_stats é agregada por dia e filtrada server-side — não dá pra
-  // derivar do array de logs já carregado.
+  // ─── QUERY 5: Shadow stats do período anterior (trends) ─────────────
   const { data: previousShadowStats } = useQuery<ShadowStats>({
     queryKey: ["campaign_stats_shadow_prev", effectiveUserId, dateRange],
     queryFn: async () => {
@@ -170,12 +229,12 @@ export default function Dashboard() {
       if (campaignIds.length === 0)
         return { dedup: 0, prefetch: 0, ghost: 0 };
 
-      const now = new Date();
       const periodLength = parseInt(dateRange);
-      const currentStart = subDays(startOfDay(now), periodLength - 1);
+      const now = new Date();
+      const currentStart = subDays(now, periodLength - 1);
       const previousStart = subDays(currentStart, periodLength);
-      const previousStartStr = previousStart.toISOString().split("T")[0];
-      const currentStartStr = currentStart.toISOString().split("T")[0];
+      const previousStartStr = spDateString(previousStart);
+      const currentStartStr = spDateString(currentStart);
 
       const { data, error } = await supabase
         .from("campaign_stats" as any)
@@ -194,6 +253,53 @@ export default function Dashboard() {
     },
     enabled: !!effectiveUserId && dateRange !== "all",
   });
+
+  // ─── METRICS: hybrid switch ─────────────────────────────────────────
+  // isToday  → derivado dos raw logs (real-time)
+  // !isToday → soma do agregado (até 1h de defasagem no dia corrente)
+  //
+  // [PR-3b.5] Buckets separados: approved = OFFER_PAGE only.
+  // SAFE_PAGE deixa de ser somado em "approved" (era o bug do ROI).
+  const metrics = useMemo(() => {
+    if (isToday) {
+      const analyzed = todayRaw.length;
+      const approved = todayRaw.filter((l) => l.status_final === "Aprovado").length;
+      const blocked = todayRaw.filter((l) => l.status_final !== "Aprovado").length;
+      return { analyzed, approved, blocked };
+    }
+    const totalClicks    = aggStats.reduce((acc, r) => acc + (r.total_clicks     ?? 0), 0);
+    const botClicks      = aggStats.reduce((acc, r) => acc + (r.bot_clicks       ?? 0), 0);
+    const approvedClicks = aggStats.reduce((acc, r) => acc + (r.approved_clicks  ?? 0), 0);
+    const safePageClicks = aggStats.reduce((acc, r) => acc + (r.safe_page_clicks ?? 0), 0);
+    return {
+      analyzed: totalClicks,
+      // [PR-3b.5] "blocked" no Dashboard = bots + safe_page (tudo que NÃO viu a oferta)
+      blocked: botClicks + safePageClicks,
+      // [PR-3b.5] "approved" agora = APENAS offer_page (não mais total - bot)
+      approved: approvedClicks,
+    };
+  }, [isToday, todayRaw, aggStats]);
+
+  const totalRequests = useMemo(() => {
+    const shadow = shadowStats || { dedup: 0, prefetch: 0, ghost: 0 };
+    return metrics.analyzed + shadow.dedup + shadow.prefetch + shadow.ghost;
+  }, [metrics, shadowStats]);
+
+  // ─── PERÍODO ANTERIOR (trend real) ───────────────────────────────
+  // Sempre vem do agregado (mais leve e cobre todos os ranges históricos).
+  // "all" não tem comparativo sensato → trends escondidos.
+  const previousMetrics = useMemo(() => {
+    if (dateRange === "all") return { analyzed: 0, approved: 0, blocked: 0 };
+    const totalClicks    = prevAggStats.reduce((acc, r) => acc + (r.total_clicks     ?? 0), 0);
+    const botClicks      = prevAggStats.reduce((acc, r) => acc + (r.bot_clicks       ?? 0), 0);
+    const approvedClicks = prevAggStats.reduce((acc, r) => acc + (r.approved_clicks  ?? 0), 0);
+    const safePageClicks = prevAggStats.reduce((acc, r) => acc + (r.safe_page_clicks ?? 0), 0);
+    return {
+      analyzed: totalClicks,
+      blocked: botClicks + safePageClicks, // [PR-3b.5]
+      approved: approvedClicks,            // [PR-3b.5]
+    };
+  }, [prevAggStats, dateRange]);
 
   const previousTotalRequests = useMemo(() => {
     const shadow = previousShadowStats || { dedup: 0, prefetch: 0, ghost: 0 };
@@ -215,9 +321,6 @@ export default function Dashboard() {
     return shadow.dedup + shadow.prefetch + shadow.ghost;
   }, [previousShadowStats]);
 
-  // Pacote de trends pra MetricsSidebar. Undefined → trends escondidos
-  // (caso do filtro "Todo o Período" — comparar "tudo" com "tudo anterior"
-  // é tautológico, o nada).
   const trends = useMemo(() => {
     if (dateRange === "all") return undefined;
     return {
@@ -248,12 +351,9 @@ export default function Dashboard() {
     previousSafePageHits,
   ]);
 
-  const isToday = dateRange === "1";
-
-  // Modo do gráfico: default segue o dateRange (Hoje → hourly), mas o usuário
-  // pode sobrepor via botões. Quando o dateRange muda, volta ao default —
-  // isso mantém o comportamento previsível sem prender o usuário numa escolha
-  // que pode não fazer sentido no novo período.
+  // ─── CHART MODE ──────────────────────────────────────────────────
+  // Hourly só faz sentido com dados raw (que só temos pra hoje).
+  // Quando o usuário troca pra um período histórico, força daily.
   const [chartMode, setChartMode] = useState<ChartMode>(isToday ? "hourly" : "daily");
   useEffect(() => {
     setChartMode(isToday ? "hourly" : "daily");
@@ -262,9 +362,20 @@ export default function Dashboard() {
   const isHourlyChart = chartMode === "hourly";
 
   const chartData = useMemo(() => {
+    // ─── HOURLY ────────────────────────────────────────────────────
     if (isHourlyChart) {
+      // Só temos granularidade horária pra hoje (raw). Em períodos
+      // históricos, mostra as 24 barras zeradas (graceful degradation).
+      // O agregado é por dia — não dá pra reconstruir hora-a-hora.
+      if (!isToday) {
+        return Array.from({ length: 24 }, (_, hour) => ({
+          label: `${String(hour).padStart(2, "0")}:00`,
+          approved: 0,
+          blocked: 0,
+        }));
+      }
       return Array.from({ length: 24 }, (_, hour) => {
-        const hourLogs = filteredLogs.filter(
+        const hourLogs = todayRaw.filter(
           (l) => getHours(new Date(l.created_at)) === hour
         );
         return {
@@ -274,20 +385,67 @@ export default function Dashboard() {
         };
       });
     }
+
+    // ─── DAILY ─────────────────────────────────────────────────────
+    // isToday: gráfico de uma barra só (hoje), montada do raw.
+    if (isToday) {
+      const approved = todayRaw.filter((l) => l.status_final === "Aprovado").length;
+      const blocked = todayRaw.filter((l) => l.status_final !== "Aprovado").length;
+      return [{ label: format(new Date(), "MMM d"), approved, blocked }];
+    }
+
+    // !isToday: agregado pode ter múltiplas linhas por dia (uma por
+    // campanha). Soma por `date` antes de plotar.
     const dayMap: Record<string, { approved: number; blocked: number }> = {};
-    filteredLogs.forEach((l) => {
-      const dayStr = l.created_at.substring(0, 10);
-      if (!dayMap[dayStr]) dayMap[dayStr] = { approved: 0, blocked: 0 };
-      if (l.status_final === "Aprovado") dayMap[dayStr].approved++;
-      else dayMap[dayStr].blocked++;
+    aggStats.forEach((r) => {
+      if (!dayMap[r.date]) dayMap[r.date] = { approved: 0, blocked: 0 };
+      // [PR-3b.5] approved = OFFER_PAGE only; blocked = bot + safe_page
+      dayMap[r.date].approved += (r.approved_clicks  ?? 0);
+      dayMap[r.date].blocked  += (r.bot_clicks ?? 0) + (r.safe_page_clicks ?? 0);
     });
-    return Object.entries(dayMap)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([dayStr, v]) => ({
-        label: format(new Date(dayStr + "T00:00:00"), "MMM d"),
+
+    // ─── ZERO-FILL ───────────────────────────────────────────────
+    // Sem isso, o Recharts liga dia 19 a dia 24 (com gaps no meio)
+    // por uma diagonal/barra adjacente, distorcendo a percepção de
+    // "tráfego nos dias sem dados". Zero-fill garante 1 ponto por dia
+    // do intervalo, mesmo que zerado.
+    let startDate: Date;
+    let endDate: Date;
+
+    if (dateRange === "all") {
+      // "Todo o Período" não tem range fixo — usa min/max do que veio
+      // do banco. Conta nova sem cliques → array vazio (nada pra plotar).
+      const sortedDays = Object.keys(dayMap).sort();
+      if (sortedDays.length === 0) return [];
+      startDate = new Date(sortedDays[0] + "T00:00:00");
+      endDate = new Date(sortedDays[sortedDays.length - 1] + "T00:00:00");
+    } else {
+      // Períodos numéricos ("2", "7", "30") → mesmas bordas da query SQL,
+      // garantindo que o gráfico cubra exatamente o período pedido —
+      // mesmo que o primeiro dia tenha vindo zerado do banco.
+      const days = parseInt(dateRange);
+      endDate = new Date(spDateString() + "T00:00:00");
+      startDate = new Date(
+        spDateString(subDays(new Date(), days - 1)) + "T00:00:00"
+      );
+    }
+
+    return eachDayOfInterval({ start: startDate, end: endDate }).map((d) => {
+      // Lookup no formato do agregado (YYYY-MM-DD). format() do date-fns
+      // gera a string no fuso local — consistente com o resto do componente.
+      const dayKey = format(d, "yyyy-MM-dd");
+      const v = dayMap[dayKey] || { approved: 0, blocked: 0 };
+      return {
+        label: format(d, "MMM d"),
         ...v,
-      }));
-  }, [filteredLogs, isHourlyChart]);
+      };
+    });
+  }, [isHourlyChart, isToday, todayRaw, aggStats, dateRange]);
+
+  // ─── isLoading consolidado ───────────────────────────────────────
+  // TanStack v5: query desabilitada tem isLoading=false. Então isso só
+  // dá true quando alguma query realmente em uso está em flight.
+  const isLoading = isLoadingToday || (!isToday && isLoadingAgg);
 
   const timeAgoText = useMemo(() => {
     const diffSec = Math.floor((Date.now() - lastUpdated.getTime()) / 1000);
@@ -297,7 +455,8 @@ export default function Dashboard() {
   }, [lastUpdated, t]);
 
   const handleRefresh = () => {
-    refetch();
+    refetchToday();
+    if (!isToday) refetchAgg();
     setLastUpdated(new Date());
   };
 
@@ -373,7 +532,9 @@ export default function Dashboard() {
               onModeChange={setChartMode}
               isLoading={isLoading}
             />
-            <LiveStreamList logs={filteredLogs} isLoading={isLoading} />
+            {/* LiveStream sempre vem do raw de hoje — é "live", independente
+                do filtro histórico que o usuário está olhando nas métricas. */}
+            <LiveStreamList logs={todayRaw} isLoading={isLoadingToday} />
           </div>
         </div>
       </div>
