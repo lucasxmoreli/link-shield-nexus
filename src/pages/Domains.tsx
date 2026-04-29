@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Plus, CheckCircle, Trash2, Lock } from "lucide-react";
+import { Plus, CheckCircle, Trash2, Lock, Globe } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -276,18 +277,20 @@ export default function Domains() {
         </div>
       )}
 
-      {/* Empty state */}
+      {/* [PR-3d.2] Empty state magnético: substitui o card passivo cinza por
+          uma EmptyState com ícone, copy emocional e CTA gigante. Pra usuários
+          locked (free / past_due / canceled), copy + CTA viram "ver planos". */}
       {!isLoading && domains.length === 0 && (
-        <Card className="border-border bg-card">
-          <CardContent className="py-12 text-center space-y-1">
-            <p className="text-sm text-foreground font-medium">
-              {t("domains.emptyStateTitle")}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {t("domains.emptyStateSubtitle")}
-            </p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={Globe}
+          title={isLimitReached ? t("domains.emptyTitleLocked") : t("domains.emptyTitle")}
+          description={isLimitReached ? t("domains.emptyDescLocked") : t("domains.emptyDesc")}
+          cta={
+            isLimitReached
+              ? { label: t("campaigns.emptyCtaLocked"), onClick: () => navigate("/billing"), variant: "outline" }
+              : { label: t("domains.emptyCta"), onClick: () => setOpen(true) }
+          }
+        />
       )}
     </div>
   );

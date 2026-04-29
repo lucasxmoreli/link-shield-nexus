@@ -1,6 +1,7 @@
 import { useMemo } from "react";
-import { Monitor, Smartphone } from "lucide-react";
+import { Monitor, Smartphone, Radio } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 import { useTranslation } from "react-i18next";
 import { formatDistanceToNowStrict } from "date-fns";
 
@@ -72,11 +73,14 @@ export function LiveStreamList({ logs, isLoading }: LiveStreamListProps) {
       </div>
 
       {recentLogs.length === 0 ? (
-        <div className="text-center py-8">
-          <p className="text-xs text-muted-foreground/40">
-            {t("dashboard.noTrafficDetected")}
-          </p>
-        </div>
+        // [PR-3d.2] Subtle variant: já estamos dentro de um card, EmptyState
+        // só centraliza ícone + copy sem adicionar borda extra.
+        <EmptyState
+          icon={Radio}
+          title={t("dashboard.liveStreamEmptyTitle")}
+          description={t("dashboard.liveStreamEmptyDesc")}
+          variant="subtle"
+        />
       ) : (
         <div className="space-y-0">
           {recentLogs.map((log, idx) => {

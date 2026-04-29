@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Plus, Pencil, Trash2, Link, Lock, Copy, CopyPlus } from "lucide-react";
+import { Plus, Pencil, Trash2, Link, Lock, Copy, CopyPlus, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { EmptyState } from "@/components/ui/empty-state";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -99,6 +100,21 @@ export default function Campaigns() {
         </Alert>
       )}
 
+      {/* [PR-3d.2] Empty state magnético: quando não tem campanha, substitui a
+          tabela inteira por uma EmptyState com CTA óbvio. Pra usuários free/locked,
+          a copy + CTA mudam pra direcionar pra /billing em vez de /campaigns/new. */}
+      {!isLoading && campaigns.length === 0 ? (
+        <EmptyState
+          icon={Target}
+          title={isFreePlan ? t("campaigns.emptyTitleLocked") : t("campaigns.emptyTitle")}
+          description={isFreePlan ? t("campaigns.emptyDescLocked") : t("campaigns.emptyDesc")}
+          cta={{
+            label: isFreePlan ? t("campaigns.emptyCtaLocked") : t("campaigns.emptyCta"),
+            onClick: handleCreateClick,
+            variant: isFreePlan ? "outline" : "default",
+          }}
+        />
+      ) : (
       <Card className="border-border bg-card">
         <CardContent className="p-0 overflow-x-auto">
           <Table className="min-w-[650px]">
@@ -123,12 +139,6 @@ export default function Campaigns() {
                     ))}
                   </TableRow>
                 ))
-              ) : campaigns.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                    {t("campaigns.noCampaigns")}
-                  </TableCell>
-                </TableRow>
               ) : (
                 campaigns.map((c) => (
                   <TableRow key={c.id} className="border-border">
@@ -197,6 +207,7 @@ export default function Campaigns() {
           </Table>
         </CardContent>
       </Card>
+      )}
 
       {/* ── Campaign Final Link Modal ── */}
       <CampaignFinalLinkModal

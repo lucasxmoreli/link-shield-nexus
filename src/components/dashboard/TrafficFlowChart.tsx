@@ -1,5 +1,7 @@
 import { useTranslation } from "react-i18next";
+import { Activity } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   AreaChart,
   Area,
@@ -93,15 +95,16 @@ export function TrafficFlowChart({
       {/* Chart */}
       <div className="h-[300px]">
         {!hasData ? (
+          // [PR-3d.2] Overlay magnético: subtle variant pra não duplicar borda
+          // (já estamos dentro do card do chart). Sem CTA porque o usuário
+          // não age daqui — ele age no OnboardingWizard ao lado.
           <div className="h-full flex items-center justify-center">
-            <div className="text-center space-y-1.5">
-              <p className="text-sm text-muted-foreground/50">
-                {t("dashboard.noTrafficYet")}
-              </p>
-              <p className="text-xs text-muted-foreground/30">
-                {t("dashboard.shieldWatching")}
-              </p>
-            </div>
+            <EmptyState
+              icon={Activity}
+              title={t("dashboard.noTrafficYet")}
+              description={t("dashboard.shieldWatching")}
+              variant="subtle"
+            />
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
