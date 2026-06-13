@@ -1,0 +1,1 @@
+ALTER TABLE public.campaigns ADD COLUMN offer_page_b text;

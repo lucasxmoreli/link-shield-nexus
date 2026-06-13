@@ -1,0 +1,1 @@
+ALTER TABLE public.requests_log ADD COLUMN IF NOT EXISTS risk_score integer;

@@ -1,0 +1,25 @@
+project_id = "jhjympznbobcgdltnjfk"
+
+[functions.filter]
+verify_jwt = false
+
+[functions.register]
+verify_jwt = false
+
+[functions.verify-domains-cron]
+verify_jwt = false
+
+[functions.add-custom-hostname]
+verify_jwt = false
+
+[functions.check-hostname-status]
+verify_jwt = false
+
+[functions.cf-api-test]
+verify_jwt = false
+
+[functions.delete-custom-hostname]
+verify_jwt = false
+
+[functions.stripe-webhook]
+verify_jwt = false

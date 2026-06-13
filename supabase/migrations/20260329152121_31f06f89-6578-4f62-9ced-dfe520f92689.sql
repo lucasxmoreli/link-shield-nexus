@@ -1,0 +1,1 @@
+ALTER VIEW public.dashboard_analytics_view SET (security_invoker = on);

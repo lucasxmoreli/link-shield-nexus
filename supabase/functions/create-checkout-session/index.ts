@@ -1,0 +1,166 @@
+// =============================================================================
+// create-checkout-session
+// -----------------------------------------------------------------------------
+// Receives a Stripe `price_id` from the frontend, validates the JWT and the
+// user's activation state, ensures a Stripe customer exists for the profile,
+// then creates a Stripe Checkout Session (subscription mode) bundling the
+// fixed plan price + its paired metered overage price.
+//
+// Returns: { session_id, url } — the frontend redirects to `url`.
+// =============================================================================
+
+import { createClient } from "jsr:@supabase/supabase-js@2";
+import Stripe from "npm:stripe@17.5.0";
+
+// ── CORS allowlist ───────────────────────────────────────────────────────────
+const ALLOWED_ORIGINS = [
+  "https://www.cloakerx.com",
+  "https://cloakerx.com",
+  "http://localhost:5173",
+  "http://localhost:8080",
+];
+
+const VERCEL_PREVIEW_REGEX = /^https:\/\/[a-z0-9-]+\.vercel\.app$/;
+
+function getCorsHeaders(origin: string | null) {
+  const isAllowed = origin && (
+    ALLOWED_ORIGINS.includes(origin) ||
+    VERCEL_PREVIEW_REGEX.test(origin)
+  );
+  return {
+    "Access-Control-Allow-Origin": isAllowed ? origin! : ALLOWED_ORIGINS[0],
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Vary": "Origin",
+  };
+}
+
+// Fixed → metered price mapping. Must mirror plan-config.ts on the frontend.
+const PLAN_METERED_MAP: Record<string, string> = {
+  "price_1TLVRnLZEOji6sEJnw9oiVW2": "price_1TLaNwLZEOji6sEJrtBFpRnn", // BASIC
+  "price_1TLVSrLZEOji6sEJ8sF00dTT": "price_1TLaHlLZEOji6sEJgKRRDuOh", // PRO
+  "price_1TLVTYLZEOji6sEJ0mzIvzme": "price_1TLaP0LZEOji6sEJdV7XPaJb", // FREEDOM
+  "price_1TLVULLZEOji6sEJ4VyuhzMF": "price_1TLaR3LZEOji6sEJmagidXcF", // ENTERPRISE
+};
+
+Deno.serve(async (req) => {
+  const origin = req.headers.get("origin");
+  const corsHeaders = getCorsHeaders(origin);
+
+  const json = (status: number, body: unknown) =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  try {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) return json(401, { error: "Unauthorized" });
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+
+    // Validate JWT with the user-scoped client.
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: { user }, error: authError } = await userClient.auth.getUser();
+    if (authError || !user) return json(401, { error: "Unauthorized" });
+
+    // Parse and validate the requested price_id.
+    const { price_id } = await req.json();
+    if (!price_id || typeof price_id !== "string" || !price_id.startsWith("price_")) {
+      return json(400, { error: "Invalid price_id" });
+    }
+
+    const meteredPriceId = PLAN_METERED_MAP[price_id];
+    if (!meteredPriceId) {
+      return json(400, { error: "Unknown plan price_id" });
+    }
+
+    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+    if (!stripeKey) {
+      console.error("[create-checkout-session] STRIPE_SECRET_KEY not configured");
+      return json(500, { error: "Stripe not configured" });
+    }
+
+    const stripe = new Stripe(stripeKey, {
+      apiVersion: "2024-06-20",
+      httpClient: Stripe.createFetchHttpClient(),
+    });
+
+    // Load profile with the admin client (bypasses RLS for this server-side check).
+    // We pull `activation_status` to enforce the double-charge guard.
+    const adminClient = createClient(supabaseUrl, serviceRoleKey);
+    const { data: profile, error: profileError } = await adminClient
+      .from("profiles")
+      .select("user_id, email, stripe_customer_id, activation_status")
+      .eq("user_id", user.id)
+      .single();
+
+    if (profileError || !profile) {
+      console.error("[create-checkout-session] Profile not found:", profileError);
+      return json(404, { error: "Profile not found" });
+    }
+
+    // ── Double-charge guard ──────────────────────────────────────────────────
+    // If the workspace is already ACTIVE, the user must use the customer
+    // portal to switch plans, not create a brand-new subscription. Returning
+    // 409 Conflict makes the frontend redirect to /billing where the existing
+    // subscription is managed.
+    if (profile.activation_status === "ACTIVE") {
+      console.warn(`[create-checkout-session] User ${user.id} is already ACTIVE; refusing to create a new session.`);
+      return json(409, {
+        error: "Workspace already activated. Use the customer portal to change plans.",
+        code: "ALREADY_ACTIVE",
+      });
+    }
+
+    // Ensure a Stripe customer exists for this profile (lazy-create on first checkout).
+    let customerId = profile.stripe_customer_id;
+    if (!customerId) {
+      const customer = await stripe.customers.create({
+        email: profile.email || user.email,
+        metadata: { supabase_user_id: user.id },
+      });
+      customerId = customer.id;
+
+      const { error: updateError } = await adminClient
+        .from("profiles")
+        .update({ stripe_customer_id: customerId })
+        .eq("user_id", user.id);
+
+      if (updateError) {
+        console.error("[create-checkout-session] Failed to save customer_id:", updateError);
+      }
+    }
+
+    const requestOrigin = req.headers.get("origin") || "https://www.cloakerx.com";
+
+    const session = await stripe.checkout.sessions.create({
+      customer: customerId,
+      client_reference_id: user.id,
+      mode: "subscription",
+      line_items: [
+        { price: price_id, quantity: 1 },
+        { price: meteredPriceId },
+      ],
+      success_url: `${requestOrigin}/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${requestOrigin}/billing?checkout=cancelled`,
+      metadata: { supabase_user_id: user.id },
+      subscription_data: {
+        metadata: { supabase_user_id: user.id },
+      },
+      allow_promotion_codes: true,
+    });
+
+    return json(200, { session_id: session.id, url: session.url });
+  } catch (err) {
+    console.error("[create-checkout-session] Unexpected error:", err);
+    const message = err instanceof Error ? err.message : "Internal error";
+    return json(500, { error: message });
+  }
+});
