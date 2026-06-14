@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { actionToStatusFinal, getStatusBadgeConfig } from "@/lib/status-utils";
+import { getBlockReasonLabel } from "@/lib/blockReasonLabels";
 
 type DatePreset = "all" | "today" | "7d" | "30d";
 
@@ -117,7 +118,7 @@ export default function Requests() {
       );
     }
 
-    return <span className="text-xs text-muted-foreground font-mono">{reason}</span>;
+    return <span className="text-xs text-muted-foreground">{t(getBlockReasonLabel(reason))}</span>;
   };
 
   return (

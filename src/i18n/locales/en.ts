@@ -1022,6 +1022,16 @@ const en = {
     pt: "Português",
     es: "Español",
   },
+  blockReason: {
+    suspicious_behavior: "Suspicious behavior",
+    device_not_allowed: "Device not allowed",
+    geo_blocked: "Geographic origin blocked",
+    invalid_click: "Invalid click identifier",
+    campaign_inactive: "Campaign paused",
+    suspicious_connection: "Suspicious connection",
+    blocked_source: "Blocked source",
+    blocked_generic: "Blocked",
+  },
   overage: {
     modalTitle: "🚀 Your campaign is taking off!",
     modalDesc: "You've reached the click limit on your current plan. But don't worry — we haven't paused your traffic. You're still receiving leads and making sales! We're only charging a small overage fee to keep your scale running.",

@@ -999,6 +999,16 @@ const es = {
     pt: "Português",
     es: "Español",
   },
+  blockReason: {
+    suspicious_behavior: "Comportamiento sospechoso",
+    device_not_allowed: "Dispositivo no permitido",
+    geo_blocked: "Origen geográfico bloqueado",
+    invalid_click: "Identificador de clic inválido",
+    campaign_inactive: "Campaña pausada",
+    suspicious_connection: "Conexión sospechosa",
+    blocked_source: "Origen bloqueado",
+    blocked_generic: "Bloqueado",
+  },
   overage: {
     modalTitle: "🚀 ¡Tu campaña está despegando!",
     modalDesc: "Has alcanzado el límite de clics de tu plan actual. Pero tranquilo: no pausamos tu tráfico. ¡Sigues recibiendo leads y generando ventas! Solo estamos cobrando una tarifa mínima por el tráfico excedente para no interrumpir tu escala.",

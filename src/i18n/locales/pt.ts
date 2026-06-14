@@ -1018,6 +1018,16 @@ accountDeleted: {
     pt: "Português",
     es: "Español",
   },
+  blockReason: {
+    suspicious_behavior: "Comportamento suspeito",
+    device_not_allowed: "Dispositivo não permitido",
+    geo_blocked: "Origem geográfica bloqueada",
+    invalid_click: "Identificador de clique inválido",
+    campaign_inactive: "Campanha pausada",
+    suspicious_connection: "Conexão suspeita",
+    blocked_source: "Origem bloqueada",
+    blocked_generic: "Bloqueado",
+  },
   overage: {
     modalTitle: "🚀 Sua campanha está voando!",
     modalDesc: "Você atingiu o limite de cliques do seu plano atual. Mas fique tranquilo: não pausamos o seu tráfego e você continua recebendo leads e fazendo vendas! Estamos cobrando apenas uma taxa mínima pelo tráfego excedente para não interromper sua escala.",
