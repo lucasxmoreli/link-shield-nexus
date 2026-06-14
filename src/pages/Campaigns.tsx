@@ -10,6 +10,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { EmptyState } from "@/components/ui/empty-state";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -24,6 +34,7 @@ export default function Campaigns() {
   const { t } = useTranslation();
 
   const [linkModal, setLinkModal] = useState<CampaignFinalLinkData | null>(null);
+  const [campaignToDelete, setCampaignToDelete] = useState<{ id: string; name: string } | null>(null);
 
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
@@ -195,7 +206,7 @@ export default function Campaigns() {
                         <Button variant="ghost" size="icon" onClick={() => navigate(`/campaigns/${c.id}/edit`)} title="Editar">
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(c.id)} title="Excluir">
+                        <Button variant="ghost" size="icon" onClick={() => setCampaignToDelete({ id: c.id, name: c.name })} title="Excluir">
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
@@ -215,6 +226,32 @@ export default function Campaigns() {
         onClose={() => setLinkModal(null)}
         redirectTo=""
       />
+
+      {/* ── Delete Confirmation Dialog ── */}
+      <AlertDialog open={!!campaignToDelete} onOpenChange={(open) => { if (!open) setCampaignToDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("campaigns.deleteConfirmTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("campaigns.deleteConfirmMessage", { name: campaignToDelete?.name ?? "" })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("campaigns.deleteConfirmCancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (campaignToDelete) {
+                  deleteMutation.mutate(campaignToDelete.id);
+                  setCampaignToDelete(null);
+                }
+              }}
+            >
+              {t("campaigns.deleteConfirmAction")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { useRef, useEffect } from "react";
 import { ArrowLeft, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,7 +16,7 @@ import CampaignFinalLinkModal from "@/components/campaigns/CampaignFinalLinkModa
 import CampaignGeneralConfig from "@/components/campaigns/edit/CampaignGeneralConfig";
 import SafePageConfig from "@/components/campaigns/edit/SafePageConfig";
 import OfferPageConfig from "@/components/campaigns/edit/OfferPageConfig";
-import PreLanderConfig from "@/components/campaigns/edit/PreLanderConfig";
+import PreLanderConfig, { type PreLanderConfigHandle } from "@/components/campaigns/edit/PreLanderConfig";
 import BehavioralModeConfig from "@/components/campaigns/edit/BehavioralModeConfig";
 import SecurityConfig from "@/components/campaigns/edit/SecurityConfig";
 import WebhookPostbackConfig from "@/components/campaigns/edit/WebhookPostbackConfig";
@@ -27,6 +28,14 @@ export default function CampaignEdit() {
     meta, data, form, setters, normalizers,
     handlers, validation, save, postbackPreview, dialogs,
   } = useCampaignForm();
+
+  const prelanderRef = useRef<PreLanderConfigHandle>(null);
+
+  useEffect(() => {
+    if (validation.prelanderErrorTrigger > 0) {
+      prelanderRef.current?.focusFirstError();
+    }
+  }, [validation.prelanderErrorTrigger]);
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 pb-12">
@@ -63,6 +72,7 @@ export default function CampaignEdit() {
       />
 
       <PreLanderConfig
+        ref={prelanderRef}
         prelanderEnabled={form.prelanderEnabled} onPrelanderEnabledChange={setters.setPrelanderEnabled}
         prelanderHeadline={form.prelanderHeadline} onPrelanderHeadlineChange={setters.setPrelanderHeadline}
         prelanderBody={form.prelanderBody} onPrelanderBodyChange={setters.setPrelanderBody}
@@ -94,7 +104,7 @@ export default function CampaignEdit() {
       {/* Footer */}
       <div className="flex justify-end gap-3 pt-2">
         <Button variant="outline" onClick={() => meta.navigate("/campaigns")}>{t("common.cancel")}</Button>
-        <Button onClick={handlers.handleSave} disabled={save.isPending || !validation.isFormValid}>
+        <Button onClick={handlers.handleSave} disabled={save.isPending}>
           {save.isPending ? t("common.saving") : t("campaignEdit.saveCampaign")}
         </Button>
       </div>

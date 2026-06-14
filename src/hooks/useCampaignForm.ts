@@ -82,6 +82,7 @@ export function useCampaignForm() {
   const [powDifficulty, setPowDifficulty] = useState(4);
   const [behavioralMode, setBehavioralMode] = useState<"protect_leads" | "anti_reviewer">("protect_leads");
   const [attemptedSave, setAttemptedSave] = useState(false);
+  const [prelanderErrorTrigger, setPrelanderErrorTrigger] = useState(0);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [countrySearch, setCountrySearch] = useState("");
@@ -119,7 +120,16 @@ export function useCampaignForm() {
       setPrelanderBody(campaign.prelander_body ?? "");
       setPrelanderCta(campaign.prelander_cta ?? "");
       setPowDifficulty(campaign.pow_difficulty ?? 4);
-      setBehavioralMode(campaign.behavioral_mode === "anti_reviewer" ? "anti_reviewer" : "protect_leads");
+      // When cloning, always reset behavioral_mode to the safe default regardless of
+      // the original's value — copying 'anti_reviewer' to a fresh clone can silently
+      // block real users before the operator reviews the settings.
+      setBehavioralMode(
+        isCloning
+          ? "protect_leads"
+          : campaign.behavioral_mode === "anti_reviewer"
+            ? "anti_reviewer"
+            : "protect_leads",
+      );
 
       const raw = campaign.postback_url ?? "";
       if (raw.includes("?")) {
@@ -164,8 +174,7 @@ export function useCampaignForm() {
     trafficSource &&
     safeUrl &&
     (offerMode === "single" ? offerUrl : abOffers.every((o) => o.url)) &&
-    areDestinationUrlsValid &&
-    prelanderValid
+    areDestinationUrlsValid
   );
 
   // ── Postback preview (derived) ──────────────
@@ -267,6 +276,10 @@ export function useCampaignForm() {
         setPendingHash(hash);
         payload.user_id = user!.id;
         payload.hash = hash;
+        // Clones must mirror the original exactly (except behavioral_mode and unique IDs).
+        // If the original was inactive, the clone stays inactive — explicit operator action required to activate.
+        // New (non-clone) campaigns always start active.
+        payload.is_active = isCloning ? (campaign?.is_active ?? true) : true;
         const { error } = await supabase.from("campaigns").insert(payload as any);
         if (error) throw error;
         return { hash, domain: payload.domain as string };
@@ -299,8 +312,8 @@ export function useCampaignForm() {
     }
 
     if (prelanderEnabled && (!prelanderHeadline.trim() || !prelanderBody.trim())) {
-      if (!prelanderHeadline.trim()) toast.error(t("campaignEdit.prelanderHeadlineRequired"));
-      else toast.error(t("campaignEdit.prelanderBodyRequired"));
+      toast.error(t("campaignEdit.prelanderFieldsRequired"));
+      setPrelanderErrorTrigger((n) => n + 1);
       return;
     }
 
@@ -333,7 +346,7 @@ export function useCampaignForm() {
     areDestinationUrlsValid,
     prelanderEnabled, prelanderHeadline, prelanderBody,
     normalizeSafeUrl, normalizeOfferUrl, normalizeOfferPageB,
-    saveMutation, t,
+    saveMutation, t, setPrelanderErrorTrigger,
   ]);
 
   const forceSave = useCallback(() => {
@@ -440,6 +453,7 @@ export function useCampaignForm() {
       prelanderValid,
       prelanderHeadlineError,
       prelanderBodyError,
+      prelanderErrorTrigger,
     },
 
     // Save state
