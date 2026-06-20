@@ -120,15 +120,8 @@ export function useCampaignForm() {
       setPrelanderBody(campaign.prelander_body ?? "");
       setPrelanderCta(campaign.prelander_cta ?? "");
       setPowDifficulty(campaign.pow_difficulty ?? 4);
-      // When cloning, always reset behavioral_mode to the safe default regardless of
-      // the original's value — copying 'anti_reviewer' to a fresh clone can silently
-      // block real users before the operator reviews the settings.
       setBehavioralMode(
-        isCloning
-          ? "protect_leads"
-          : campaign.behavioral_mode === "anti_reviewer"
-            ? "anti_reviewer"
-            : "protect_leads",
+        campaign.behavioral_mode === "anti_reviewer" ? "anti_reviewer" : "protect_leads",
       );
 
       const raw = campaign.postback_url ?? "";
