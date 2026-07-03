@@ -12,7 +12,7 @@ const COUNTRY_NAMES: Record<string, string> = {
   DE: "Germany", FR: "France", GB: "United Kingdom", JP: "Japan", KR: "South Korea",
   NG: "Nigeria", PH: "Philippines", ID: "Indonesia", VN: "Vietnam", PK: "Pakistan",
   BD: "Bangladesh", MX: "Mexico", TH: "Thailand", UA: "Ukraine", EG: "Egypt",
-  AR: "Argentina", CO: "Colombia", ZA: "South Africa", TR: "Turkey", PL: "Poland",
+  AR: "Argentina", CO: "Colombia", CL: "Chile", UY: "Uruguay", ZA: "South Africa", TR: "Turkey", PL: "Poland",
 };
 
 function getCountryName(code: string): string {

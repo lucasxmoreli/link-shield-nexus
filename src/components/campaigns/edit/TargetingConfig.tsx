@@ -20,6 +20,8 @@ const COUNTRIES = [
   { code: "MX", name: "Mexico" },
   { code: "AR", name: "Argentina" },
   { code: "CO", name: "Colombia" },
+  { code: "CL", name: "Chile" },
+  { code: "UY", name: "Uruguay" },
   { code: "IN", name: "India" },
   { code: "NG", name: "Nigeria" },
   { code: "ZA", name: "South Africa" },
