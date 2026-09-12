@@ -144,14 +144,27 @@ Deno.serve(async (req) => {
       return json(409, { error: "Domain already exists for this user" });
     }
 
-    // ── Check plan limit ──
+    // ── Workspace gate (1A) + plan limit ──
+    // service_role bypasses RLS, so ACTIVE must be enforced here too.
     const { data: profile } = await adminClient
       .from("profiles")
-      .select("max_domains")
+      .select("max_domains, activation_status, is_suspended, is_deleted")
       .eq("user_id", user.id)
       .single();
 
-    if (!profile || (profile.max_domains ?? 0) <= 0) {
+    if (!profile) {
+      return json(403, { error: "Profile not found" });
+    }
+    if (profile.is_deleted === true) {
+      return json(403, { error: "Account deleted" });
+    }
+    if (profile.is_suspended === true) {
+      return json(403, { error: "Account suspended" });
+    }
+    if (profile.activation_status !== "ACTIVE") {
+      return json(403, { error: "Workspace not active. Choose a plan to add domains." });
+    }
+    if ((profile.max_domains ?? 0) <= 0) {
       return json(403, { error: "Plan does not allow custom domains" });
     }
 

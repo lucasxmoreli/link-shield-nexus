@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { Turnstile } from "@marsidev/react-turnstile";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Shield, Loader2, ArrowLeft, Eye, EyeOff, Mail, Lock, Ticket, AlertCircle } from "lucide-react";
+import { Shield, Loader2, ArrowLeft, Eye, EyeOff, Mail, Lock, Inbox } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { LanguageSelector } from "@/components/LanguageSelector";
@@ -15,21 +16,23 @@ import {
 } from "@/lib/password-validation";
 import { PasswordCriteriaList } from "@/components/profile/PasswordCriteriaList";
 
-type AuthView = "login" | "invite" | "register";
+// Public site key — also set VITE_TURNSTILE_SITE_KEY on Vercel for overrides.
+const TURNSTILE_SITE_KEY =
+  import.meta.env.VITE_TURNSTILE_SITE_KEY || "0x4AAAAAAEw2RoFA8Uczq9-a";
+
+type AuthView = "login" | "register" | "check_email";
 
 export default function Auth() {
   const [view, setView] = useState<AuthView>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [inviteCode, setInviteCode] = useState("");
-  const [validatedCode, setValidatedCode] = useState("");
-  const [inviteError, setInviteError] = useState("");
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [turnstileKey, setTurnstileKey] = useState(0);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { t } = useTranslation();
 
-  // Calcula força da senha (usado só no Register)
   const strength = calculatePasswordStrength(password);
   const strengthPct = getPasswordStrengthPct(password);
   const strengthColors = getPasswordStrengthColor(strength);
@@ -41,21 +44,32 @@ export default function Auth() {
     strength === "medium" ? t("password.strengthMedium") :
     t("password.strengthStrong");
 
+  const resetTurnstile = useCallback(() => {
+    setCaptchaToken(null);
+    setTurnstileKey((k) => k + 1);
+  }, []);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password,
+    });
     if (error) {
-      toast.error(error.message);
+      const msg = error.message?.toLowerCase() || "";
+      if (msg.includes("email not confirmed") || msg.includes("not confirmed")) {
+        toast.error(t("auth.emailNotConfirmed"));
+        setView("check_email");
+      } else {
+        toast.error(error.message);
+      }
     } else {
       navigate("/dashboard");
     }
     setLoading(false);
   };
 
-  // ── Dispara o e-mail de reset password via Supabase Auth. ──
-  // A redirectTo é ABSOLUTA e precisa bater com a URL configurada no painel
-  // Supabase (Authentication → URL Configuration → Redirect URLs).
   const handleForgotPassword = async () => {
     const trimmedEmail = email.trim().toLowerCase();
     if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
@@ -68,10 +82,6 @@ export default function Auth() {
       const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
         redirectTo: `${window.location.origin}/update-password`,
       });
-
-      // Enumeration defense: sucesso genérico mesmo se o e-mail não existir.
-      // O Supabase já não retorna erro de "user not found" aqui, mas mantemos
-      // a mensagem neutra por precaução.
       if (error) {
         console.error("[forgot-password] resetPasswordForEmail failed:", error.message);
       }
@@ -84,75 +94,65 @@ export default function Auth() {
     }
   };
 
-  const handleValidateInvite = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setInviteError("");
-    const { data: isValid, error } = await supabase.rpc("validate_invite_code", {
-      p_code: inviteCode.trim().toUpperCase(),
-    });
-    if (error || !isValid) {
-      setInviteError(t("auth.invalidInvite"));
-    } else {
-      setValidatedCode(inviteCode.trim().toUpperCase());
-      setView("register");
-      toast.success(t("auth.validCode"));
-    }
-    setLoading(false);
-  };
-
+  // ── Spec 1B: open signup via Auth signUp + Turnstile (no service-role edge).
+  // Confirm-email ON → no session until link click → redirect lands on /dashboard logged in.
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Defesa adicional client-side (botão já bloqueia, mas paranoia é boa)
     if (!passwordAcceptable) {
       toast.error(t("password.notAcceptable"));
       return;
     }
+    if (!captchaToken) {
+      toast.error(t("auth.captchaRequired"));
+      return;
+    }
 
+    const normalizedEmail = email.trim().toLowerCase();
     setLoading(true);
+
     try {
-      const { data, error: fnError } = await supabase.functions.invoke("register", {
-        body: { email, password, invite_code: validatedCode },
-      });
-
-      if (fnError) {
-        toast.error(fnError.message || t("auth.registrationFailed"));
-        setLoading(false);
-        return;
-      }
-      if (data?.error) {
-        toast.error(data.error);
-        setLoading(false);
-        return;
-      }
-
-      // ── Conta criada. Auto-login imediato pra eliminar fricção do onboarding. ──
-      // A edge function já confirma o e-mail (email_confirm: true), então
-      // signInWithPassword aqui funciona na mesma chamada — sem round-trip
-      // de confirmação por e-mail.
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
+      const { data, error } = await supabase.auth.signUp({
+        email: normalizedEmail,
         password,
+        options: {
+          captchaToken,
+          emailRedirectTo: `${window.location.origin}/dashboard`,
+        },
       });
 
-      if (signInError) {
-        // Fallback defensivo: conta existe mas sign-in travou (caso raríssimo).
-        // Não deixa o usuário sem saída — manda pra login com a senha já em mente.
-        console.error("[register] auto-login falhou:", signInError.message);
-        toast.success(t("auth.accountCreated"));
-        setView("login");
-        setPassword("");
+      if (error) {
+        console.error("[register] signUp failed:", error.message);
+        // Anti-enum: same toast family for most failures that could leak existence.
+        const msg = error.message?.toLowerCase() || "";
+        if (msg.includes("captcha") || msg.includes("timeout") || msg.includes("verification")) {
+          toast.error(t("auth.captchaFailed"));
+        } else {
+          toast.error(t("auth.registrationFailed"));
+        }
+        resetTurnstile();
         setLoading(false);
         return;
       }
 
-      // ── Sucesso total: limpa senha da memória e manda pro dashboard. ──
-      toast.success(t("auth.accountCreated"));
+      // If Confirm email is OFF, Auth may return a session immediately.
+      if (data.session) {
+        setPassword("");
+        toast.success(t("auth.accountCreated"));
+        navigate("/dashboard");
+        setLoading(false);
+        return;
+      }
+
+      // Confirm email ON (expected): ask user to open inbox; link auto-logs them in.
       setPassword("");
-      navigate("/dashboard");
-    } catch {
+      resetTurnstile();
+      setView("check_email");
+      toast.success(t("auth.checkEmailSent"));
+    } catch (err) {
+      console.error("[register] unexpected error:", err);
       toast.error(t("auth.registrationFailed"));
+      resetTurnstile();
     } finally {
       setLoading(false);
     }
@@ -162,17 +162,24 @@ export default function Auth() {
     if (view === "login") {
       return (
         <button
-          onClick={() => { setView("invite"); setInviteError(""); }}
-          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          onClick={() => {
+            setView("register");
+            setPassword("");
+            resetTurnstile();
+          }}
+          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
-          <Ticket className="h-4 w-4" />
-          <span>{t("auth.iHaveInvite")}</span>
+          {t("auth.createAccount")}
         </button>
       );
     }
     return (
       <button
-        onClick={() => { setView("login"); setInviteError(""); setPassword(""); }}
+        onClick={() => {
+          setView("login");
+          setPassword("");
+          resetTurnstile();
+        }}
         className="text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
         {t("auth.alreadyHaveAccount")}{" "}
@@ -185,17 +192,16 @@ export default function Auth() {
     switch (view) {
       case "login":
         return { title: t("auth.welcomeBack"), subtitle: t("auth.welcomeSubtitle") };
-      case "invite":
-        return { title: t("auth.inviteCode"), subtitle: t("auth.inviteSubtitle") };
       case "register":
         return { title: t("auth.createAccount"), subtitle: t("auth.createSubtitle") };
+      case "check_email":
+        return { title: t("auth.checkEmailTitle"), subtitle: t("auth.checkEmailSubtitle") };
     }
   };
 
   const { title, subtitle } = renderTitle();
-
-  // Botão Register habilita apenas com senha aceitável + email preenchido
-  const canRegister = !loading && passwordAcceptable && email.trim().length > 0;
+  const canRegister =
+    !loading && passwordAcceptable && email.trim().length > 0 && !!captchaToken;
 
   return (
     <div className="min-h-screen flex bg-background">
@@ -240,7 +246,7 @@ export default function Auth() {
           </Link>
           <div className="flex items-center gap-3">
             <LanguageSelector />
-            {headerAction()}
+            {view !== "check_email" && headerAction()}
           </div>
         </div>
 
@@ -256,7 +262,6 @@ export default function Auth() {
               <p className="text-muted-foreground text-sm">{subtitle}</p>
             </div>
 
-            {/* ─── LOGIN ─── */}
             {view === "login" && (
               <form onSubmit={handleLogin} className="space-y-5">
                 <div className="space-y-1.5">
@@ -281,7 +286,6 @@ export default function Auth() {
                   {t("auth.signInButton")}
                 </Button>
 
-                {/* Forgot password — usa o e-mail já digitado no campo acima. */}
                 <button
                   type="button"
                   onClick={handleForgotPassword}
@@ -293,39 +297,18 @@ export default function Auth() {
 
                 <button
                   type="button"
-                  onClick={() => { setView("invite"); setInviteError(""); }}
-                  className="flex items-center justify-center gap-1.5 w-full text-sm text-muted-foreground hover:text-primary transition-colors pt-1"
+                  onClick={() => {
+                    setView("register");
+                    setPassword("");
+                    resetTurnstile();
+                  }}
+                  className="block w-full text-center text-sm text-muted-foreground hover:text-primary transition-colors pt-1"
                 >
-                  <Ticket className="h-4 w-4" />
-                  <span>{t("auth.iHaveInvite")}</span>
+                  {t("auth.noAccountYet")}
                 </button>
               </form>
             )}
 
-            {/* ─── INVITE CODE ─── */}
-            {view === "invite" && (
-              <form onSubmit={handleValidateInvite} className="space-y-5">
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-foreground">{t("auth.inviteCodeLabel")}</label>
-                  <div className="relative">
-                    <Ticket className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input type="text" placeholder={t("auth.inviteCodePlaceholder")} value={inviteCode} onChange={(e) => { setInviteCode(e.target.value); setInviteError(""); }} required className="pl-10 h-11 bg-secondary/50 border-border focus:border-primary/50 transition-colors uppercase tracking-wider" />
-                  </div>
-                  {inviteError && (
-                    <div className="flex items-center gap-2 text-destructive text-sm mt-2">
-                      <AlertCircle className="h-4 w-4 shrink-0" />
-                      <span>{inviteError}</span>
-                    </div>
-                  )}
-                </div>
-                <Button type="submit" className="w-full h-11 text-sm font-semibold" disabled={loading}>
-                  {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  {t("auth.validateCode")}
-                </Button>
-              </form>
-            )}
-
-            {/* ─── REGISTER (com checklist) ─── */}
             {view === "register" && (
               <form onSubmit={handleRegister} className="space-y-5">
                 <div className="space-y-1.5">
@@ -353,7 +336,6 @@ export default function Auth() {
                     </button>
                   </div>
 
-                  {/* Barra de força */}
                   {password.length > 0 && (
                     <div className="space-y-1 pt-1">
                       <div className="flex items-center justify-between text-xs">
@@ -373,8 +355,21 @@ export default function Auth() {
                     </div>
                   )}
 
-                  {/* ★ Checklist dinâmico de critérios */}
                   <PasswordCriteriaList password={password} />
+                </div>
+
+                <div className="flex justify-center min-h-[65px]">
+                  <Turnstile
+                    key={turnstileKey}
+                    siteKey={TURNSTILE_SITE_KEY}
+                    onSuccess={(token) => setCaptchaToken(token)}
+                    onExpire={() => setCaptchaToken(null)}
+                    onError={() => {
+                      setCaptchaToken(null);
+                      toast.error(t("auth.captchaFailed"));
+                    }}
+                    options={{ theme: "dark" }}
+                  />
                 </div>
 
                 <Button
@@ -388,8 +383,27 @@ export default function Auth() {
               </form>
             )}
 
+            {view === "check_email" && (
+              <div className="space-y-5 text-center">
+                <div className="mx-auto h-14 w-14 rounded-2xl bg-primary/15 flex items-center justify-center">
+                  <Inbox className="h-7 w-7 text-primary" />
+                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {t("auth.checkEmailBody", { email: email.trim().toLowerCase() })}
+                </p>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="w-full h-11"
+                  onClick={() => setView("login")}
+                >
+                  {t("auth.backToSignIn")}
+                </Button>
+              </div>
+            )}
+
             <p className="text-xs text-center text-muted-foreground leading-relaxed">
-              {t("auth.accessRestricted")}
+              {t("auth.accessOpenNote")}
             </p>
           </div>
         </div>

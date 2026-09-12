@@ -14,5 +14,8 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
+    // Required so the confirm-email link (#access_token) creates a session
+    // and AuthRoute / ProtectedRoute can send the user straight to /dashboard.
+    detectSessionInUrl: true,
   },
 });
