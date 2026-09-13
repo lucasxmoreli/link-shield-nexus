@@ -629,10 +629,11 @@ const es = {
     criteriaHasLetter: "Al menos 1 letra",
     criteriaHasNumber: "Al menos 1 número",
 
-    strengthLabel: "Fuerza",
-    strengthWeak: "Débil",
-    strengthMedium: "Media",
-    strengthStrong: "Fuerte",
+    strengthLabel: "Requisitos",
+    strengthWeak: "Incompleta",
+    strengthMedium: "Casi",
+    strengthStrong: "Requisitos ok",
+    breachHint: "Las contraseñas comunes o filtradas en filtraciones públicas serán rechazadas por el servidor.",
 
     notAcceptable: "Todos los criterios deben estar en verde",
     doNotMatch: "Las contraseñas no coinciden",
@@ -714,6 +715,7 @@ const es = {
     inviteConsumed: "El código de invitación ya fue consumido. Contacta al administrador.",
     accountCreated: "¡Cuenta creada! Bienvenido a CloakerX.",
     registrationFailed: "No se pudo crear la cuenta. Inténtalo de nuevo.",
+    passwordPwned: "Esa contraseña ya apareció en filtraciones. Elige una única que no hayas usado en otro sitio.",
     forgotPassword: "¿Olvidaste tu contraseña?",
     forgotPasswordInvalidEmail: "Ingresa un correo válido arriba primero.",
     forgotPasswordSent: "Si este correo está registrado, enviaremos un enlace de recuperación.",

@@ -646,10 +646,11 @@ const en = {
     criteriaHasLetter: "At least 1 letter",
     criteriaHasNumber: "At least 1 number",
 
-    strengthLabel: "Strength",
-    strengthWeak: "Weak",
-    strengthMedium: "Medium",
-    strengthStrong: "Strong",
+    strengthLabel: "Requirements",
+    strengthWeak: "Incomplete",
+    strengthMedium: "Almost",
+    strengthStrong: "Requirements met",
+    breachHint: "Common passwords or ones found in public breaches will be rejected by the server.",
 
     notAcceptable: "All criteria must be green",
     doNotMatch: "Passwords do not match",
@@ -732,6 +733,7 @@ const en = {
     inviteConsumed: "Invite code was already consumed. Please contact the administrator.",
     accountCreated: "Account created! Welcome to CloakerX.",
     registrationFailed: "Unable to create the account. Please try again.",
+    passwordPwned: "That password has appeared in data breaches. Choose a unique password you have never used elsewhere.",
     forgotPassword: "Forgot your password?",
     forgotPasswordInvalidEmail: "Please enter a valid email above first.",
     forgotPasswordSent: "If this email is registered, a reset link is on its way.",

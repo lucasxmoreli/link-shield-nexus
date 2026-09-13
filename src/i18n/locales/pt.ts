@@ -636,11 +636,12 @@ const pt = {
     criteriaHasLetter: "Pelo menos 1 letra",
     criteriaHasNumber: "Pelo menos 1 número",
 
-    // Força da senha
-    strengthLabel: "Força",
-    strengthWeak: "Fraca",
-    strengthMedium: "Média",
-    strengthStrong: "Forte",
+    // Checklist de formato (não verifica vazamentos — o Auth faz isso)
+    strengthLabel: "Requisitos",
+    strengthWeak: "Incompleta",
+    strengthMedium: "Quase",
+    strengthStrong: "Requisitos ok",
+    breachHint: "Senhas comuns ou já vazadas em vazamentos públicos serão rejeitadas pelo servidor.",
 
     // Mensagens de validação
     notAcceptable: "Todos os critérios precisam estar verdes",
@@ -731,6 +732,7 @@ accountDeleted: {
     inviteConsumed: "O código de convite já foi consumido. Entre em contato com o administrador.",
     accountCreated: "Conta criada! Bem-vindo ao CloakerX.",
     registrationFailed: "Não foi possível criar a conta. Tente novamente.",
+    passwordPwned: "Essa senha já apareceu em vazamentos. Escolha uma senha única que você nunca usou em outro site.",
     forgotPassword: "Esqueceu sua senha?",
     forgotPasswordInvalidEmail: "Digite um e-mail válido no campo acima primeiro.",
     forgotPasswordSent: "Se este e-mail estiver cadastrado, um link de redefinição já está a caminho.",

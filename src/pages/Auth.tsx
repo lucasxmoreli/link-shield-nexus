@@ -122,12 +122,21 @@ export default function Auth() {
       });
 
       if (error) {
-        console.error("[register] signUp failed:", error.message);
-        // Anti-enum: same toast family for most failures that could leak existence.
+        console.error("[register] signUp failed:", error.message, (error as { code?: string }).code);
+        const code = String((error as { code?: string }).code || "");
         const msg = error.message?.toLowerCase() || "";
-        if (msg.includes("captcha") || msg.includes("timeout") || msg.includes("verification")) {
+        // HIBP / Supabase "Prevent leaked passwords" — format checklist can still be green.
+        if (
+          code === "weak_password" ||
+          msg.includes("pwned") ||
+          msg.includes("weak and easy") ||
+          msg.includes("known to be weak")
+        ) {
+          toast.error(t("auth.passwordPwned"));
+        } else if (msg.includes("captcha") || msg.includes("timeout") || msg.includes("verification")) {
           toast.error(t("auth.captchaFailed"));
         } else {
+          // Anti-enum for remaining cases (e.g. duplicate email messaging).
           toast.error(t("auth.registrationFailed"));
         }
         resetTurnstile();
@@ -356,6 +365,11 @@ export default function Auth() {
                   )}
 
                   <PasswordCriteriaList password={password} />
+                  {password.length > 0 && (
+                    <p className="text-[11px] text-muted-foreground leading-relaxed pt-1">
+                      {t("password.breachHint")}
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex justify-center min-h-[65px]">
