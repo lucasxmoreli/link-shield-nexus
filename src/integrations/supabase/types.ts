@@ -489,6 +489,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      get_my_profile_gate: {
+        Args: never
+        Returns: {
+          profile_exists: boolean
+          is_deleted: boolean
+          is_suspended: boolean
+          activation_status: string
+        }[]
+      }
       process_billing_renewals: { Args: never; Returns: Json }
       redeem_promo_code: { Args: { p_code: string }; Returns: Json }
       use_invite_code: { Args: { p_code: string }; Returns: boolean }

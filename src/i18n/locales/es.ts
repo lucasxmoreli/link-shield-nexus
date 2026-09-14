@@ -760,7 +760,14 @@ const es = {
     deleteCodeDescription: "¿Seguro que quieres eliminar el código \"{{code}}\"? Esta acción es irreversible y elimina todos los registros de canje asociados.",
   },
 
-  // Update password (flujo de recuperación)
+  gate: {
+    profileMissing: "Tu cuenta se está preparando. Si esto persiste, contacta a soporte.",
+    fetchError: "No pudimos verificar tu cuenta ahora. Algunas acciones quedan bloqueadas.",
+    retry: "Intentar de nuevo",
+    contactSupport: "Soporte",
+  },
+
+  // Update password (fluxo de recuperación)
   updatePassword: {
     title: "Define una nueva contraseña",
     subtitle: "Elige una contraseña fuerte para recuperar el acceso a tu cuenta.",

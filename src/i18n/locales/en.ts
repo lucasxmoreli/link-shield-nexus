@@ -756,6 +756,12 @@ const en = {
     detectionFull: "Bot Detection",
     latency: "Latency",
   },
+  gate: {
+    profileMissing: "Your account is being prepared. If this persists, contact support.",
+    fetchError: "We couldn't verify your account right now. Some actions stay locked.",
+    retry: "Try again",
+    contactSupport: "Support",
+  },
 
   // Update password (recovery flow)
   updatePassword: {

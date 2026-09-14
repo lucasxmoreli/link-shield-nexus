@@ -21,6 +21,10 @@ interface AuthContextType {
   effectiveUserId: string | null;
   activationStatus: ActivationStatus;
   refreshActivationStatus: () => Promise<void>;
+  /** Logged-in but no profiles row (orphan / post-signup race). */
+  profileMissing: boolean;
+  /** Gate RPC/network failed; session kept, write gate stays closed. */
+  gateError: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -36,45 +40,64 @@ const AuthContext = createContext<AuthContextType>({
   effectiveUserId: null,
   activationStatus: DEFAULT_ACTIVATION_STATUS,
   refreshActivationStatus: async () => {},
+  profileMissing: false,
+  gateError: false,
 });
 
+type GateState = "ok" | "deleted" | "missing" | "error";
+
 interface ProfileGate {
-  isDeleted: boolean;
+  state: GateState;
   activationStatus: ActivationStatus;
 }
 
+interface GateRow {
+  profile_exists: boolean;
+  is_deleted: boolean;
+  is_suspended: boolean;
+  activation_status: string | null;
+}
+
+// Retries only for "missing": covers the window between auth.users insert and
+// handle_new_user commit / client session receive.
+const MISSING_RETRY_DELAYS_MS = [400, 1200, 2500];
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 /**
- * Single read of the gate fields from `profiles`. Returns soft-delete state
- * and activation status in one round-trip. Fail-open on errors (do not lock
- * the user out due to a transient network blip).
+ * Reads the gate via SECURITY DEFINER RPC. Soft-deleted rows are hidden by
+ * profiles SELECT RLS, so a direct select cannot tell deleted vs missing.
  */
-async function fetchProfileGate(userId: string): Promise<ProfileGate> {
-  try {
-    const { data: profile, error } = await supabase
-      .from("profiles")
-      .select("user_id, is_deleted, activation_status")
-      .eq("user_id", userId)
-      .maybeSingle();
+async function fetchProfileGateOnce(): Promise<ProfileGate> {
+  const { data, error } = await supabase
+    .rpc("get_my_profile_gate")
+    .maybeSingle();
 
-    // Profile explicitly returned with is_deleted=true → deleted.
-    if (profile?.is_deleted === true) {
-      return { isDeleted: true, activationStatus: DEFAULT_ACTIVATION_STATUS };
-    }
-
-    // Profile returned null without error → RLS blocked (likely soft-deleted).
-    if (!profile && !error) {
-      return { isDeleted: true, activationStatus: DEFAULT_ACTIVATION_STATUS };
-    }
-
-    return {
-      isDeleted: false,
-      activationStatus: normalizeActivationStatus(profile?.activation_status),
-    };
-  } catch (err) {
-    console.error("[useAuth] Profile gate fetch failed:", err);
-    // Fail-open on isDeleted, fail-safe on activationStatus.
-    return { isDeleted: false, activationStatus: DEFAULT_ACTIVATION_STATUS };
+  if (error) {
+    console.error("[useAuth] get_my_profile_gate failed:", error.message);
+    return { state: "error", activationStatus: DEFAULT_ACTIVATION_STATUS };
   }
+
+  const row = data as GateRow | null;
+  if (!row || row.profile_exists !== true) {
+    return { state: "missing", activationStatus: DEFAULT_ACTIVATION_STATUS };
+  }
+  if (row.is_deleted === true) {
+    return { state: "deleted", activationStatus: DEFAULT_ACTIVATION_STATUS };
+  }
+  return {
+    state: "ok",
+    activationStatus: normalizeActivationStatus(row.activation_status),
+  };
+}
+
+async function fetchProfileGate(): Promise<ProfileGate> {
+  let gate = await fetchProfileGateOnce();
+  for (const delay of MISSING_RETRY_DELAYS_MS) {
+    if (gate.state !== "missing") break;
+    await sleep(delay);
+    gate = await fetchProfileGateOnce();
+  }
+  return gate;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -85,34 +108,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [activationStatus, setActivationStatus] = useState<ActivationStatus>(
     DEFAULT_ACTIVATION_STATUS,
   );
+  const [profileMissing, setProfileMissing] = useState(false);
+  const [gateError, setGateError] = useState(false);
 
   useEffect(() => {
     let mounted = true;
     let lastIdentifiedUserId: string | null = null;
 
-    // Helper: apply session with gate check (soft-delete + activation status).
     const applySession = async (newSession: Session | null) => {
       if (!mounted) return;
 
-      // No authenticated user → apply directly (landing, /auth, etc).
       if (!newSession?.user) {
         if (lastIdentifiedUserId) {
           analyticsReset();
           lastIdentifiedUserId = null;
         }
         setActivationStatus(DEFAULT_ACTIVATION_STATUS);
+        setProfileMissing(false);
+        setGateError(false);
         setSession(newSession);
         setLoading(false);
         return;
       }
 
-      // User present → fetch gate (soft-delete + activation_status).
-      const gate = await fetchProfileGate(newSession.user.id);
-
+      const gate = await fetchProfileGate();
       if (!mounted) return;
 
-      if (gate.isDeleted) {
-        console.warn("[useAuth] User is soft-deleted, forcing logout");
+      if (gate.state === "deleted") {
+        console.warn("[useAuth] Soft-deleted account, forcing logout");
         await supabase.auth.signOut();
         if (window.location.pathname !== "/account-deleted") {
           window.location.replace("/account-deleted");
@@ -120,7 +143,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      // Identify the user in analytics (once per distinct id).
+      // missing / error: keep session. INVITED-ish gate + banner; RLS still
+      // denies writes. Orphan ≠ deleted account.
+      setProfileMissing(gate.state === "missing");
+      setGateError(gate.state === "error");
+      if (gate.state !== "ok") {
+        console.warn(`[useAuth] Profile gate state=${gate.state} for user ${newSession.user.id}`);
+      }
+
       if (newSession.user.id !== lastIdentifiedUserId) {
         analyticsIdentify(newSession.user.id, {
           email: newSession.user.email ?? undefined,
@@ -135,14 +165,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     };
 
-    // Auth state listener (login, logout, refresh).
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, newSession) => {
         applySession(newSession);
       }
     );
 
-    // Initial session check on first page load.
     supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
       applySession(initialSession);
     });
@@ -157,6 +185,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAdminViewAsId(null);
     setAdminViewAsEmail(null);
     setActivationStatus(DEFAULT_ACTIVATION_STATUS);
+    setProfileMissing(false);
+    setGateError(false);
     analyticsReset();
     await supabase.auth.signOut();
   };
@@ -171,16 +201,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAdminViewAsEmail(null);
   }, []);
 
-  /**
-   * Re-read the activation status from the DB. Call this after the user
-   * returns from Stripe Checkout so the gate flips immediately without
-   * requiring a logout/login cycle.
-   */
   const refreshActivationStatus = useCallback(async () => {
     const userId = session?.user?.id;
     if (!userId) return;
-    const gate = await fetchProfileGate(userId);
-    if (gate.isDeleted) return;
+    const gate = await fetchProfileGate();
+    if (gate.state === "deleted") return;
+    setProfileMissing(gate.state === "missing");
+    setGateError(gate.state === "error");
     setActivationStatus(gate.activationStatus);
   }, [session?.user?.id]);
 
@@ -195,6 +222,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       startClientView, stopClientView,
       isImpersonating, effectiveUserId,
       activationStatus, refreshActivationStatus,
+      profileMissing, gateError,
     }}>
       {children}
     </AuthContext.Provider>

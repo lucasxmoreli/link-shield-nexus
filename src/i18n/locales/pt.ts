@@ -755,6 +755,12 @@ accountDeleted: {
     detectionFull: "Detecção de Bots",
     latency: "Latência",
   },
+  gate: {
+    profileMissing: "Sua conta está sendo preparada. Se isso persistir, fale com o suporte.",
+    fetchError: "Não conseguimos verificar sua conta agora. Algumas ações ficam bloqueadas.",
+    retry: "Tentar novamente",
+    contactSupport: "Suporte",
+  },
 
   // Update password (fluxo de recuperação)
   updatePassword: {
