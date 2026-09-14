@@ -23,3 +23,12 @@ verify_jwt = false
 
 [functions.stripe-webhook]
 verify_jwt = false
+
+[functions.sync-usage-stripe]
+verify_jwt = false
+
+[functions.cleanup-deleted-accounts]
+verify_jwt = false
+
+[functions.cron-billing-reset]
+verify_jwt = true

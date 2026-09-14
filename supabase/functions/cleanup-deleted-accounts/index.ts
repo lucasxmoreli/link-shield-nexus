@@ -29,16 +29,23 @@ Deno.serve(async (req: Request) => {
   }
 
   // ─────────────────────────────────────────────────────────────
-  // Auth via CRON_SECRET
+  // Auth via CRON_SECRET (fail-closed se secret ausente — evita Bearer undefined)
   // ─────────────────────────────────────────────────────────────
-  const authHeader = req.headers.get("Authorization");
-  const expectedSecret = `Bearer ${Deno.env.get("CRON_SECRET")}`;
+  const cronSecret = Deno.env.get("CRON_SECRET");
+  if (!cronSecret) {
+    console.error("[cleanup] CRON_SECRET not configured");
+    return new Response(JSON.stringify({ error: "Server misconfigured" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
 
-  if (authHeader !== expectedSecret) {
+  const authHeader = req.headers.get("Authorization");
+  if (authHeader !== `Bearer ${cronSecret}`) {
     console.error("[cleanup] Unauthorized cron call");
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { 
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
-      headers: { "Content-Type": "application/json" }
+      headers: { "Content-Type": "application/json" },
     });
   }
 
