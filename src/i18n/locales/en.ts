@@ -185,6 +185,12 @@ const en = {
     noDomainsWarning: "⚠️ No domains available. You must connect and verify a custom domain in the Domains tab before generating a campaign link.",
     goToDomains: "Go to Domains",
     dnsReminder: "Make sure your domain has a CNAME record pointing to cname.cloakerx.com with Cloudflare proxy active (orange cloud).",
+    errors: {
+      limitReached: "You've reached your plan's campaign limit.",
+      domainNotOwned: "That domain is not registered on your account.",
+      domainNotVerified: "That domain is not verified yet.",
+      saveFailed: "Couldn't save the campaign. Please try again.",
+    },
   },
 
   // Campaign Edit / New

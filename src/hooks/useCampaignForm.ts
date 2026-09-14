@@ -287,7 +287,15 @@ export function useCampaignForm() {
         traffic_source: trafficSource,
       });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => {
+      const msg = e.message || "";
+      const key =
+        msg.includes("campaign_limit_reached") ? "campaigns.errors.limitReached" :
+        msg.includes("domain_not_owned") ? "campaigns.errors.domainNotOwned" :
+        msg.includes("domain_not_verified") ? "campaigns.errors.domainNotVerified" :
+        null;
+      toast.error(key ? t(key) : (msg || t("campaigns.errors.saveFailed")));
+    },
   });
 
   // ── handleSave (validation + conflict check + mutate) ──

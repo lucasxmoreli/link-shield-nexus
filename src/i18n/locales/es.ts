@@ -178,6 +178,12 @@ const es = {
     noDomainsWarning: "⚠️ No hay dominios disponibles. Debes conectar y verificar un dominio personalizado en la pestaña Dominios antes de generar un enlace de campaña.",
     goToDomains: "Ir a Dominios",
     dnsReminder: "Asegúrate de que tu dominio tenga un registro CNAME apuntando a cname.cloakerx.com con el proxy de Cloudflare activo (nube naranja).",
+    errors: {
+      limitReached: "Alcanzaste el límite de campañas de tu plan.",
+      domainNotOwned: "Ese dominio no está registrado en tu cuenta.",
+      domainNotVerified: "Ese dominio aún no está verificado.",
+      saveFailed: "No se pudo guardar la campaña. Inténtalo de nuevo.",
+    },
   },
 
   campaignEdit: {
