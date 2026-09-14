@@ -241,7 +241,7 @@ export default function Auth() {
           setCaptchaToken(null);
           toast.error(t("auth.captchaFailed"));
         }}
-        options={{ theme: "dark", appearance: "interaction-only" }}
+        options={{ theme: "dark" }}
       />
     </div>
   );
