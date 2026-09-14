@@ -723,6 +723,7 @@ const es = {
     noAccountYet: "¿No tienes cuenta? Créala ahora",
     captchaRequired: "Completa la verificación de seguridad antes de continuar.",
     captchaFailed: "La verificación de seguridad falló. Inténtalo de nuevo.",
+    invalidCredentials: "Correo o contraseña inválidos.",
     checkEmailTitle: "Revisa tu correo",
     checkEmailSubtitle: "Te enviamos un enlace de confirmación. Un clic y entras al panel.",
     checkEmailSent: "Enlace de confirmación enviado.",

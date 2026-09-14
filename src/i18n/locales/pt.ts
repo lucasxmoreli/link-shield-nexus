@@ -740,6 +740,7 @@ accountDeleted: {
     noAccountYet: "Não tem conta? Criar agora",
     captchaRequired: "Complete a verificação de segurança antes de continuar.",
     captchaFailed: "Verificação de segurança falhou. Tente novamente.",
+    invalidCredentials: "E-mail ou senha inválidos.",
     checkEmailTitle: "Confira seu e-mail",
     checkEmailSubtitle: "Enviamos um link de confirmação. Um clique e você entra no painel.",
     checkEmailSent: "Link de confirmação enviado.",

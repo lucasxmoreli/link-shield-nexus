@@ -741,6 +741,7 @@ const en = {
     noAccountYet: "No account yet? Create one",
     captchaRequired: "Complete the security check before continuing.",
     captchaFailed: "Security check failed. Please try again.",
+    invalidCredentials: "Invalid email or password.",
     checkEmailTitle: "Check your email",
     checkEmailSubtitle: "We sent a confirmation link. One click and you're in the dashboard.",
     checkEmailSent: "Confirmation link sent.",

@@ -51,18 +51,29 @@ export default function Auth() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!captchaToken) {
+      toast.error(t("auth.captchaRequired"));
+      return;
+    }
+
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({
       email: email.trim().toLowerCase(),
       password,
+      options: { captchaToken },
     });
+    // Turnstile tokens are single-use — always refresh after an Auth call.
+    resetTurnstile();
     if (error) {
       const msg = error.message?.toLowerCase() || "";
       if (msg.includes("email not confirmed") || msg.includes("not confirmed")) {
         toast.error(t("auth.emailNotConfirmed"));
         setView("check_email");
+      } else if (msg.includes("captcha") || msg.includes("verification")) {
+        toast.error(t("auth.captchaFailed"));
       } else {
-        toast.error(error.message);
+        // Anti-enum: never surface raw GoTrue messages on login.
+        toast.error(t("auth.invalidCredentials"));
       }
     } else {
       navigate("/dashboard");
@@ -76,22 +87,28 @@ export default function Auth() {
       toast.error(t("auth.forgotPasswordInvalidEmail"));
       return;
     }
+    if (!captchaToken) {
+      toast.error(t("auth.captchaRequired"));
+      return;
+    }
 
     setLoading(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
         redirectTo: `${window.location.origin}/update-password`,
+        captchaToken,
       });
       if (error) {
         console.error("[forgot-password] resetPasswordForEmail failed:", error.message);
       }
-      toast.success(t("auth.forgotPasswordSent"));
     } catch (err) {
       console.error("[forgot-password] unexpected error:", err);
-      toast.success(t("auth.forgotPasswordSent"));
     } finally {
+      resetTurnstile();
       setLoading(false);
     }
+    // Constant response (anti-enum) regardless of whether the email exists.
+    toast.success(t("auth.forgotPasswordSent"));
   };
 
   // ── Spec 1B: open signup via Auth signUp + Turnstile (no service-role edge).
@@ -209,8 +226,25 @@ export default function Auth() {
   };
 
   const { title, subtitle } = renderTitle();
+  const canLogin = !loading && email.trim().length > 0 && password.length > 0 && !!captchaToken;
   const canRegister =
     !loading && passwordAcceptable && email.trim().length > 0 && !!captchaToken;
+
+  const turnstileWidget = (
+    <div className="flex justify-center min-h-[65px]">
+      <Turnstile
+        key={`${view}-${turnstileKey}`}
+        siteKey={TURNSTILE_SITE_KEY}
+        onSuccess={(token) => setCaptchaToken(token)}
+        onExpire={() => setCaptchaToken(null)}
+        onError={() => {
+          setCaptchaToken(null);
+          toast.error(t("auth.captchaFailed"));
+        }}
+        options={{ theme: "dark", appearance: "interaction-only" }}
+      />
+    </div>
+  );
 
   return (
     <div className="min-h-screen flex bg-background">
@@ -290,7 +324,10 @@ export default function Auth() {
                     </button>
                   </div>
                 </div>
-                <Button type="submit" className="w-full h-11 text-sm font-semibold" disabled={loading}>
+
+                {turnstileWidget}
+
+                <Button type="submit" className="w-full h-11 text-sm font-semibold" disabled={!canLogin}>
                   {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                   {t("auth.signInButton")}
                 </Button>
@@ -298,7 +335,7 @@ export default function Auth() {
                 <button
                   type="button"
                   onClick={handleForgotPassword}
-                  disabled={loading}
+                  disabled={loading || !captchaToken || !email.trim()}
                   className="block w-full text-center text-sm text-muted-foreground hover:text-primary transition-colors disabled:opacity-50 disabled:pointer-events-none"
                 >
                   {t("auth.forgotPassword")}
@@ -372,19 +409,7 @@ export default function Auth() {
                   )}
                 </div>
 
-                <div className="flex justify-center min-h-[65px]">
-                  <Turnstile
-                    key={turnstileKey}
-                    siteKey={TURNSTILE_SITE_KEY}
-                    onSuccess={(token) => setCaptchaToken(token)}
-                    onExpire={() => setCaptchaToken(null)}
-                    onError={() => {
-                      setCaptchaToken(null);
-                      toast.error(t("auth.captchaFailed"));
-                    }}
-                    options={{ theme: "dark" }}
-                  />
-                </div>
+                {turnstileWidget}
 
                 <Button
                   type="submit"
@@ -409,7 +434,10 @@ export default function Auth() {
                   type="button"
                   variant="secondary"
                   className="w-full h-11"
-                  onClick={() => setView("login")}
+                  onClick={() => {
+                    setView("login");
+                    resetTurnstile();
+                  }}
                 >
                   {t("auth.backToSignIn")}
                 </Button>
