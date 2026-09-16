@@ -26,6 +26,7 @@ import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { getSourceByKey } from "@/lib/plan-config";
 import CampaignFinalLinkModal, { type CampaignFinalLinkData } from "@/components/campaigns/CampaignFinalLinkModal";
+import { canCreateResource, useBillingState } from "@/hooks/useBillingState";
 
 export default function Campaigns() {
   const { user, effectiveUserId } = useAuth();
@@ -36,21 +37,62 @@ export default function Campaigns() {
   const [linkModal, setLinkModal] = useState<CampaignFinalLinkData | null>(null);
   const [campaignToDelete, setCampaignToDelete] = useState<{ id: string; name: string } | null>(null);
 
-  const { data: profile } = useQuery({
-    queryKey: ["profile", user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("profiles").select("*").eq("user_id", effectiveUserId!).single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user,
-  });
+  const {
+    data: billing,
+    isError: billingError,
+    isLoading: billingLoading,
+  } = useBillingState();
 
-  // Ground truth for the paywall: only ACTIVE workspaces (i.e. profiles with
-  // a valid Stripe subscription) can create/toggle campaigns. Everything else
-  // — INVITED, PAST_DUE, CANCELED — is treated as "free/locked" and routed
-  // to /billing through the existing empty-state UI.
-  const isFreePlan = profile?.activation_status !== "ACTIVE";
+  // Gate: ACTIVE + room under effective (R8). Missing profile → locked (teste 11).
+  // F1–F4: espelha Domains (load / copy FREE≠limite / at_cap→plans / impersonação).
+  const isViewOnly = !!user?.id && !!effectiveUserId && effectiveUserId !== user.id;
+  const activation = billingError ? null : billing?.plan.activation_status;
+  const campaignsRes = billingError ? undefined : billing?.resources.campaigns;
+  const isActive = activation === "ACTIVE";
+  const state = campaignsRes?.state;
+  const packReason = billing?.packs.campaigns.reason;
+  const used = campaignsRes?.used ?? 0;
+  const effective = campaignsRes?.effective ?? 0;
+  const billingReady = !billingLoading && !isViewOnly;
+  const canCreate =
+    billingReady && !billingError && canCreateResource(activation, campaignsRes);
+  const createBlocked = billingReady && !canCreate;
+  const writesLocked = isViewOnly || !isActive;
+
+  const billingHref = (tab: "plans" | "packs") =>
+    `/billing?tab=${tab}&need=campaign&from=campaigns`;
+
+  const lockedBillingTab = (): "plans" | "packs" => {
+    if (!isActive) return "plans";
+    if (packReason === "at_cap") return "plans";
+    return "packs";
+  };
+
+  const badgeLabel = (): string => {
+    if (activation === "PAST_DUE") return t("campaigns.gatePastDueShort");
+    if (activation === "CANCELED") return t("campaigns.gateCanceledShort");
+    if (!isActive) return t("campaigns.gatePaidPlanShort");
+    if (state === "over_limit") {
+      return t("campaigns.badgeOverLimit", {
+        plan: billing?.plan.key ?? "",
+        used,
+        effective,
+      });
+    }
+    if (state === "at_limit" && packReason === "at_cap") {
+      return t("campaigns.badgeAtCap", { plan: billing?.plan.key ?? "" });
+    }
+    if (state === "at_limit") return t("campaigns.limitReached");
+    return t("campaigns.limitReached");
+  };
+
+  const gateAlertKey = (): string => {
+    if (isViewOnly) return "campaigns.viewOnlyHint";
+    if (activation === "PAST_DUE") return "campaigns.gatePastDue";
+    if (activation === "CANCELED") return "campaigns.gateCanceled";
+    if (!isActive) return "campaigns.gatePaidPlan";
+    return "campaigns.viewOnlyMode";
+  };
 
   const { data: campaigns = [], isLoading } = useQuery({
     queryKey: ["campaigns", user?.id],
@@ -67,7 +109,10 @@ export default function Campaigns() {
       const { error } = await supabase.from("campaigns").update({ is_active }).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["campaigns"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["campaigns"] });
+      qc.invalidateQueries({ queryKey: ["billing_state"] });
+    },
   });
 
   const deleteMutation = useMutation({
@@ -77,13 +122,15 @@ export default function Campaigns() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["campaigns"] });
+      qc.invalidateQueries({ queryKey: ["billing_state"] });
       toast.success(t("campaigns.campaignRemoved"));
     },
   });
 
   const handleCreateClick = () => {
-    if (isFreePlan) {
-      navigate("/billing");
+    if (isViewOnly) return;
+    if (createBlocked) {
+      navigate(billingHref(lockedBillingTab()));
       return;
     }
     navigate("/campaigns/new");
@@ -93,9 +140,17 @@ export default function Campaigns() {
     <div className="space-y-4 sm:space-y-6">
       <div className="flex items-center justify-between gap-2">
         <h1 className="text-xl sm:text-2xl font-bold">{t("campaigns.title")}</h1>
-        {isFreePlan ? (
+        {isViewOnly ? (
+          <Button variant="outline" disabled title={t("campaigns.viewOnlyHint")}>
+            <Lock className="h-4 w-4 mr-1" /> {t("campaigns.viewOnlyAdd")}
+          </Button>
+        ) : billingLoading ? (
+          <Button disabled className="neon-glow">
+            <Plus className="h-4 w-4 mr-1" /> {t("campaigns.createNew")}
+          </Button>
+        ) : createBlocked ? (
           <Button variant="outline" className="border-destructive/30 text-destructive" onClick={handleCreateClick}>
-            <Lock className="h-4 w-4 mr-1" /> {t("campaigns.upgradeToCreate")}
+            <Lock className="h-4 w-4 mr-1" /> {badgeLabel()}
           </Button>
         ) : (
           <Button className="neon-glow" onClick={handleCreateClick}>
@@ -104,26 +159,36 @@ export default function Campaigns() {
         )}
       </div>
 
-      {isFreePlan && (
+      {(isViewOnly || (billingReady && !isActive)) && (
         <Alert className="border-border bg-muted/30">
           <Lock className="h-4 w-4 text-muted-foreground" />
-          <AlertDescription className="text-muted-foreground">{t("campaigns.viewOnlyMode")}</AlertDescription>
+          <AlertDescription className="text-muted-foreground">{t(gateAlertKey())}</AlertDescription>
         </Alert>
       )}
 
       {/* [PR-3d.2] Empty state magnético: quando não tem campanha, substitui a
           tabela inteira por uma EmptyState com CTA óbvio. Pra usuários free/locked,
           a copy + CTA mudam pra direcionar pra /billing em vez de /campaigns/new. */}
-      {!isLoading && campaigns.length === 0 ? (
+      {!isLoading && !billingLoading && campaigns.length === 0 ? (
         <EmptyState
           icon={Target}
-          title={isFreePlan ? t("campaigns.emptyTitleLocked") : t("campaigns.emptyTitle")}
-          description={isFreePlan ? t("campaigns.emptyDescLocked") : t("campaigns.emptyDesc")}
-          cta={{
-            label: isFreePlan ? t("campaigns.emptyCtaLocked") : t("campaigns.emptyCta"),
-            onClick: handleCreateClick,
-            variant: isFreePlan ? "outline" : "default",
-          }}
+          title={createBlocked || isViewOnly ? t("campaigns.emptyTitleLocked") : t("campaigns.emptyTitle")}
+          description={
+            isViewOnly
+              ? t("campaigns.viewOnlyHint")
+              : createBlocked
+                ? t("campaigns.emptyDescLocked")
+                : t("campaigns.emptyDesc")
+          }
+          cta={
+            isViewOnly
+              ? undefined
+              : {
+                  label: createBlocked ? t("campaigns.emptyCtaLocked") : t("campaigns.emptyCta"),
+                  onClick: handleCreateClick,
+                  variant: createBlocked ? "outline" : "default",
+                }
+          }
         />
       ) : (
       <Card className="border-border bg-card">
@@ -179,7 +244,7 @@ export default function Campaigns() {
                     <TableCell>
                       <Switch
                         checked={c.is_active ?? false}
-                        disabled={isFreePlan}
+                        disabled={writesLocked}
                         onCheckedChange={(v) => toggleMutation.mutate({ id: c.id, is_active: v })}
                       />
                     </TableCell>

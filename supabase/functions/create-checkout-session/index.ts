@@ -1,18 +1,14 @@
 // =============================================================================
 // create-checkout-session
 // -----------------------------------------------------------------------------
-// Receives a Stripe `price_id` from the frontend, validates the JWT and the
-// user's activation state, ensures a Stripe customer exists for the profile,
-// then creates a Stripe Checkout Session (subscription mode) bundling the
-// fixed plan price + its paired metered overage price.
-//
-// Returns: { session_id, url } — the frontend redirects to `url`.
+// Receives a Stripe plan `price_id`, validates JWT + activation, ensures a
+// Stripe customer, creates Checkout (subscription) for the PLAN ONLY.
+// Packs are separate (no metered overage line item).
 // =============================================================================
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import Stripe from "npm:stripe@17.5.0";
 
-// ── CORS allowlist ───────────────────────────────────────────────────────────
 const ALLOWED_ORIGINS = [
   "https://www.cloakerx.com",
   "https://cloakerx.com",
@@ -35,13 +31,19 @@ function getCorsHeaders(origin: string | null) {
   };
 }
 
-// Fixed → metered price mapping. Must mirror plan-config.ts on the frontend.
-const PLAN_METERED_MAP: Record<string, string> = {
-  "price_1TLVRnLZEOji6sEJnw9oiVW2": "price_1TLaNwLZEOji6sEJrtBFpRnn", // BASIC
-  "price_1TLVSrLZEOji6sEJ8sF00dTT": "price_1TLaHlLZEOji6sEJgKRRDuOh", // PRO
-  "price_1TLVTYLZEOji6sEJ0mzIvzme": "price_1TLaP0LZEOji6sEJdV7XPaJb", // FREEDOM
-  "price_1TLVULLZEOji6sEJ4VyuhzMF": "price_1TLaR3LZEOji6sEJmagidXcF", // ENTERPRISE
-};
+/** Plan prices only (test + live). No metered / pack IDs here. */
+const PLAN_PRICE_IDS = new Set([
+  // test — USD Spec 2 (57.99 / 96.99 / 234.99 / 389.99)
+  "price_1UG23HLZEOji6sEJoaUpX4t1", // BASIC $57.99
+  "price_1UG23OLZEOji6sEJw9z873KX", // PRO $96.99
+  "price_1UG23QLZEOji6sEJQQ1Evq5U", // FREEDOM $234.99
+  "price_1UG23PLZEOji6sEJ1kjc8qCg", // ENTERPRISE $389.99
+  // live (legacy catalog — until live mirrored)
+  "price_1TLVRnLZEOji6sEJnw9oiVW2",
+  "price_1TLVSrLZEOji6sEJ8sF00dTT",
+  "price_1TLVTYLZEOji6sEJ0mzIvzme",
+  "price_1TLVULLZEOji6sEJ4VyuhzMF",
+]);
 
 Deno.serve(async (req) => {
   const origin = req.headers.get("origin");
@@ -55,6 +57,15 @@ Deno.serve(async (req) => {
 
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  // Fail-closed: only exact "false" reopens Stripe checkout.
+  if (Deno.env.get("STRIPE_CHECKOUT_DISABLED") !== "false") {
+    return json(410, {
+      error: "stripe_checkout_disabled",
+      code: "STRIPE_CHECKOUT_DISABLED",
+      message: "Stripe checkout is temporarily disabled.",
+    });
+  }
+
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) return json(401, { error: "Unauthorized" });
@@ -63,21 +74,18 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // Validate JWT with the user-scoped client.
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
     const { data: { user }, error: authError } = await userClient.auth.getUser();
     if (authError || !user) return json(401, { error: "Unauthorized" });
 
-    // Parse and validate the requested price_id.
     const { price_id } = await req.json();
     if (!price_id || typeof price_id !== "string" || !price_id.startsWith("price_")) {
       return json(400, { error: "Invalid price_id" });
     }
 
-    const meteredPriceId = PLAN_METERED_MAP[price_id];
-    if (!meteredPriceId) {
+    if (!PLAN_PRICE_IDS.has(price_id)) {
       return json(400, { error: "Unknown plan price_id" });
     }
 
@@ -92,8 +100,6 @@ Deno.serve(async (req) => {
       httpClient: Stripe.createFetchHttpClient(),
     });
 
-    // Load profile with the admin client (bypasses RLS for this server-side check).
-    // We pull `activation_status` to enforce the double-charge guard.
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
     const { data: profile, error: profileError } = await adminClient
       .from("profiles")
@@ -106,20 +112,14 @@ Deno.serve(async (req) => {
       return json(404, { error: "Profile not found" });
     }
 
-    // ── Double-charge guard ──────────────────────────────────────────────────
-    // If the workspace is already ACTIVE, the user must use the customer
-    // portal to switch plans, not create a brand-new subscription. Returning
-    // 409 Conflict makes the frontend redirect to /billing where the existing
-    // subscription is managed.
     if (profile.activation_status === "ACTIVE") {
-      console.warn(`[create-checkout-session] User ${user.id} is already ACTIVE; refusing to create a new session.`);
+      console.warn(`[create-checkout-session] User ${user.id} already ACTIVE`);
       return json(409, {
         error: "Workspace already activated. Use the customer portal to change plans.",
         code: "ALREADY_ACTIVE",
       });
     }
 
-    // Ensure a Stripe customer exists for this profile (lazy-create on first checkout).
     let customerId = profile.stripe_customer_id;
     if (!customerId) {
       const customer = await stripe.customers.create({
@@ -140,14 +140,12 @@ Deno.serve(async (req) => {
 
     const requestOrigin = req.headers.get("origin") || "https://www.cloakerx.com";
 
+    // Plan only — packs bought separately (no metered overage).
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       client_reference_id: user.id,
       mode: "subscription",
-      line_items: [
-        { price: price_id, quantity: 1 },
-        { price: meteredPriceId },
-      ],
+      line_items: [{ price: price_id, quantity: 1 }],
       success_url: `${requestOrigin}/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${requestOrigin}/billing?checkout=cancelled`,
       metadata: { supabase_user_id: user.id },

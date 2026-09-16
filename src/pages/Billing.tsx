@@ -6,16 +6,22 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
-import { supabaseUntyped } from "@/integrations/supabase/untyped";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 import { PLANS, TRAFFIC_SOURCES, getPlanByName, type PlanData } from "@/lib/plan-config";
 import { PlanOverviewCard } from "@/components/billing/PlanOverviewCard";
-import { LimitsGrid } from "@/components/billing/LimitsGrid";
 import { PaymentMethodCard } from "@/components/billing/PaymentMethodCard";
 import { InvoicesTable } from "@/components/billing/InvoicesTable";
+import { BillingPacksTab } from "@/components/billing/BillingPacksTab";
+import { useBillingState } from "@/hooks/useBillingState";
+import { normalizePackNeed } from "@/lib/resolvePackView";
+
+/** Stripe checkout ON (test catalog USD). Edge still requires STRIPE_CHECKOUT_DISABLED=false. */
+const STRIPE_CHECKOUT_ENABLED = true;
 
 const STARTER_PLANS = PLANS.filter((p) => ["FREE", "BASIC PLAN", "PRO PLAN"].includes(p.name));
 const SCALE_PLANS = PLANS.filter((p) => ["FREEDOM PLAN", "ENTERPRISE CONQUEST"].includes(p.name));
@@ -24,10 +30,14 @@ const SCALE_PLANS = PLANS.filter((p) => ["FREEDOM PLAN", "ENTERPRISE CONQUEST"].
 // PlanCard (componente interno usado na tab Plans — inalterado)
 // ─────────────────────────────────────────────────────────────────────────────
 
-function PlanCard({ plan, userPlan, userPlanIndex, onSelect, t }: { plan: PlanData; userPlan: PlanData; userPlanIndex: number; onSelect: (plan: PlanData) => void; t: any }) {
+function PlanCard({ plan, userPlan, userPlanIndex, onSelect, t, checkoutDisabled }: { plan: PlanData; userPlan: PlanData; userPlanIndex: number; onSelect: (plan: PlanData) => void; t: any; checkoutDisabled?: boolean }) {
   const idx = PLANS.findIndex((p) => p.name === plan.name);
   const getButtonState = () => {
     if (plan.name === userPlan.name) return { text: t("billing.currentPlan"), disabled: true, style: "bg-muted text-muted-foreground cursor-not-allowed hover:bg-muted" };
+    // I-2 / Fatia 2: Stripe OFF até Cakto — mesmo padrão "Em breve" dos packs
+    if (checkoutDisabled) {
+      return { text: t("billing.checkoutComingSoon"), disabled: true, style: "bg-muted text-muted-foreground cursor-not-allowed hover:bg-muted" };
+    }
     if (idx < userPlanIndex) return { text: t("billing.downgrade"), disabled: false, style: "bg-secondary text-secondary-foreground hover:bg-secondary/80" };
     if (plan.highlighted) return { text: t("common.upgrade"), disabled: false, style: "bg-orange-500 hover:bg-orange-600 text-white" };
     return { text: t("common.upgrade"), disabled: false, style: "bg-primary text-primary-foreground hover:bg-primary/90" };
@@ -80,17 +90,8 @@ function PlanCard({ plan, userPlan, userPlanIndex, onSelect, t }: { plan: PlanDa
 // Billing (componente principal)
 // ─────────────────────────────────────────────────────────────────────────────
 
-interface EffectiveLimits {
-  base_max_domains: number;
-  base_max_campaigns: number;
-  extra_domains: number;
-  extra_campaigns: number;
-  effective_max_domains: number;
-  effective_max_campaigns: number;
-}
-
 export default function Billing() {
-  const { user, refreshActivationStatus } = useAuth();
+  const { user, effectiveUserId, refreshActivationStatus } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { t } = useTranslation();
@@ -98,7 +99,14 @@ export default function Billing() {
 
   const [selectedPlan, setSelectedPlan] = useState<PlanData | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
-  const [addonLoading, setAddonLoading] = useState<"extra_domain" | "extra_campaign" | null>(null);
+
+  const isViewOnly = !!user?.id && !!effectiveUserId && effectiveUserId !== user.id;
+
+  const {
+    data: billing,
+    isError: billingError,
+    isLoading: billingLoading,
+  } = useBillingState();
 
   // ── Query: Profile ──
   // Colunas stripe_customer_id, stripe_subscription_id e is_deleted ainda
@@ -121,18 +129,6 @@ export default function Billing() {
     enabled: !!user,
   });
 
-  // ── Query: Effective Limits (plano base + addons) ──
-  const { data: effectiveLimits } = useQuery({
-    queryKey: ["effective_limits", user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabaseUntyped.rpc("get_effective_limits");
-      if (error) throw error;
-      return ((data as unknown) as EffectiveLimits[])?.[0] ?? null;
-    },
-    enabled: !!user && !!profile?.stripe_subscription_id, // só busca se tem sub ativa
-    staleTime: 60 * 1000,
-  });
-
   // ── Handler: retorno do Stripe Checkout ──
   useEffect(() => {
     const checkout = searchParams.get("checkout");
@@ -143,13 +139,8 @@ export default function Billing() {
         description: t("billing.checkoutSuccessDesc"),
       });
       queryClient.invalidateQueries({ queryKey: ["profile"] });
-      queryClient.invalidateQueries({ queryKey: ["effective_limits"] });
-      // Force-refresh the activation gate so the workspace flips to ACTIVE
-      // immediately (no logout/login needed). Fire-and-forget; the query
-      // invalidations above will rerender the UI as soon as the new profile
-      // arrives.
+      queryClient.invalidateQueries({ queryKey: ["billing_state"] });
       void refreshActivationStatus();
-      // Strip the query params without triggering a navigate
       const params = new URLSearchParams(searchParams);
       params.delete("checkout");
       params.delete("session_id");
@@ -188,12 +179,40 @@ export default function Billing() {
   const isScalePlan = SCALE_PLANS.some((p) => p.name === userPlan.name);
   const defaultPlanTab = isScalePlan ? "scale" : "starter";
 
-  // Tab principal (account vs plans) — persistência via query param
+  // W3: aba Pacotes só para pago (não FREE), sem erro, sem impersonação
+  const showPacksTab =
+    !!billing &&
+    !billingError &&
+    !isViewOnly &&
+    billing.plan.key !== "FREE";
+
+  const needParam = searchParams.get("need");
+  const fromParam = searchParams.get("from");
+  const needNormalized = normalizePackNeed(needParam);
+
+  // W4: tab=packs && !showPacksTab → plans (preserva need/from); desconhecido → account
   const tabParam = searchParams.get("tab");
-  const activeTab = 
-    tabParam === "plans" ? "plans" :
-    tabParam === "faturas" ? "faturas" :
-    "account";
+  let activeTab: string;
+  if (tabParam === "packs") {
+    activeTab = showPacksTab ? "packs" : billingLoading ? "account" : "plans";
+  } else if (tabParam === "plans") {
+    activeTab = "plans";
+  } else if (tabParam === "faturas") {
+    activeTab = "faturas";
+  } else {
+    activeTab = "account";
+  }
+
+  // Redirect soft: FREE pediu packs → plans (sem cair em account)
+  useEffect(() => {
+    if (billingLoading || billingError) return;
+    if (tabParam === "packs" && !showPacksTab && !isViewOnly) {
+      const params = new URLSearchParams(searchParams);
+      params.set("tab", "plans");
+      setSearchParams(params, { replace: true });
+    }
+  }, [billingLoading, billingError, tabParam, showPacksTab, isViewOnly, searchParams, setSearchParams]);
+
   const handleTabChange = (value: string) => {
     const params = new URLSearchParams(searchParams);
     if (value === "account") {
@@ -204,8 +223,8 @@ export default function Billing() {
     setSearchParams(params, { replace: true });
   };
 
-  // ── Handlers: Plan selection e checkout ──
   const handlePlanClick = (plan: PlanData) => {
+    if (!STRIPE_CHECKOUT_ENABLED) return;
     if (plan.name === userPlan.name) return;
     setSelectedPlan(plan);
   };
@@ -216,7 +235,15 @@ export default function Billing() {
     setSearchParams(params, { replace: true });
   };
 
+  const handleGoPlansFromPacks = (need: string | null) => {
+    const params = new URLSearchParams(searchParams);
+    params.set("tab", "plans");
+    if (need) params.set("need", need === "domains" ? "domain" : need === "campaigns" ? "campaign" : need);
+    setSearchParams(params, { replace: true });
+  };
+
   const handleConfirmUpgrade = async () => {
+    if (!STRIPE_CHECKOUT_ENABLED) return;
     if (!selectedPlan) return;
 
     if (!selectedPlan.stripePriceId) {
@@ -251,49 +278,14 @@ export default function Billing() {
     }
   };
 
-  // ── Handlers: Addons (LimitsGrid) ──
-  const handleAddAddon = async (addonType: "extra_domain" | "extra_campaign") => {
-    if (!profile?.stripe_subscription_id) {
-      toast({
-        title: t("billing.checkoutFailed"),
-        description: t("billing.freePlanDescription"),
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setAddonLoading(addonType);
-
-    try {
-      const { data, error } = await supabase.functions.invoke("manage-subscription-addon", {
-        body: { action: "add", addon_type: addonType },
-      });
-
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-
-      toast({
-        title: t("billing.checkoutSuccess"),
-        description: t("billing.checkoutSuccessDesc"),
-      });
-
-      // Força refetch dos limites efetivos (webhook vai sincronizar a tabela subscription_addons)
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ["effective_limits"] });
-        queryClient.invalidateQueries({ queryKey: ["usage_counts"] });
-      }, 2000); // aguarda webhook processar
-    } catch (err: any) {
-      console.error("[addon] Failed:", err);
-      toast({
-        title: t("billing.checkoutFailed"),
-        description: err.message || t("billing.checkoutFailedDesc"),
-        variant: "destructive",
-      });
-      throw err; // Propaga pro Dialog do LimitsGrid mostrar erro inline
-    } finally {
-      setAddonLoading(null);
-    }
-  };
+  const needBannerResource =
+    needNormalized === "domains"
+      ? t("billing.needResourceDomain")
+      : needNormalized === "campaigns"
+        ? t("billing.needResourceCampaign")
+        : needNormalized === "clicks"
+          ? t("billing.needResourceClicks")
+          : null;
 
   // ── Render ──
   return (
@@ -304,9 +296,8 @@ export default function Billing() {
         <Badge className="bg-primary/20 text-primary border-0">{userPlan.name}</Badge>
       </div>
 
-      {/* Tabs principais: Account / Plans */}
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="bg-secondary/60 border border-border p-1 rounded-lg w-full sm:w-auto">
+        <TabsList className="bg-secondary/60 border border-border p-1 rounded-lg w-full sm:w-auto flex-wrap h-auto">
           <TabsTrigger
             value="account"
             className="flex-1 sm:flex-initial px-6 py-2 text-sm font-semibold tracking-wide data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md rounded-md transition-all"
@@ -322,51 +313,47 @@ export default function Billing() {
           >
             {t("billing.tabPlans")}
           </TabsTrigger>
+          {billingLoading && !isViewOnly ? (
+            <Skeleton className="h-9 w-24 rounded-md" />
+          ) : (
+            showPacksTab && (
+              <TabsTrigger
+                value="packs"
+                className="flex-1 sm:flex-initial px-6 py-2 text-sm font-semibold tracking-wide data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md rounded-md transition-all"
+              >
+                {t("billing.tabPacks")}
+              </TabsTrigger>
+            )
+          )}
         </TabsList>
 
-        {/* ─── TAB: MINHA CONTA ─── */}
         <TabsContent value="account" className="space-y-4 mt-6">
           {profile && (
-            <>
-              <PlanOverviewCard
-                plan={userPlan}
-                currentClicks={profile.current_clicks ?? 0}
-                maxClicks={profile.max_clicks ?? 0}
-                billingCycleStart={profile.billing_cycle_start}
-                billingCycleEnd={profile.billing_cycle_end}
-                onChangePlan={handleChangePlan}
-              />
-
-
-              {profile.stripe_subscription_id && effectiveLimits && (
-                <LimitsGrid
-                  effectiveMaxDomains={effectiveLimits.effective_max_domains}
-                  effectiveMaxCampaigns={effectiveLimits.effective_max_campaigns}
-                  extraDomains={effectiveLimits.extra_domains}
-                  extraCampaigns={effectiveLimits.extra_campaigns}
-                  onAddDomainSlot={() => handleAddAddon("extra_domain")}
-                  onAddCampaignSlot={() => handleAddAddon("extra_campaign")}
-                />
-              )}
-
-              {addonLoading && (
-                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 size={14} className="animate-spin" />
-                  <span>{t("billing.redirecting")}</span>
-                </div>
-              )}
-            </>
+            <PlanOverviewCard
+              plan={userPlan}
+              currentClicks={profile.current_clicks ?? 0}
+              maxClicks={profile.max_clicks ?? 0}
+              billingCycleStart={profile.billing_cycle_start}
+              billingCycleEnd={profile.billing_cycle_end}
+              onChangePlan={handleChangePlan}
+            />
           )}
+          {/* R7: LimitsGrid Stripe desligado — substituído pela aba Pacotes */}
         </TabsContent>
-          
-          {/* ─── TAB: FATURAS ─── */}
-          <TabsContent value="faturas" className="space-y-4 mt-6">
-            <PaymentMethodCard />
-            <InvoicesTable />
-          </TabsContent>
-        
-        {/* ─── TAB: PLANOS ─── */}
-        <TabsContent value="plans" className="mt-6">
+
+        <TabsContent value="faturas" className="space-y-4 mt-6">
+          <PaymentMethodCard />
+          <InvoicesTable />
+        </TabsContent>
+
+        <TabsContent value="plans" className="mt-6 space-y-4">
+          {needBannerResource && !showPacksTab && (
+            <Alert className="border-primary/30 bg-primary/5">
+              <AlertDescription>
+                {t("billing.needBannerPlans", { resource: needBannerResource })}
+              </AlertDescription>
+            </Alert>
+          )}
           <Tabs defaultValue={defaultPlanTab} className="w-full">
             <div className="flex justify-center mb-8">
               <TabsList className="bg-secondary/60 border border-border p-1 rounded-lg">
@@ -382,24 +369,51 @@ export default function Billing() {
             <TabsContent value="starter">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
                 {STARTER_PLANS.map((plan) => (
-                  <PlanCard key={plan.name} plan={plan} userPlan={userPlan} userPlanIndex={userPlanIndex} onSelect={handlePlanClick} t={t} />
+                  <PlanCard
+                    key={plan.name}
+                    plan={plan}
+                    userPlan={userPlan}
+                    userPlanIndex={userPlanIndex}
+                    onSelect={handlePlanClick}
+                    t={t}
+                    checkoutDisabled={!STRIPE_CHECKOUT_ENABLED}
+                  />
                 ))}
               </div>
             </TabsContent>
             <TabsContent value="scale">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
                 {SCALE_PLANS.map((plan) => (
-                  <PlanCard key={plan.name} plan={plan} userPlan={userPlan} userPlanIndex={userPlanIndex} onSelect={handlePlanClick} t={t} />
+                  <PlanCard
+                    key={plan.name}
+                    plan={plan}
+                    userPlan={userPlan}
+                    userPlanIndex={userPlanIndex}
+                    onSelect={handlePlanClick}
+                    t={t}
+                    checkoutDisabled={!STRIPE_CHECKOUT_ENABLED}
+                  />
                 ))}
               </div>
             </TabsContent>
           </Tabs>
         </TabsContent>
+
+        {showPacksTab && billing && (
+          <TabsContent value="packs" className="mt-6">
+            <BillingPacksTab
+              billing={billing}
+              needParam={needParam}
+              fromParam={fromParam}
+              onGoPlans={handleGoPlansFromPacks}
+            />
+          </TabsContent>
+        )}
       </Tabs>
 
-      {/* Dialog de confirmação de upgrade (reaproveitado da versão anterior) */}
+      {/* Dialog de confirmação de upgrade (Stripe — só se flag on) */}
       <Dialog
-        open={!!selectedPlan}
+        open={!!selectedPlan && STRIPE_CHECKOUT_ENABLED}
         onOpenChange={(open) => {
           if (!open) {
             setSelectedPlan(null);

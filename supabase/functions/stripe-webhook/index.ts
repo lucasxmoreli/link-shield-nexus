@@ -6,29 +6,58 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, stripe-signature",
 };
 
-// Mapa do price fixed → config interno do plano
+// Mapa do price fixed → config interno do plano (Spec 2 quotas)
 const PRICE_TO_PLAN: Record<string, { plan_name: string; max_clicks: number; max_domains: number; max_campaigns: number }> = {
+  // test USD (57.99 / 96.99 / 234.99 / 389.99)
+  "price_1UG23HLZEOji6sEJoaUpX4t1": { plan_name: "BASIC PLAN",          max_clicks:    8000, max_domains:  1, max_campaigns:  3 },
+  "price_1UG23OLZEOji6sEJw9z873KX": { plan_name: "PRO PLAN",            max_clicks:   20000, max_domains:  3, max_campaigns:  8 },
+  "price_1UG23QLZEOji6sEJQQ1Evq5U": { plan_name: "FREEDOM PLAN",        max_clicks:  100000, max_domains: 10, max_campaigns: 20 },
+  "price_1UG23PLZEOji6sEJ1kjc8qCg": { plan_name: "ENTERPRISE CONQUEST", max_clicks:  300000, max_domains: 20, max_campaigns: -1 },
+  // live legacy (until live catalog mirrored to Spec 2 + new USD)
   "price_1TLVRnLZEOji6sEJnw9oiVW2": { plan_name: "BASIC PLAN",          max_clicks:    20000, max_domains:  3, max_campaigns:  5 },
   "price_1TLVSrLZEOji6sEJ8sF00dTT": { plan_name: "PRO PLAN",            max_clicks:   100000, max_domains: 10, max_campaigns: 20 },
   "price_1TLVTYLZEOji6sEJ0mzIvzme": { plan_name: "FREEDOM PLAN",        max_clicks:   300000, max_domains: 20, max_campaigns: 50 },
   "price_1TLVULLZEOji6sEJ4VyuhzMF": { plan_name: "ENTERPRISE CONQUEST", max_clicks:  1000000, max_domains: 25, max_campaigns: -1 },
 };
 
-// Mapa fixed → metered (auto-healing de subs antigas)
-const PLAN_METERED_MAP: Record<string, string> = {
-  "price_1TLVRnLZEOji6sEJnw9oiVW2": "price_1TLaNwLZEOji6sEJrtBFpRnn",
-  "price_1TLVSrLZEOji6sEJ8sF00dTT": "price_1TLaHlLZEOji6sEJgKRRDuOh",
-  "price_1TLVTYLZEOji6sEJ0mzIvzme": "price_1TLaP0LZEOji6sEJdV7XPaJb",
-  "price_1TLVULLZEOji6sEJ4VyuhzMF": "price_1TLaR3LZEOji6sEJmagidXcF",
-};
+// Legacy live metered map — DO NOT auto-heal for Spec 2 (packs replace overage).
+// Kept empty so new USD plans never get metered items attached.
+const PLAN_METERED_MAP: Record<string, string> = {};
 
-// Mapa de addon prices → tipo
-const ADDON_PRICE_TO_TYPE: Record<string, "extra_domain" | "extra_campaign"> = {
+// Pack / addon prices → tipo (test catalog + legacy live addons)
+const ADDON_PRICE_TO_TYPE: Record<string, "extra_clicks" | "extra_domain" | "extra_campaign"> = {
+  // test packs
+  "price_1UG1xZLZEOji6sEJf1szGS77": "extra_clicks",
+  "price_1UG1xZLZEOji6sEJXBR5Lwmk": "extra_domain",
+  "price_1UG1xbLZEOji6sEJozZXJhZ0": "extra_campaign",
+  "price_1UG1xbLZEOji6sEJbCkXukRD": "extra_clicks",
+  "price_1UG1xdLZEOji6sEJne54x6gr": "extra_domain",
+  "price_1UG1xfLZEOji6sEJ0GIFjbLE": "extra_campaign",
+  "price_1UG1xfLZEOji6sEJrTF5ANZB": "extra_clicks",
+  "price_1UG1xiLZEOji6sEJIMl4BVvx": "extra_domain",
+  "price_1UG1xjLZEOji6sEJY6fldVxi": "extra_campaign",
+  "price_1UG1xkLZEOji6sEJVppD5P1n": "extra_clicks",
+  "price_1UG1xkLZEOji6sEJ8Su2cqqP": "extra_domain",
+  // live legacy addons
   "price_1TMwsxLZEOji6sEJZj5yvPct": "extra_domain",
   "price_1TMwudLZEOji6sEJLY129lHV": "extra_campaign",
 };
 
 const FREE_PLAN = { plan_name: "FREE", max_clicks: 0, max_domains: 0, max_campaigns: 0 };
+
+type PgResult = { error: { message: string; code?: string } | null; data?: unknown };
+
+/** Throws if PostgREST returned an error OR a write that should hit exactly
+ *  1 row hit none. Without this the webhook returns 200, the event stays
+ *  marked processed, and Stripe never retries. */
+function mustWrite(label: string, res: PgResult, expectRows = true) {
+  if (res.error) {
+    throw new Error(`[${label}] ${res.error.code ?? ""} ${res.error.message}`.trim());
+  }
+  if (expectRows && Array.isArray(res.data) && res.data.length === 0) {
+    throw new Error(`[${label}] 0 rows affected — profile not found`);
+  }
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -171,24 +200,28 @@ async function handleCheckoutCompleted(
 
   const meteredItem = findMeteredItem(subscription);
 
-  await admin
-    .from("profiles")
-    .update({
-      stripe_customer_id: customerId,
-      stripe_subscription_id: subscriptionId,
-      stripe_price_id: priceId,
-      stripe_overage_item_id: meteredItem?.id ?? null,
-      plan_name: planConfig.plan_name,
-      max_clicks: planConfig.max_clicks,
-      max_domains: planConfig.max_domains,
-      max_campaigns: planConfig.max_campaigns,
-      current_clicks: 0,
-      subscription_status: subscription.status,
-      is_suspended: false,
-      billing_cycle_start: new Date(subscription.current_period_start * 1000).toISOString(),
-      billing_cycle_end: new Date(subscription.current_period_end * 1000).toISOString(),
-    })
-    .eq("user_id", userId);
+  mustWrite(
+    "checkout.completed/profiles",
+    await admin
+      .from("profiles")
+      .update({
+        stripe_customer_id: customerId,
+        stripe_subscription_id: subscriptionId,
+        stripe_price_id: priceId,
+        stripe_overage_item_id: meteredItem?.id ?? null,
+        plan_name: planConfig.plan_name,
+        max_clicks: planConfig.max_clicks,
+        max_domains: planConfig.max_domains,
+        max_campaigns: planConfig.max_campaigns,
+        current_clicks: 0,
+        subscription_status: subscription.status,
+        is_suspended: false,
+        billing_cycle_start: new Date(subscription.current_period_start * 1000).toISOString(),
+        billing_cycle_end: new Date(subscription.current_period_end * 1000).toISOString(),
+      })
+      .eq("user_id", userId)
+      .select("user_id"),
+  );
 
   console.log(`[checkout.completed] User ${userId} -> ${planConfig.plan_name}`);
 }
@@ -277,10 +310,14 @@ async function handleSubscriptionUpdated(
     );
   }
 
-  await admin
-    .from("profiles")
-    .update(updatePayload)
-    .eq("user_id", userId);
+  mustWrite(
+    "subscription.updated/profiles",
+    await admin
+      .from("profiles")
+      .update(updatePayload)
+      .eq("user_id", userId)
+      .select("user_id"),
+  );
 
   console.log(
     `[subscription.updated] User ${userId} -> ${subscription.status} ` +
@@ -304,28 +341,40 @@ async function syncSubscriptionAddons(
 
     activeItemIds.push(item.id);
 
-    await admin.from("subscription_addons").upsert({
-      user_id: userId,
-      stripe_subscription_item_id: item.id,
-      stripe_price_id: item.price.id,
-      addon_type: addonType,
-      quantity: item.quantity || 1,
-      status: "active",
-    }, { onConflict: "stripe_subscription_item_id" });
+    mustWrite(
+      "sync-addons/upsert",
+      await admin.from("subscription_addons").upsert({
+        user_id: userId,
+        stripe_subscription_item_id: item.id,
+        stripe_price_id: item.price.id,
+        addon_type: addonType,
+        quantity: item.quantity || 1,
+        status: "active",
+      }, { onConflict: "stripe_subscription_item_id" }),
+      false,
+    );
   }
 
   if (activeItemIds.length > 0) {
     const itemsList = activeItemIds.map((id) => `"${id}"`).join(",");
-    await admin.from("subscription_addons")
-      .update({ status: "cancelled" })
-      .eq("user_id", userId)
-      .eq("status", "active")
-      .not("stripe_subscription_item_id", "in", `(${itemsList})`);
+    mustWrite(
+      "sync-addons/cancel-stale",
+      await admin.from("subscription_addons")
+        .update({ status: "cancelled" })
+        .eq("user_id", userId)
+        .eq("status", "active")
+        .not("stripe_subscription_item_id", "in", `(${itemsList})`),
+      false,
+    );
   } else {
-    await admin.from("subscription_addons")
-      .update({ status: "cancelled" })
-      .eq("user_id", userId)
-      .eq("status", "active");
+    mustWrite(
+      "sync-addons/cancel-all",
+      await admin.from("subscription_addons")
+        .update({ status: "cancelled" })
+        .eq("user_id", userId)
+        .eq("status", "active"),
+      false,
+    );
   }
 
   console.log(`[sync-addons] User ${userId} -> ${activeItemIds.length} active`);
@@ -339,26 +388,34 @@ async function handleSubscriptionDeleted(
   const userId = await findUserId(admin, customerId, subscription.metadata?.supabase_user_id);
   if (!userId) throw new Error(`No user for customer ${customerId}`);
 
-  await admin
-    .from("profiles")
-    .update({
-      stripe_subscription_id: null,
-      stripe_price_id: null,
-      stripe_overage_item_id: null,
-      plan_name: FREE_PLAN.plan_name,
-      max_clicks: FREE_PLAN.max_clicks,
-      max_domains: FREE_PLAN.max_domains,
-      max_campaigns: FREE_PLAN.max_campaigns,
-      subscription_status: "canceled",
-      is_suspended: true,
-      billing_cycle_end: new Date().toISOString(),
-    })
-    .eq("user_id", userId);
+  mustWrite(
+    "subscription.deleted/profiles",
+    await admin
+      .from("profiles")
+      .update({
+        stripe_subscription_id: null,
+        stripe_price_id: null,
+        stripe_overage_item_id: null,
+        plan_name: FREE_PLAN.plan_name,
+        max_clicks: FREE_PLAN.max_clicks,
+        max_domains: FREE_PLAN.max_domains,
+        max_campaigns: FREE_PLAN.max_campaigns,
+        subscription_status: "canceled",
+        is_suspended: true,
+        billing_cycle_end: new Date().toISOString(),
+      })
+      .eq("user_id", userId)
+      .select("user_id"),
+  );
 
-  await admin.from("subscription_addons")
-    .update({ status: "cancelled" })
-    .eq("user_id", userId)
-    .eq("status", "active");
+  mustWrite(
+    "subscription.deleted/addons",
+    await admin.from("subscription_addons")
+      .update({ status: "cancelled" })
+      .eq("user_id", userId)
+      .eq("status", "active"),
+    false,
+  );
 
   console.log(`[subscription.deleted] User ${userId} downgraded to FREE`);
 }
@@ -372,20 +429,24 @@ async function handleInvoicePaid(
   const userId = await findUserId(admin, customerId);
   if (!userId) throw new Error(`No user for customer ${customerId}`);
 
-  await admin.from("invoices").upsert({
-    user_id: userId,
-    stripe_invoice_id: invoice.id,
-    stripe_event_id: eventId,
-    billing_period_start: invoice.period_start ? new Date(invoice.period_start * 1000).toISOString() : null,
-    billing_period_end: invoice.period_end ? new Date(invoice.period_end * 1000).toISOString() : null,
-    plan_name: invoice.lines.data[0]?.description || "unknown",
-    base_amount_cents: invoice.subtotal,
-    total_amount_cents: invoice.total,
-    currency: invoice.currency,
-    status: "paid",
-    paid_at: new Date().toISOString(),
-    hosted_invoice_url: invoice.hosted_invoice_url,
-  }, { onConflict: "stripe_invoice_id" });
+  mustWrite(
+    "invoice.paid/upsert",
+    await admin.from("invoices").upsert({
+      user_id: userId,
+      stripe_invoice_id: invoice.id,
+      stripe_event_id: eventId,
+      billing_period_start: invoice.period_start ? new Date(invoice.period_start * 1000).toISOString() : null,
+      billing_period_end: invoice.period_end ? new Date(invoice.period_end * 1000).toISOString() : null,
+      plan_name: invoice.lines.data[0]?.description || "unknown",
+      base_amount_cents: invoice.subtotal,
+      total_amount_cents: invoice.total,
+      currency: invoice.currency,
+      status: "paid",
+      paid_at: new Date().toISOString(),
+      hosted_invoice_url: invoice.hosted_invoice_url,
+    }, { onConflict: "stripe_invoice_id" }),
+    false,
+  );
 
   console.log(`[invoice.paid] User ${userId} -> ${invoice.id}`);
 }
@@ -399,17 +460,21 @@ async function handleInvoiceFailed(
   const userId = await findUserId(admin, customerId);
   if (!userId) throw new Error(`No user for customer ${customerId}`);
 
-  await admin.from("invoices").upsert({
-    user_id: userId,
-    stripe_invoice_id: invoice.id,
-    stripe_event_id: eventId,
-    plan_name: invoice.lines.data[0]?.description || "unknown",
-    base_amount_cents: invoice.subtotal,
-    total_amount_cents: invoice.total,
-    currency: invoice.currency,
-    status: "failed",
-    hosted_invoice_url: invoice.hosted_invoice_url,
-  }, { onConflict: "stripe_invoice_id" });
+  mustWrite(
+    "invoice.failed/upsert",
+    await admin.from("invoices").upsert({
+      user_id: userId,
+      stripe_invoice_id: invoice.id,
+      stripe_event_id: eventId,
+      plan_name: invoice.lines.data[0]?.description || "unknown",
+      base_amount_cents: invoice.subtotal,
+      total_amount_cents: invoice.total,
+      currency: invoice.currency,
+      status: "failed",
+      hosted_invoice_url: invoice.hosted_invoice_url,
+    }, { onConflict: "stripe_invoice_id" }),
+    false,
+  );
 
   console.warn(`[invoice.failed] User ${userId} -> ${invoice.id} (grace period ativo)`);
 }

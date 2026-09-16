@@ -1,7 +1,6 @@
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import Stripe from "npm:stripe@17.5.0";
 
-// ─── CORS Allowlist ────────────────────────────────────────────────
 const ALLOWED_ORIGINS = [
   "https://www.cloakerx.com",
   "https://cloakerx.com",
@@ -24,10 +23,42 @@ function getCorsHeaders(origin: string | null) {
   };
 }
 
-const ADDON_PRICES: Record<string, string> = {
-  extra_domain:   "price_1TMwsxLZEOji6sEJZj5yvPct",
-  extra_campaign: "price_1TMwudLZEOji6sEJLY129lHV",
+type AddonType = "extra_clicks" | "extra_domain" | "extra_campaign";
+type PlanKey = "BASIC" | "PRO" | "FREEDOM" | "ENTERPRISE";
+
+/** Test catalog — Spec 2 packs (USD). Swap to live IDs before go-live. */
+const PACK_PRICES: Record<PlanKey, Partial<Record<AddonType, string>>> = {
+  BASIC: {
+    extra_clicks: "price_1UG1xZLZEOji6sEJf1szGS77",
+    extra_domain: "price_1UG1xZLZEOji6sEJXBR5Lwmk",
+    extra_campaign: "price_1UG1xbLZEOji6sEJozZXJhZ0",
+  },
+  PRO: {
+    extra_clicks: "price_1UG1xbLZEOji6sEJbCkXukRD",
+    extra_domain: "price_1UG1xdLZEOji6sEJne54x6gr",
+    extra_campaign: "price_1UG1xfLZEOji6sEJ0GIFjbLE",
+  },
+  FREEDOM: {
+    extra_clicks: "price_1UG1xfLZEOji6sEJrTF5ANZB",
+    extra_domain: "price_1UG1xiLZEOji6sEJIMl4BVvx",
+    extra_campaign: "price_1UG1xjLZEOji6sEJY6fldVxi",
+  },
+  ENTERPRISE: {
+    extra_clicks: "price_1UG1xkLZEOji6sEJVppD5P1n",
+    extra_domain: "price_1UG1xkLZEOji6sEJ8Su2cqqP",
+  },
 };
+
+const CLICK_PACK_MAX = 2;
+
+function planKeyFromName(planName: string | null | undefined): PlanKey | null {
+  const u = (planName || "").toUpperCase();
+  if (u.includes("ENTERPRISE")) return "ENTERPRISE";
+  if (u.includes("FREEDOM")) return "FREEDOM";
+  if (u.includes("PRO")) return "PRO";
+  if (u.includes("BASIC")) return "BASIC";
+  return null;
+}
 
 Deno.serve(async (req) => {
   const origin = req.headers.get("origin");
@@ -40,6 +71,14 @@ Deno.serve(async (req) => {
     });
 
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  if (Deno.env.get("STRIPE_CHECKOUT_DISABLED") !== "false") {
+    return json(410, {
+      error: "stripe_checkout_disabled",
+      code: "STRIPE_CHECKOUT_DISABLED",
+      message: "Stripe packs are disabled until STRIPE_CHECKOUT_DISABLED=false.",
+    });
+  }
 
   try {
     const authHeader = req.headers.get("Authorization");
@@ -71,43 +110,66 @@ Deno.serve(async (req) => {
 
     const { data: profile } = await admin
       .from("profiles")
-      .select("stripe_subscription_id, is_suspended")
+      .select("stripe_subscription_id, is_suspended, plan_name, activation_status, max_domains, max_campaigns, max_clicks")
       .eq("user_id", user.id)
       .single();
 
     if (!profile?.stripe_subscription_id) {
       return json(400, { error: "User has no active subscription" });
     }
-    if (profile.is_suspended) {
-      return json(403, { error: "Account suspended" });
+    if (profile.is_suspended || profile.activation_status !== "ACTIVE") {
+      return json(403, { error: "Account not eligible for packs" });
     }
 
     if (action === "add") {
-      const priceId = ADDON_PRICES[addon_type];
-      if (!priceId) return json(400, { error: "Invalid addon_type" });
+      const addonType = addon_type as AddonType;
+      if (!["extra_clicks", "extra_domain", "extra_campaign"].includes(addonType)) {
+        return json(400, { error: "Invalid addon_type" });
+      }
 
-      // Busca a subscription completa pra ver se já existe item com esse price
+      const planKey = planKeyFromName(profile.plan_name);
+      if (!planKey) return json(400, { error: "FREE plan cannot buy packs" });
+
+      const priceId = PACK_PRICES[planKey][addonType];
+      if (!priceId) {
+        return json(400, { error: `Pack not available for ${planKey}` });
+      }
+
+      // Soft cap check via current addons (hard enforcement also in billing_state)
+      const { data: addons } = await admin
+        .from("subscription_addons")
+        .select("addon_type, quantity")
+        .eq("user_id", user.id)
+        .eq("status", "active");
+
+      const qtyOf = (t: string) =>
+        (addons || [])
+          .filter((a) => a.addon_type === t)
+          .reduce((s, a) => s + (a.quantity || 0), 0);
+
+      if (addonType === "extra_clicks" && qtyOf("extra_clicks") >= CLICK_PACK_MAX) {
+        return json(400, { error: "Click pack cycle quota reached", code: "cycle_quota" });
+      }
+
       const subscription = await stripe.subscriptions.retrieve(
-        profile.stripe_subscription_id
+        profile.stripe_subscription_id,
       );
 
       const existingItem = subscription.items.data.find(
-        (si) => si.price.id === priceId
+        (si) => si.price.id === priceId,
       );
 
       let item;
 
       if (existingItem) {
-        // Já existe → incrementa quantity
         item = await stripe.subscriptionItems.update(existingItem.id, {
           quantity: (existingItem.quantity || 1) + 1,
           proration_behavior: "create_prorations",
         });
         console.log(
-          `[addon] Incremented ${addon_type} for user ${user.id}: qty ${existingItem.quantity} → ${item.quantity}`
+          `[addon] Incremented ${addonType} for user ${user.id}: qty ${existingItem.quantity} → ${item.quantity}`,
         );
       } else {
-        // Não existe → cria novo item
         item = await stripe.subscriptionItems.create({
           subscription: profile.stripe_subscription_id,
           price: priceId,
@@ -115,14 +177,25 @@ Deno.serve(async (req) => {
           proration_behavior: "create_prorations",
         });
         console.log(
-          `[addon] Created ${addon_type} for user ${user.id}: item ${item.id}`
+          `[addon] Created ${addonType} for user ${user.id}: item ${item.id}`,
         );
       }
+
+      // Optimistic local upsert (webhook also syncs)
+      await admin.from("subscription_addons").upsert({
+        user_id: user.id,
+        stripe_subscription_item_id: item.id,
+        stripe_price_id: priceId,
+        addon_type: addonType,
+        quantity: item.quantity || 1,
+        status: "active",
+      }, { onConflict: "stripe_subscription_item_id" });
 
       return json(200, {
         success: true,
         subscription_item_id: item.id,
         quantity: item.quantity,
+        addon_type: addonType,
       });
     }
 
@@ -142,6 +215,11 @@ Deno.serve(async (req) => {
       await stripe.subscriptionItems.del(subscription_item_id, {
         proration_behavior: "create_prorations",
       });
+
+      await admin.from("subscription_addons")
+        .update({ status: "cancelled" })
+        .eq("stripe_subscription_item_id", subscription_item_id)
+        .eq("user_id", user.id);
 
       return json(200, { success: true });
     }

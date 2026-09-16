@@ -1,6 +1,14 @@
 import { Youtube, Search, Smartphone, Facebook } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
+/** Marketing / UI + Stripe plan price IDs.
+ *  Runtime limits: get_billing_state() / useBillingState (not these numbers alone).
+ *  Spec 2 included quotas. Packs replace metered overage.
+ *
+ *  stripePriceId below = TEST mode (acct test). Swap to live IDs before go-live.
+ *  Catalog: supabase/functions/_shared/stripe-catalog.test.json
+ */
+
 export interface TrafficSourceDef {
   key: string;
   name: string;
@@ -29,11 +37,10 @@ export interface PlanData {
   maxClicksLimit: number;
   maxDomains: number;
   maxCampaigns: number; // -1 = unlimited
-  /** Preço em USD por clique excedente (overage). 0 = nao cobra. */
+  /** @deprecated Metered overage removed — use packs. Kept 0 for UI. */
   extraClickPrice: number;
-  /** Stripe Price ID da mensalidade fixa. null para o plano Free. */
   stripePriceId: string | null;
-  /** Stripe Price ID do item metered (overage). null para o plano Free. */
+  /** @deprecated Always null — no metered line item. */
   stripeMeteredPriceId: string | null;
 }
 
@@ -62,37 +69,37 @@ export const PLANS: PlanData[] = [
   },
   {
     name: "BASIC PLAN",
-    price: "$97",
-    priceNum: "97",
-    description: "The most competitive and popular plan with restrictions on clicks and registered domains.",
+    price: "$57.99",
+    priceNum: "57.99",
+    description: "Starter kit for US ads traffic. Grow with click/domain/campaign packs up to the hard cap.",
     features: [
-      { text: "20,000 clicks", available: true },
-      { text: "3 domains", available: true },
-      { text: "5 campaigns", available: true },
-      { text: "$0.01 per extra click", available: true },
+      { text: "8,000 clicks / month", available: true },
+      { text: "1 domain", available: true },
+      { text: "3 campaigns", available: true },
+      { text: "Packs up to 18k clicks / 3 domains / 5 campaigns", available: true },
       { text: "Vip support: Text us in the chat", available: true },
     ],
     visibleSources: 2,
     buttonText: "Select Plan",
     highlighted: false,
     isFree: false,
-    maxClicksLimit: 20000,
-    maxDomains: 3,
-    maxCampaigns: 5,
-    extraClickPrice: 0.01,
-    stripePriceId: "price_1TLVRnLZEOji6sEJnw9oiVW2",
-    stripeMeteredPriceId: "price_1TLaNwLZEOji6sEJrtBFpRnn",
+    maxClicksLimit: 8000,
+    maxDomains: 1,
+    maxCampaigns: 3,
+    extraClickPrice: 0,
+    stripePriceId: "price_1UG23HLZEOji6sEJoaUpX4t1",
+    stripeMeteredPriceId: null,
   },
   {
     name: "PRO PLAN",
-    price: "$297",
-    priceNum: "297",
-    description: "The PRO plan was designed to serve companies with a large number of services.",
+    price: "$96.99",
+    priceNum: "96.99",
+    description: "For teams scaling Meta/TikTok. Packs extend capacity without overage surprises.",
     features: [
-      { text: "100,000 clicks", available: true },
-      { text: "10 domains", available: true },
-      { text: "20 campaigns", available: true },
-      { text: "$0.004 per extra click", available: true },
+      { text: "20,000 clicks / month", available: true },
+      { text: "3 domains", available: true },
+      { text: "8 campaigns", available: true },
+      { text: "Packs up to 40k clicks / 6 domains / 12 campaigns", available: true },
       { text: "Vip support: Text us in the chat", available: true },
     ],
     visibleSources: 4,
@@ -100,23 +107,46 @@ export const PLANS: PlanData[] = [
     highlighted: true,
     badge: "BEST OPTION FOR YOU",
     isFree: false,
-    maxClicksLimit: 100000,
-    maxDomains: 10,
-    maxCampaigns: 20,
-    extraClickPrice: 0.004,
-    stripePriceId: "price_1TLVSrLZEOji6sEJ8sF00dTT",
-    stripeMeteredPriceId: "price_1TLaHlLZEOji6sEJgKRRDuOh",
+    maxClicksLimit: 20000,
+    maxDomains: 3,
+    maxCampaigns: 8,
+    extraClickPrice: 0,
+    stripePriceId: "price_1UG23OLZEOji6sEJw9z873KX",
+    stripeMeteredPriceId: null,
   },
   {
     name: "FREEDOM PLAN",
-    price: "$497",
-    priceNum: "497",
-    description: "Our best plan to serve companies with many accesses and with several domains.",
+    price: "$234.99",
+    priceNum: "234.99",
+    description: "High volume with room to grow via packs.",
     features: [
-      { text: "300,000 clicks", available: true },
+      { text: "100,000 clicks / month", available: true },
+      { text: "10 domains", available: true },
+      { text: "20 campaigns", available: true },
+      { text: "Packs up to 150k clicks / 15 domains / 30 campaigns", available: true },
+      { text: "Vip support: Text us in the chat", available: true },
+    ],
+    visibleSources: 4,
+    buttonText: "Select Plan",
+    highlighted: false,
+    isFree: false,
+    maxClicksLimit: 100000,
+    maxDomains: 10,
+    maxCampaigns: 20,
+    extraClickPrice: 0,
+    stripePriceId: "price_1UG23QLZEOji6sEJQQ1Evq5U",
+    stripeMeteredPriceId: null,
+  },
+  {
+    name: "ENTERPRISE CONQUEST",
+    price: "$389.99",
+    priceNum: "389.99",
+    description: "Enterprise volume with unlimited campaigns.",
+    features: [
+      { text: "300,000 clicks / month", available: true },
       { text: "20 domains", available: true },
-      { text: "50 campaigns", available: true },
-      { text: "$0.002 per extra click", available: true },
+      { text: "Unlimited campaigns", available: true },
+      { text: "Packs up to 400k clicks / 25 domains", available: true },
       { text: "Vip support: Text us in the chat", available: true },
     ],
     visibleSources: 4,
@@ -125,33 +155,10 @@ export const PLANS: PlanData[] = [
     isFree: false,
     maxClicksLimit: 300000,
     maxDomains: 20,
-    maxCampaigns: 50,
-    extraClickPrice: 0.002,
-    stripePriceId: "price_1TLVTYLZEOji6sEJ0mzIvzme",
-    stripeMeteredPriceId: "price_1TLaP0LZEOji6sEJdV7XPaJb",
-  },
-  {
-    name: "ENTERPRISE CONQUEST",
-    price: "$997",
-    priceNum: "997",
-    description: "Enterprise Plan Conquest.",
-    features: [
-      { text: "1,000,000 clicks", available: true },
-      { text: "25 domains", available: true },
-      { text: "Unlimited campaigns", available: true },
-      { text: "$0.001 per extra click", available: true },
-      { text: "Vip support: Text us in the chat", available: true },
-    ],
-    visibleSources: 4,
-    buttonText: "Select Plan",
-    highlighted: false,
-    isFree: false,
-    maxClicksLimit: 1000000,
-    maxDomains: 25,
     maxCampaigns: -1,
-    extraClickPrice: 0.001,
-    stripePriceId: "price_1TLVULLZEOji6sEJ4VyuhzMF",
-    stripeMeteredPriceId: "price_1TLaR3LZEOji6sEJmagidXcF",
+    extraClickPrice: 0,
+    stripePriceId: "price_1UG23PLZEOji6sEJ1kjc8qCg",
+    stripeMeteredPriceId: null,
   },
 ];
 
@@ -168,15 +175,11 @@ export function getSourceByKey(key: string): TrafficSourceDef | undefined {
   return TRAFFIC_SOURCES.find((s) => s.key === key);
 }
 
+/** @deprecated Overage removed — packs only. Always returns zeros. */
 export function calculateOverageCost(
-  currentClicks: number,
-  maxClicks: number,
-  plan: PlanData
+  _currentClicks: number,
+  _maxClicks: number,
+  _plan: PlanData,
 ): { extraClicks: number; cost: number } {
-  if (!maxClicks || maxClicks <= 0 || currentClicks <= maxClicks || plan.extraClickPrice <= 0) {
-    return { extraClicks: 0, cost: 0 };
-  }
-  const extraClicks = currentClicks - maxClicks;
-  const cost = extraClicks * plan.extraClickPrice;
-  return { extraClicks, cost };
+  return { extraClicks: 0, cost: 0 };
 }

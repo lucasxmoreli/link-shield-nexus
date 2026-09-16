@@ -1,0 +1,61 @@
+{
+  "account": "acct_1TLTvILZEOji6sEJ",
+  "livemode": false,
+  "currency": "usd",
+  "notes": "Spec 2 limits + pack kits. Plan prices USD (57.99/96.99/234.99/389.99). No metered overage. Packs = monthly licensed add-ons.",
+  "plans": {
+    "BASIC": {
+      "product": "prod_VGZ4fC2uFwH7bk",
+      "price": "price_1UG23HLZEOji6sEJoaUpX4t1",
+      "lookup_key": "plan_basic",
+      "unit_amount": 5799,
+      "included": { "clicks": 8000, "domains": 1, "campaigns": 3 },
+      "hard_cap": { "clicks": 18000, "domains": 3, "campaigns": 5 }
+    },
+    "PRO": {
+      "product": "prod_VGZ4bcOaSkhewQ",
+      "price": "price_1UG23OLZEOji6sEJw9z873KX",
+      "lookup_key": "plan_pro",
+      "unit_amount": 9699,
+      "included": { "clicks": 20000, "domains": 3, "campaigns": 8 },
+      "hard_cap": { "clicks": 40000, "domains": 6, "campaigns": 12 }
+    },
+    "FREEDOM": {
+      "product": "prod_VGZ4eWoJ4e2xwq",
+      "price": "price_1UG23QLZEOji6sEJQQ1Evq5U",
+      "lookup_key": "plan_freedom",
+      "unit_amount": 23499,
+      "included": { "clicks": 100000, "domains": 10, "campaigns": 20 },
+      "hard_cap": { "clicks": 150000, "domains": 15, "campaigns": 30 }
+    },
+    "ENTERPRISE": {
+      "product": "prod_VGZ4Nux6J829Yp",
+      "price": "price_1UG23PLZEOji6sEJ1kjc8qCg",
+      "lookup_key": "plan_enterprise",
+      "unit_amount": 38999,
+      "included": { "clicks": 300000, "domains": 20, "campaigns": -1 },
+      "hard_cap": { "clicks": 400000, "domains": 25, "campaigns": -1 }
+    }
+  },
+  "packs": {
+    "BASIC": {
+      "clicks": { "product": "prod_VGZ4WJkOztpS91", "price": "price_1UG1xZLZEOji6sEJf1szGS77", "lookup_key": "pack_basic_clicks", "unit_amount": 1500, "unit_size": 5000, "max_per_cycle": 2 },
+      "domains": { "product": "prod_VGZ5UqGPp2JgRf", "price": "price_1UG1xZLZEOji6sEJXBR5Lwmk", "lookup_key": "pack_basic_domains", "unit_amount": 700, "unit_size": 1, "max_per_cycle": 2 },
+      "campaigns": { "product": "prod_VGZ5OMt2hII3bu", "price": "price_1UG1xbLZEOji6sEJozZXJhZ0", "lookup_key": "pack_basic_campaigns", "unit_amount": 500, "unit_size": 1, "max_per_cycle": 2 }
+    },
+    "PRO": {
+      "clicks": { "product": "prod_VGZ5Srat2ZzFAV", "price": "price_1UG1xbLZEOji6sEJbCkXukRD", "lookup_key": "pack_pro_clicks", "unit_amount": 2000, "unit_size": 10000, "max_per_cycle": 2 },
+      "domains": { "product": "prod_VGZ5a0b8w5yRRk", "price": "price_1UG1xdLZEOji6sEJne54x6gr", "lookup_key": "pack_pro_domains", "unit_amount": 1000, "unit_size": 1, "max_per_cycle": 3 },
+      "campaigns": { "product": "prod_VGZ56JTRDZ1Jd0", "price": "price_1UG1xfLZEOji6sEJ0GIFjbLE", "lookup_key": "pack_pro_campaigns", "unit_amount": 700, "unit_size": 1, "max_per_cycle": 4 }
+    },
+    "FREEDOM": {
+      "clicks": { "product": "prod_VGZ5GM4EBzQDPa", "price": "price_1UG1xfLZEOji6sEJrTF5ANZB", "lookup_key": "pack_freedom_clicks", "unit_amount": 4000, "unit_size": 25000, "max_per_cycle": 2 },
+      "domains": { "product": "prod_VGZ5zUc6BHfEMF", "price": "price_1UG1xiLZEOji6sEJIMl4BVvx", "lookup_key": "pack_freedom_domains", "unit_amount": 1500, "unit_size": 1, "max_per_cycle": 5 },
+      "campaigns": { "product": "prod_VGZ5Q40CBVInUC", "price": "price_1UG1xjLZEOji6sEJY6fldVxi", "lookup_key": "pack_freedom_campaigns", "unit_amount": 1000, "unit_size": 1, "max_per_cycle": 10 }
+    },
+    "ENTERPRISE": {
+      "clicks": { "product": "prod_VGZ5MEL38hudyu", "price": "price_1UG1xkLZEOji6sEJVppD5P1n", "lookup_key": "pack_enterprise_clicks", "unit_amount": 5000, "unit_size": 50000, "max_per_cycle": 2 },
+      "domains": { "product": "prod_VGZ5Ku5uCyrX0J", "price": "price_1UG1xkLZEOji6sEJ8Su2cqqP", "lookup_key": "pack_enterprise_domains", "unit_amount": 2000, "unit_size": 1, "max_per_cycle": 5 }
+    }
+  }
+}
