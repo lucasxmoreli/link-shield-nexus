@@ -1,0 +1,26 @@
+{
+  "event": "subscription_created",
+  "event_key": "subscription_created:d2537402-1b60-4303-9a03-7dd22bba4fd2:2026-09-15T13:47:00.225701-03:00",
+  "order_id": "7f933b3c-1cc5-4683-9a5b-c423b2dedcfa",
+  "subscription_id": "d2537402-1b60-4303-9a03-7dd22bba4fd2",
+  "offer_id": "viyq5vd",
+  "product_type": "subscription",
+  "status": "paid",
+  "sub_status": "active",
+  "paid_payments": 1,
+  "base_amount": 5,
+  "amount": 5.99,
+  "discount": 0,
+  "coupon": null,
+  "currency": "BRL",
+  "occurred_at": "2026-09-15T13:47:00.225701-03:00",
+  "paid_at": "2026-09-15T13:46:47.878870-03:00",
+  "cycle_end": "2026-10-15T13:47:00.077288-03:00",
+  "canceled_at": null,
+  "cakto_customer_id": "215501",
+  "user_hint": {
+    "sck": "44817c30-c37b-491d-afde-1b5e43007f49",
+    "utm_content": "44817c30-c37b-491d-afde-1b5e43007f49",
+    "email": "fabio_brat@hotmail.com"
+  }
+}

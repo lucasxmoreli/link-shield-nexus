@@ -32,6 +32,3 @@ verify_jwt = false
 
 [functions.cron-billing-reset]
 verify_jwt = true
-
-[functions.cakto-webhook]
-verify_jwt = false

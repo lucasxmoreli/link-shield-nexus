@@ -60,6 +60,96 @@ function planKeyFromName(planName: string | null | undefined): PlanKey | null {
   return null;
 }
 
+/**
+ * Packs live on a SEPARATE Stripe subscription (metadata.kind=packs):
+ * - Own billing cycle (anchor = first pack purchase)
+ * - Charge immediately on add (always_invoice / error_if_incomplete)
+ * - No credit on remove (proration none)
+ * Plan subscription stays plan-only.
+ */
+async function ensurePacksSubscription(
+  stripe: Stripe,
+  admin: ReturnType<typeof createClient>,
+  opts: {
+    userId: string;
+    customerId: string;
+    planSubscriptionId: string;
+    packsSubId: string | null;
+    priceId: string;
+  },
+): Promise<{ subscriptionId: string; item: Stripe.SubscriptionItem; createdNew: boolean }> {
+  const { userId, customerId, planSubscriptionId, packsSubId, priceId } = opts;
+
+  if (packsSubId) {
+    try {
+      const existing = await stripe.subscriptions.retrieve(packsSubId, {
+        expand: ["items.data.price"],
+      });
+      if (existing.status === "active" || existing.status === "trialing" || existing.status === "past_due") {
+        const samePrice = existing.items.data.find((si) => si.price.id === priceId);
+        if (samePrice) {
+          const item = await stripe.subscriptionItems.update(samePrice.id, {
+            quantity: (samePrice.quantity || 1) + 1,
+            proration_behavior: "always_invoice",
+          });
+          return { subscriptionId: existing.id, item, createdNew: false };
+        }
+        const item = await stripe.subscriptionItems.create({
+          subscription: existing.id,
+          price: priceId,
+          quantity: 1,
+          proration_behavior: "always_invoice",
+        });
+        return { subscriptionId: existing.id, item, createdNew: false };
+      }
+    } catch (err) {
+      console.warn(`[addon] packs sub ${packsSubId} not usable, creating new:`, err);
+    }
+  }
+
+  // Reuse card from the plan subscription (customer may have no invoice default PM).
+  const planSub = await stripe.subscriptions.retrieve(planSubscriptionId);
+  const pmRaw = planSub.default_payment_method;
+  const defaultPaymentMethod =
+    typeof pmRaw === "string" ? pmRaw : pmRaw?.id ?? undefined;
+
+  if (!defaultPaymentMethod) {
+    const err = new Error(
+      "No payment method on plan subscription. Update your card in billing portal, then retry.",
+    );
+    (err as Error & { code?: string }).code = "missing_payment_method";
+    throw err;
+  }
+
+  // Also set as customer default so renewals of packs sub succeed.
+  await stripe.customers.update(customerId, {
+    invoice_settings: { default_payment_method: defaultPaymentMethod },
+  });
+
+  const created = await stripe.subscriptions.create({
+    customer: customerId,
+    items: [{ price: priceId, quantity: 1 }],
+    collection_method: "charge_automatically",
+    payment_behavior: "error_if_incomplete",
+    default_payment_method: defaultPaymentMethod,
+    proration_behavior: "none",
+    metadata: {
+      supabase_user_id: userId,
+      kind: "packs",
+    },
+    expand: ["latest_invoice", "items.data.price"],
+  });
+
+  await admin
+    .from("profiles")
+    .update({ stripe_packs_subscription_id: created.id })
+    .eq("user_id", userId);
+
+  const item = created.items.data[0];
+  if (!item) throw new Error("Packs subscription created without items");
+  return { subscriptionId: created.id, item, createdNew: true };
+}
+
 Deno.serve(async (req) => {
   const origin = req.headers.get("origin");
   const corsHeaders = getCorsHeaders(origin);
@@ -110,12 +200,14 @@ Deno.serve(async (req) => {
 
     const { data: profile } = await admin
       .from("profiles")
-      .select("stripe_subscription_id, is_suspended, plan_name, activation_status, max_domains, max_campaigns, max_clicks")
+      .select(
+        "stripe_customer_id, stripe_subscription_id, stripe_packs_subscription_id, is_suspended, plan_name, activation_status",
+      )
       .eq("user_id", user.id)
       .single();
 
-    if (!profile?.stripe_subscription_id) {
-      return json(400, { error: "User has no active subscription" });
+    if (!profile?.stripe_subscription_id || !profile.stripe_customer_id) {
+      return json(400, { error: "User has no active plan subscription" });
     }
     if (profile.is_suspended || profile.activation_status !== "ACTIVE") {
       return json(403, { error: "Account not eligible for packs" });
@@ -135,7 +227,6 @@ Deno.serve(async (req) => {
         return json(400, { error: `Pack not available for ${planKey}` });
       }
 
-      // Soft cap check via current addons (hard enforcement also in billing_state)
       const { data: addons } = await admin
         .from("subscription_addons")
         .select("addon_type, quantity")
@@ -151,37 +242,14 @@ Deno.serve(async (req) => {
         return json(400, { error: "Click pack cycle quota reached", code: "cycle_quota" });
       }
 
-      const subscription = await stripe.subscriptions.retrieve(
-        profile.stripe_subscription_id,
-      );
+      const { subscriptionId, item, createdNew } = await ensurePacksSubscription(stripe, admin, {
+        userId: user.id,
+        customerId: profile.stripe_customer_id,
+        planSubscriptionId: profile.stripe_subscription_id,
+        packsSubId: profile.stripe_packs_subscription_id,
+        priceId,
+      });
 
-      const existingItem = subscription.items.data.find(
-        (si) => si.price.id === priceId,
-      );
-
-      let item;
-
-      if (existingItem) {
-        item = await stripe.subscriptionItems.update(existingItem.id, {
-          quantity: (existingItem.quantity || 1) + 1,
-          proration_behavior: "create_prorations",
-        });
-        console.log(
-          `[addon] Incremented ${addonType} for user ${user.id}: qty ${existingItem.quantity} → ${item.quantity}`,
-        );
-      } else {
-        item = await stripe.subscriptionItems.create({
-          subscription: profile.stripe_subscription_id,
-          price: priceId,
-          quantity: 1,
-          proration_behavior: "create_prorations",
-        });
-        console.log(
-          `[addon] Created ${addonType} for user ${user.id}: item ${item.id}`,
-        );
-      }
-
-      // Optimistic local upsert (webhook also syncs)
       await admin.from("subscription_addons").upsert({
         user_id: user.id,
         stripe_subscription_item_id: item.id,
@@ -191,11 +259,18 @@ Deno.serve(async (req) => {
         status: "active",
       }, { onConflict: "stripe_subscription_item_id" });
 
+      console.log(
+        `[addon] ${createdNew ? "Created packs sub" : "Updated packs sub"} ${subscriptionId} ` +
+          `${addonType} qty=${item.quantity} user=${user.id}`,
+      );
+
       return json(200, {
         success: true,
         subscription_item_id: item.id,
+        packs_subscription_id: subscriptionId,
         quantity: item.quantity,
         addon_type: addonType,
+        charged: "immediate",
       });
     }
 
@@ -212,8 +287,9 @@ Deno.serve(async (req) => {
 
       if (!addon) return json(403, { error: "Addon not found or access denied" });
 
+      // No credit on remove — capacity drops, money already collected stays.
       await stripe.subscriptionItems.del(subscription_item_id, {
-        proration_behavior: "create_prorations",
+        proration_behavior: "none",
       });
 
       await admin.from("subscription_addons")
@@ -221,13 +297,33 @@ Deno.serve(async (req) => {
         .eq("stripe_subscription_item_id", subscription_item_id)
         .eq("user_id", user.id);
 
+      // If packs sub has no items left, cancel it and clear profile pointer.
+      if (profile.stripe_packs_subscription_id) {
+        try {
+          const packsSub = await stripe.subscriptions.retrieve(profile.stripe_packs_subscription_id);
+          if (packsSub.items.data.length === 0) {
+            await stripe.subscriptions.cancel(packsSub.id, { prorate: false });
+            await admin
+              .from("profiles")
+              .update({ stripe_packs_subscription_id: null })
+              .eq("user_id", user.id);
+          }
+        } catch (err) {
+          console.warn("[addon] cleanup empty packs sub:", err);
+        }
+      }
+
       return json(200, { success: true });
     }
 
     return json(400, { error: "Unknown action" });
   } catch (err) {
     console.error("[manage-subscription-addon] Error:", err);
+    const code = (err as { code?: string })?.code;
     const message = err instanceof Error ? err.message : "Internal error";
+    if (code === "missing_payment_method") {
+      return json(400, { error: message, code });
+    }
     return json(500, { error: message });
   }
 });

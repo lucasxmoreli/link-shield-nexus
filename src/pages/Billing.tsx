@@ -34,7 +34,7 @@ function PlanCard({ plan, userPlan, userPlanIndex, onSelect, t, checkoutDisabled
   const idx = PLANS.findIndex((p) => p.name === plan.name);
   const getButtonState = () => {
     if (plan.name === userPlan.name) return { text: t("billing.currentPlan"), disabled: true, style: "bg-muted text-muted-foreground cursor-not-allowed hover:bg-muted" };
-    // I-2 / Fatia 2: Stripe OFF até Cakto — mesmo padrão "Em breve" dos packs
+    // Checkout Stripe desligado (flag) → "Em breve"
     if (checkoutDisabled) {
       return { text: t("billing.checkoutComingSoon"), disabled: true, style: "bg-muted text-muted-foreground cursor-not-allowed hover:bg-muted" };
     }

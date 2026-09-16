@@ -1,0 +1,115 @@
+{
+  "data": [
+    {
+      "id": "7f933b3c-1cc5-4683-9a5b-c423b2dedcfa",
+      "fbc": null,
+      "fbp": "fb.2.1788401942943.217716570955424921",
+      "pix": {
+        "qrCode": "***",
+        "user_journey": null,
+        "expirationDate": "2026-09-16 16:46:00.387619+00:00"
+      },
+      "sck": "44817c30-c37b-491d-afde-1b5e43007f49",
+      "fees": 2.49,
+      "offer": {
+        "id": "viyq5vd",
+        "name": "BASIC PLAN",
+        "image": null,
+        "price": 5,
+        "currency": "BRL"
+      },
+      "refId": "7FTpBFk",
+      "amount": 5.99,
+      "paidAt": "2026-09-15T13:46:47.878870-03:00",
+      "reason": null,
+      "status": "paid",
+      "address": null,
+      "product": {
+        "id": "32222eb9-09f4-4944-a9d9-0aa6d01703ca",
+        "name": "CloakerX",
+        "type": "subscription",
+        "short_id": "CqvTbRg",
+        "supportEmail": "acessos@cloakerx.com",
+        "invoiceDescription": "CloakerX"
+      },
+      "checkout": 1101387,
+      "customer": {
+        "id": 215501,
+        "name": "Fabio Brat",
+        "email": "fabio_brat@hotmail.com",
+        "phone": "***",
+        "docType": "cpf",
+        "birthDate": "***",
+        "docNumber": "***"
+      },
+      "discount": "0.00",
+      "due_date": null,
+      "interest": null,
+      "shipping": null,
+      "utm_term": null,
+      "affiliate": "",
+      "createdAt": "2026-09-15T13:45:57.078259-03:00",
+      "baseAmount": 5,
+      "canceledAt": null,
+      "couponCode": null,
+      "offer_type": "main",
+      "refundedAt": null,
+      "utm_medium": "app",
+      "utm_source": "cloakerx",
+      "checkoutUrl": "https://pay.cakto.com.br/viyq5vd_1101387?sck=44817c30-c37b-491d-afde-1b5e43007f49&utm_content=44817c30-c37b-491d-afde-1b5e43007f49&utm_source=cloakerx&utm_medium=app",
+      "commissions": [
+        {
+          "type": "producer",
+          "user": "musgroi@uol.com.br",
+          "percentage": 100,
+          "totalAmount": 2.51
+        }
+      ],
+      "utm_content": "44817c30-c37b-491d-afde-1b5e43007f49",
+      "charged_fees": "0.99",
+      "installments": 1,
+      "parent_order": "",
+      "subscription": {
+        "id": "d2537402-1b60-4303-9a03-7dd22bba4fd2",
+        "offer": "viyq5vd",
+        "amount": "5.00",
+        "orders": [
+          "7f933b3c-1cc5-4683-9a5b-c423b2dedcfa"
+        ],
+        "status": "inactive",
+        "product": "32222eb9-09f4-4944-a9d9-0aa6d01703ca",
+        "customer": {
+          "name": "Fabio Brat",
+          "email": "fabio_brat@hotmail.com",
+          "phone": "***",
+          "docType": "cpf",
+          "birthDate": "***",
+          "docNumber": "***"
+        },
+        "createdAt": "2026-09-15T13:46:00.577862-03:00",
+        "retention": "00:00:47.301008",
+        "updatedAt": "2026-09-15T13:46:00.582322-03:00",
+        "canceledAt": null,
+        "trial_days": 0,
+        "max_retries": 3,
+        "parent_order": "7f933b3c-1cc5-4683-9a5b-c423b2dedcfa",
+        "paymentMethod": "pix",
+        "current_period": 1,
+        "retry_interval": 1,
+        "next_payment_date": null,
+        "recurrence_period": 30,
+        "quantity_recurrences": -1,
+        "paid_payments_quantity": 1
+      },
+      "utm_campaign": null,
+      "chargedbackAt": null,
+      "paymentMethod": "pix",
+      "refund_reason": null,
+      "paymentMethodName": "PIX",
+      "subscription_period": 1,
+      "additionalInstallmentInterest": 0
+    }
+  ],
+  "event": "purchase_approved",
+  "secret": "***"
+}

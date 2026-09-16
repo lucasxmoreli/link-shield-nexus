@@ -45,6 +45,26 @@ const ADDON_PRICE_TO_TYPE: Record<string, "extra_clicks" | "extra_domain" | "ext
 
 const FREE_PLAN = { plan_name: "FREE", max_clicks: 0, max_domains: 0, max_campaigns: 0 };
 
+function isPacksSubscription(subscription: Stripe.Subscription): boolean {
+  return subscription.metadata?.kind === "packs";
+}
+
+function periodUnix(subscription: Stripe.Subscription): { start: number | null; end: number | null } {
+  const item = subscription.items.data[0] as Stripe.SubscriptionItem & {
+    current_period_start?: number;
+    current_period_end?: number;
+  };
+  const start =
+    (subscription as Stripe.Subscription & { current_period_start?: number }).current_period_start ??
+    item?.current_period_start ??
+    null;
+  const end =
+    (subscription as Stripe.Subscription & { current_period_end?: number }).current_period_end ??
+    item?.current_period_end ??
+    null;
+  return { start, end };
+}
+
 type PgResult = { error: { message: string; code?: string } | null; data?: unknown };
 
 /** Throws if PostgREST returned an error OR a write that should hit exactly
@@ -121,7 +141,7 @@ Deno.serve(async (req) => {
         await syncSubscriptionAddons(admin, event.data.object as Stripe.Subscription);
         break;
       case "customer.subscription.deleted":
-        await handleSubscriptionDeleted(admin, event.data.object as Stripe.Subscription);
+        await handleSubscriptionDeleted(stripe, admin, event.data.object as Stripe.Subscription);
         break;
       case "invoice.paid":
         await handleInvoicePaid(admin, event.id, event.data.object as Stripe.Invoice);
@@ -199,6 +219,7 @@ async function handleCheckoutCompleted(
   if (!planConfig) throw new Error(`Unknown price_id: ${priceId}`);
 
   const meteredItem = findMeteredItem(subscription);
+  const { start: periodStart, end: periodEnd } = periodUnix(subscription);
 
   mustWrite(
     "checkout.completed/profiles",
@@ -216,8 +237,12 @@ async function handleCheckoutCompleted(
         current_clicks: 0,
         subscription_status: subscription.status,
         is_suspended: false,
-        billing_cycle_start: new Date(subscription.current_period_start * 1000).toISOString(),
-        billing_cycle_end: new Date(subscription.current_period_end * 1000).toISOString(),
+        billing_cycle_start: periodStart
+          ? new Date(periodStart * 1000).toISOString()
+          : null,
+        billing_cycle_end: periodEnd
+          ? new Date(periodEnd * 1000).toISOString()
+          : null,
       })
       .eq("user_id", userId)
       .select("user_id"),
@@ -234,6 +259,20 @@ async function handleSubscriptionUpdated(
   const customerId = subscription.customer as string;
   const userId = await findUserId(admin, customerId, subscription.metadata?.supabase_user_id);
   if (!userId) throw new Error(`No user for customer ${customerId}`);
+
+  // Packs subscription: only store id + sync addons (caller). Never overwrite plan fields.
+  if (isPacksSubscription(subscription)) {
+    mustWrite(
+      "subscription.updated/packs-id",
+      await admin
+        .from("profiles")
+        .update({ stripe_packs_subscription_id: subscription.id })
+        .eq("user_id", userId)
+        .select("user_id"),
+    );
+    console.log(`[subscription.updated] packs sub ${subscription.id} for user ${userId}`);
+    return;
+  }
 
   const planItem = findPlanItem(subscription);
   const priceId = planItem?.price.id;
@@ -262,9 +301,6 @@ async function handleSubscriptionUpdated(
   // Grace period: past_due não suspende
   const isSuspended = ["unpaid", "canceled", "incomplete_expired"].includes(subscription.status);
 
-  // ── DETECÇÃO DE VIRADA DE CICLO ──
-  // Busca o billing_cycle_start atual do profile ANTES do update
-  // pra comparar com o novo que veio do Stripe
   const { data: currentProfile, error: fetchError } = await admin
     .from("profiles")
     .select("billing_cycle_start")
@@ -273,22 +309,19 @@ async function handleSubscriptionUpdated(
 
   if (fetchError) {
     console.error(`[subscription.updated] Falha ao buscar profile atual:`, fetchError);
-    // Não bloqueia — segue o fluxo normal sem reset
   }
 
-  const newCycleStartISO = new Date(subscription.current_period_start * 1000).toISOString();
+  const { start: periodStart, end: periodEnd } = periodUnix(subscription);
+  const newCycleStartISO = periodStart
+    ? new Date(periodStart * 1000).toISOString()
+    : new Date().toISOString();
   const oldCycleStartISO = currentProfile?.billing_cycle_start
     ? new Date(currentProfile.billing_cycle_start).toISOString()
     : null;
 
-  // Reset APENAS se:
-  // 1. Havia um billing_cycle_start antigo (conta não é novíssima)
-  // 2. E o novo é diferente do antigo (ciclo realmente virou)
   const isCycleRenewal = oldCycleStartISO !== null && oldCycleStartISO !== newCycleStartISO;
 
-  // ── Monta payload do UPDATE ──
-  // Tudo num único objeto → um único statement SQL → zero race condition
- const updatePayload: Record<string, unknown> = {
+  const updatePayload: Record<string, unknown> = {
     stripe_subscription_id: subscription.id,
     stripe_price_id: priceId,
     stripe_overage_item_id: meteredItem?.id ?? null,
@@ -299,7 +332,7 @@ async function handleSubscriptionUpdated(
     subscription_status: subscription.status,
     is_suspended: isSuspended,
     billing_cycle_start: newCycleStartISO,
-    billing_cycle_end: new Date(subscription.current_period_end * 1000).toISOString(),
+    billing_cycle_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
   };
 
   if (isCycleRenewal) {
@@ -333,12 +366,38 @@ async function syncSubscriptionAddons(
   const userId = await findUserId(admin, customerId, subscription.metadata?.supabase_user_id);
   if (!userId) return;
 
+  const addonItems = subscription.items.data.filter((item) => !!ADDON_PRICE_TO_TYPE[item.price.id]);
+
+  // Plan-only subscription must NEVER wipe packs (they live on kind=packs sub).
+  if (!isPacksSubscription(subscription) && addonItems.length === 0) {
+    return;
+  }
+
+  // Legacy: plan sub still carrying addon items — upsert only, no cancel-all.
+  if (!isPacksSubscription(subscription)) {
+    for (const item of addonItems) {
+      const addonType = ADDON_PRICE_TO_TYPE[item.price.id]!;
+      mustWrite(
+        "sync-addons/upsert-legacy",
+        await admin.from("subscription_addons").upsert({
+          user_id: userId,
+          stripe_subscription_item_id: item.id,
+          stripe_price_id: item.price.id,
+          addon_type: addonType,
+          quantity: item.quantity || 1,
+          status: "active",
+        }, { onConflict: "stripe_subscription_item_id" }),
+        false,
+      );
+    }
+    console.log(`[sync-addons] legacy plan-sub addons upserted: ${addonItems.length}`);
+    return;
+  }
+
   const activeItemIds: string[] = [];
 
-  for (const item of subscription.items.data) {
-    const addonType = ADDON_PRICE_TO_TYPE[item.price.id];
-    if (!addonType) continue;
-
+  for (const item of addonItems) {
+    const addonType = ADDON_PRICE_TO_TYPE[item.price.id]!;
     activeItemIds.push(item.id);
 
     mustWrite(
@@ -377,10 +436,11 @@ async function syncSubscriptionAddons(
     );
   }
 
-  console.log(`[sync-addons] User ${userId} -> ${activeItemIds.length} active`);
+  console.log(`[sync-addons] User ${userId} packs -> ${activeItemIds.length} active`);
 }
 
 async function handleSubscriptionDeleted(
+  stripe: Stripe,
   admin: ReturnType<typeof createClient>,
   subscription: Stripe.Subscription
 ) {
@@ -388,12 +448,112 @@ async function handleSubscriptionDeleted(
   const userId = await findUserId(admin, customerId, subscription.metadata?.supabase_user_id);
   if (!userId) throw new Error(`No user for customer ${customerId}`);
 
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("stripe_subscription_id, stripe_packs_subscription_id")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  // Packs subscription canceled → drop pack capacity only; keep plan.
+  if (
+    isPacksSubscription(subscription) ||
+    profile?.stripe_packs_subscription_id === subscription.id
+  ) {
+    mustWrite(
+      "subscription.deleted/clear-packs",
+      await admin
+        .from("profiles")
+        .update({ stripe_packs_subscription_id: null })
+        .eq("user_id", userId)
+        .select("user_id"),
+    );
+    mustWrite(
+      "subscription.deleted/cancel-pack-addons",
+      await admin.from("subscription_addons")
+        .update({ status: "cancelled" })
+        .eq("user_id", userId)
+        .eq("status", "active"),
+      false,
+    );
+    console.log(`[subscription.deleted] packs sub ${subscription.id} cleared for user ${userId}`);
+    return;
+  }
+
+  // Ignore deletes that are neither plan nor packs pointer (e.g. already-reattached duplicate).
+  if (
+    profile?.stripe_subscription_id &&
+    profile.stripe_subscription_id !== subscription.id
+  ) {
+    console.log(
+      `[subscription.deleted] Ignoring delete of ${subscription.id} — profile keeps ${profile.stripe_subscription_id}`,
+    );
+    return;
+  }
+
+  // Plan gone → cancel packs subscription too (no orphan packs).
+  if (profile?.stripe_packs_subscription_id) {
+    try {
+      await stripe.subscriptions.cancel(profile.stripe_packs_subscription_id, {
+        prorate: false,
+      });
+    } catch (err) {
+      console.warn(`[subscription.deleted] failed to cancel packs sub:`, err);
+    }
+  }
+
+  // Prefer another active PLAN subscription (not packs).
+  const remaining = await stripe.subscriptions.list({
+    customer: customerId,
+    status: "active",
+    limit: 10,
+  });
+  const keep = remaining.data.find(
+    (s) => !isPacksSubscription(s) && !!findPlanItem(s),
+  );
+  if (keep) {
+    const planItem = findPlanItem(keep)!;
+    const priceId = planItem.price.id;
+    const planConfig = PRICE_TO_PLAN[priceId];
+    if (planConfig) {
+      const { start: periodStart, end: periodEnd } = periodUnix(keep);
+      mustWrite(
+        "subscription.deleted/reattach",
+        await admin
+          .from("profiles")
+          .update({
+            stripe_subscription_id: keep.id,
+            stripe_price_id: priceId,
+            stripe_overage_item_id: null,
+            plan_name: planConfig.plan_name,
+            max_clicks: planConfig.max_clicks,
+            max_domains: planConfig.max_domains,
+            max_campaigns: planConfig.max_campaigns,
+            subscription_status: keep.status,
+            is_suspended: false,
+            billing_cycle_start: periodStart
+              ? new Date(periodStart * 1000).toISOString()
+              : null,
+            billing_cycle_end: periodEnd
+              ? new Date(periodEnd * 1000).toISOString()
+              : null,
+          })
+          .eq("user_id", userId)
+          .select("user_id"),
+      );
+      console.log(
+        `[subscription.deleted] User ${userId} reattached to remaining plan sub ${keep.id}`,
+      );
+      return;
+    }
+  }
+
   mustWrite(
     "subscription.deleted/profiles",
     await admin
       .from("profiles")
       .update({
         stripe_subscription_id: null,
+        stripe_packs_subscription_id: null,
         stripe_price_id: null,
         stripe_overage_item_id: null,
         plan_name: FREE_PLAN.plan_name,
