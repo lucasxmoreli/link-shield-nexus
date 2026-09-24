@@ -29,6 +29,20 @@ import { DnsFlowDiagram } from "@/components/domains/DnsFlowDiagram";
 
 const CNAME_TARGET = "cname.cloakerx.com";
 
+// Suffixes where the registrable domain has 3 labels (e.g. loja.com.br).
+const MULTI_LABEL_SUFFIXES = new Set([
+  "com.br", "net.br", "org.br", "art.br", "blog.br", "app.br", "dev.br", "tec.br",
+  "co.uk", "org.uk", "com.au", "com.mx", "com.ar", "co.za", "com.co", "com.pt",
+]);
+
+// DNS panels expect the host relative to the zone: "track" for track.site.com, "@" for the apex.
+const getDnsHost = (hostname: string): string => {
+  const labels = hostname.toLowerCase().replace(/\.$/, "").split(".");
+  const suffixLabels = MULTI_LABEL_SUFFIXES.has(labels.slice(-2).join(".")) ? 2 : 1;
+  const zoneLabels = suffixLabels + 1;
+  return labels.length > zoneLabels ? labels.slice(0, -zoneLabels).join(".") : "@";
+};
+
 // Card only needs a subset of DomainRow. Using Pick ensures type safety
 // propagates automatically when the schema changes — no duplicate field lists.
 type CardDomain = Pick<
@@ -255,10 +269,19 @@ export function DomainSetupCard({ domain, onVerify, onDelete }: DomainSetupCardP
               <span className="text-muted-foreground font-mono">Host</span>
               <div className="flex items-center gap-2 min-w-0">
                 <code className="px-2 py-0.5 rounded bg-black/40 font-mono text-foreground border border-white/[0.06] shrink-0">
-                  @
+                  {getDnsHost(domain.url)}
                 </code>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 shrink-0 text-muted-foreground hover:text-foreground hover:bg-white/5"
+                  onClick={() => copyToClipboard(getDnsHost(domain.url), "Host")}
+                  aria-label="Copiar host do CNAME de roteamento"
+                >
+                  <Copy className="h-3 w-3" aria-hidden="true" />
+                </Button>
                 <span className="text-[10px] text-muted-foreground truncate">
-                  (ou subdomínio: www, app, etc)
+                  (nome do registro no seu provedor de DNS)
                 </span>
               </div>
 
