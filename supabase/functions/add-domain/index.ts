@@ -144,37 +144,66 @@ Deno.serve(async (req) => {
       return json(409, { error: "Domain already exists for this user" });
     }
 
-    // ── Workspace gate (1A) + plan limit ──
-    // service_role bypasses RLS, so ACTIVE must be enforced here too.
-    const { data: profile } = await adminClient
-      .from("profiles")
-      .select("max_domains, activation_status, is_suspended, is_deleted")
-      .eq("user_id", user.id)
-      .single();
+    // ── Workspace gate (1A) + effective domain limit (fatia 1) ──
+    // service_role bypasses RLS — ACTIVE + effective must be enforced here.
+    // Single source: billing_state_for (same as get_billing_state / front).
+    const { data: billingState, error: billingErr } = await adminClient.rpc(
+      "billing_state_for",
+      { p_user_id: user.id },
+    );
 
-    if (!profile) {
-      return json(403, { error: "Profile not found" });
+    if (billingErr) {
+      const msg = billingErr.message || "";
+      if (msg.includes("profile_not_found")) {
+        return json(403, { error: "Profile not found", code: "profile_not_found" });
+      }
+      console.error("[add-domain] billing_state_for failed:", billingErr);
+      return json(500, { error: "Billing state unavailable" });
     }
-    if (profile.is_deleted === true) {
+
+    const plan = billingState?.plan;
+    const domainsRes = billingState?.resources?.domains;
+
+    if (!plan) {
+      return json(403, { error: "Profile not found", code: "profile_not_found" });
+    }
+    if (plan.activation_status !== "ACTIVE") {
+      return json(403, {
+        error: "Workspace not active. Choose a plan to add domains.",
+        code: "paid_plan_required",
+      });
+    }
+
+    const effective = Number(domainsRes?.effective ?? 0);
+    const used = Number(domainsRes?.used ?? 0);
+
+    if (effective === 0) {
+      return json(403, {
+        error: "Plan does not allow custom domains",
+        code: "paid_plan_required",
+      });
+    }
+
+    if (effective > 0 && used >= effective) {
+      return json(403, {
+        error: "Domain limit reached for this plan",
+        code: "domain_limit_reached",
+      });
+    }
+
+    // Soft checks for suspended/deleted (generated activation may still be ACTIVE
+    // in edge cases — belt and suspenders via profile row).
+    const { data: profileFlags } = await adminClient
+      .from("profiles")
+      .select("is_suspended, is_deleted")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (profileFlags?.is_deleted === true) {
       return json(403, { error: "Account deleted" });
     }
-    if (profile.is_suspended === true) {
+    if (profileFlags?.is_suspended === true) {
       return json(403, { error: "Account suspended" });
-    }
-    if (profile.activation_status !== "ACTIVE") {
-      return json(403, { error: "Workspace not active. Choose a plan to add domains." });
-    }
-    if ((profile.max_domains ?? 0) <= 0) {
-      return json(403, { error: "Plan does not allow custom domains" });
-    }
-
-    const { count: currentCount } = await adminClient
-      .from("domains")
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", user.id);
-
-    if ((currentCount ?? 0) >= (profile.max_domains ?? 0)) {
-      return json(403, { error: "Domain limit reached for this plan" });
     }
 
     // ── Cloudflare API: create Custom Hostname ──
