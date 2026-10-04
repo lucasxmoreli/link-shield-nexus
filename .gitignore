@@ -26,3 +26,6 @@ dist-ssr
 
 # Supabase CLI local cache (link state, version checks)
 supabase/.temp/
+# Local bundles / deploy payloads
+*.zip
+_deploy_*.json
