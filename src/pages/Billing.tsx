@@ -19,6 +19,7 @@ import { InvoicesTable } from "@/components/billing/InvoicesTable";
 import { BillingPacksTab } from "@/components/billing/BillingPacksTab";
 import { useBillingState } from "@/hooks/useBillingState";
 import { normalizePackNeed } from "@/lib/resolvePackView";
+import { waitForCheckoutActivation } from "@/lib/waitForCheckoutActivation";
 
 /** Stripe checkout ON (test catalog USD). Edge still requires STRIPE_CHECKOUT_DISABLED=false. */
 const STRIPE_CHECKOUT_ENABLED = true;
@@ -130,30 +131,55 @@ export default function Billing() {
   });
 
   // ── Handler: retorno do Stripe Checkout ──
+  // Never toast "activated" from ?checkout=success alone — wait for ACTIVE gate.
   useEffect(() => {
     const checkout = searchParams.get("checkout");
+    if (!checkout) return;
 
-    if (checkout === "success") {
-      toast({
-        title: t("billing.checkoutSuccess"),
-        description: t("billing.checkoutSuccessDesc"),
-      });
-      queryClient.invalidateQueries({ queryKey: ["profile"] });
-      queryClient.invalidateQueries({ queryKey: ["billing_state"] });
-      void refreshActivationStatus();
-      const params = new URLSearchParams(searchParams);
-      params.delete("checkout");
-      params.delete("session_id");
-      setSearchParams(params, { replace: true });
-    } else if (checkout === "cancelled") {
+    const params = new URLSearchParams(searchParams);
+    params.delete("checkout");
+    params.delete("session_id");
+    setSearchParams(params, { replace: true });
+
+    if (checkout === "cancelled") {
       toast({
         title: t("billing.checkoutCancelled"),
         description: t("billing.checkoutCancelledDesc"),
       });
-      const params = new URLSearchParams(searchParams);
-      params.delete("checkout");
-      setSearchParams(params, { replace: true });
+      return;
     }
+
+    if (checkout !== "success") return;
+
+    const ac = new AbortController();
+    toast({
+      title: t("billing.checkoutProcessing"),
+      description: t("billing.checkoutProcessingDesc"),
+    });
+
+    void (async () => {
+      const result = await waitForCheckoutActivation({ signal: ac.signal });
+      if (ac.signal.aborted) return;
+
+      await refreshActivationStatus();
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      queryClient.invalidateQueries({ queryKey: ["billing_state"] });
+
+      if (result === "ACTIVE") {
+        toast({
+          title: t("billing.checkoutSuccess"),
+          description: t("billing.checkoutSuccessDesc"),
+        });
+      } else {
+        toast({
+          title: t("billing.checkoutPending"),
+          description: t("billing.checkoutPendingDesc"),
+          variant: "destructive",
+        });
+      }
+    })();
+
+    return () => ac.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

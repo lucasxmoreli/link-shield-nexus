@@ -507,6 +507,10 @@ const es = {
     checkoutFailedDesc: "No se pudo conectar con la pasarela de pago. Intenta nuevamente en unos instantes.",
     checkoutSuccess: "Pago confirmado",
     checkoutSuccessDesc: "Tu plan fue activado con éxito. Puedes comenzar a usarlo ahora.",
+    checkoutProcessing: "Confirmando pago…",
+    checkoutProcessingDesc: "Esperando que Stripe active tu plan. Suele tardar unos segundos.",
+    checkoutPending: "Pago recibido — activación pendiente",
+    checkoutPendingDesc: "El checkout volvió, pero el plan aún no está ACTIVE. Actualiza en un minuto o contacta soporte si sigue en FREE.",
     checkoutCancelled: "Checkout cancelado",
     checkoutCancelledDesc: "No se realizó ningún cargo. Puedes intentarlo de nuevo cuando quieras.",
     // ── Sprint 6: Client Portal MVP ──

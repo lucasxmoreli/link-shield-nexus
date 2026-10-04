@@ -507,6 +507,10 @@ const pt = {
     checkoutFailedDesc: "Não foi possível conectar ao gateway de pagamento. Tente novamente em instantes.",
     checkoutSuccess: "Pagamento confirmado",
     checkoutSuccessDesc: "Seu plano foi ativado com sucesso. Pode começar a usar agora.",
+    checkoutProcessing: "Confirmando pagamento…",
+    checkoutProcessingDesc: "Aguardando o Stripe ativar seu plano. Costuma levar alguns segundos.",
+    checkoutPending: "Pagamento ok — ativação pendente",
+    checkoutPendingDesc: "O checkout voltou, mas o plano ainda não está ACTIVE. Atualize em um minuto ou fale com o suporte se continuar FREE.",
     checkoutCancelled: "Checkout cancelado",
     checkoutCancelledDesc: "Nenhuma cobrança foi realizada. Você pode tentar novamente quando quiser.",
     // ── Sprint 6: Client Portal MVP ──
