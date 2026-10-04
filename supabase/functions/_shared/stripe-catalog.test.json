@@ -2,7 +2,7 @@
   "account": "acct_1TLTvILZEOji6sEJ",
   "livemode": false,
   "currency": "usd",
-  "notes": "Spec 2 limits + pack kits. Plan prices USD (57.99/96.99/234.99/389.99). No metered overage. Packs = monthly licensed add-ons.",
+  "notes": "Spec 2 limits + pack kits. Plan prices USD (57.99/96.99/234.99/389.99). No metered overage. Packs = monthly licensed add-ons. Live twin: stripe-catalog.live.json",
   "plans": {
     "BASIC": {
       "product": "prod_VGZ4fC2uFwH7bk",

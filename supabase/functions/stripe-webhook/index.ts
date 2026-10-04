@@ -8,12 +8,17 @@ const corsHeaders = {
 
 // Mapa do price fixed → config interno do plano (Spec 2 quotas)
 const PRICE_TO_PLAN: Record<string, { plan_name: string; max_clicks: number; max_domains: number; max_campaigns: number }> = {
-  // test USD (57.99 / 96.99 / 234.99 / 389.99)
+  // test USD Spec 2 (57.99 / 96.99 / 234.99 / 389.99)
   "price_1UG23HLZEOji6sEJoaUpX4t1": { plan_name: "BASIC PLAN",          max_clicks:    8000, max_domains:  1, max_campaigns:  3 },
   "price_1UG23OLZEOji6sEJw9z873KX": { plan_name: "PRO PLAN",            max_clicks:   20000, max_domains:  3, max_campaigns:  8 },
   "price_1UG23QLZEOji6sEJQQ1Evq5U": { plan_name: "FREEDOM PLAN",        max_clicks:  100000, max_domains: 10, max_campaigns: 20 },
   "price_1UG23PLZEOji6sEJ1kjc8qCg": { plan_name: "ENTERPRISE CONQUEST", max_clicks:  300000, max_domains: 20, max_campaigns: -1 },
-  // live legacy (until live catalog mirrored to Spec 2 + new USD)
+  // live USD Spec 2 (stripe-catalog.live.json)
+  "price_1UGOBLLZEOji6sEJmp2Yp15Q": { plan_name: "BASIC PLAN",          max_clicks:    8000, max_domains:  1, max_campaigns:  3 },
+  "price_1UGOejLZEOji6sEJWgTR0NyV": { plan_name: "PRO PLAN",            max_clicks:   20000, max_domains:  3, max_campaigns:  8 },
+  "price_1UGOeyLZEOji6sEJu8l6ZlWm": { plan_name: "FREEDOM PLAN",        max_clicks:  100000, max_domains: 10, max_campaigns: 20 },
+  "price_1UGOhiLZEOji6sEJX44FJWmM": { plan_name: "ENTERPRISE CONQUEST", max_clicks:  300000, max_domains: 20, max_campaigns: -1 },
+  // live legacy (existing subs only — blocked from new checkout allowlist)
   "price_1TLVRnLZEOji6sEJnw9oiVW2": { plan_name: "BASIC PLAN",          max_clicks:    20000, max_domains:  3, max_campaigns:  5 },
   "price_1TLVSrLZEOji6sEJ8sF00dTT": { plan_name: "PRO PLAN",            max_clicks:   100000, max_domains: 10, max_campaigns: 20 },
   "price_1TLVTYLZEOji6sEJ0mzIvzme": { plan_name: "FREEDOM PLAN",        max_clicks:   300000, max_domains: 20, max_campaigns: 50 },
@@ -24,7 +29,7 @@ const PRICE_TO_PLAN: Record<string, { plan_name: string; max_clicks: number; max
 // Kept empty so new USD plans never get metered items attached.
 const PLAN_METERED_MAP: Record<string, string> = {};
 
-// Pack / addon prices → tipo (test catalog + legacy live addons)
+// Pack / addon prices → tipo (test + live Spec 2 + legacy live addons)
 const ADDON_PRICE_TO_TYPE: Record<string, "extra_clicks" | "extra_domain" | "extra_campaign"> = {
   // test packs
   "price_1UG1xZLZEOji6sEJf1szGS77": "extra_clicks",
@@ -38,6 +43,18 @@ const ADDON_PRICE_TO_TYPE: Record<string, "extra_clicks" | "extra_domain" | "ext
   "price_1UG1xjLZEOji6sEJY6fldVxi": "extra_campaign",
   "price_1UG1xkLZEOji6sEJVppD5P1n": "extra_clicks",
   "price_1UG1xkLZEOji6sEJ8Su2cqqP": "extra_domain",
+  // live Spec 2 packs
+  "price_1UGQKeLZEOji6sEJ0PfKLOxA": "extra_clicks",
+  "price_1UGQTtLZEOji6sEJ6ZBm1Wnn": "extra_domain",
+  "price_1UGQYHLZEOji6sEJnCFmj5FK": "extra_campaign",
+  "price_1UGQZlLZEOji6sEJY1FXvvhY": "extra_clicks",
+  "price_1UGQaALZEOji6sEJoPnpk9i6": "extra_domain",
+  "price_1UGQfyLZEOji6sEJ3mT4iR6p": "extra_campaign",
+  "price_1UGT34LZEOji6sEJDMcMkauq": "extra_clicks",
+  "price_1UGT3GLZEOji6sEJ3a147sMB": "extra_domain",
+  "price_1UGT3NLZEOji6sEJnBeQXWvb": "extra_campaign",
+  "price_1UGT3qLZEOji6sEJFea1Yu8H": "extra_clicks",
+  "price_1UGT4MLZEOji6sEJ1G2FGC2l": "extra_domain",
   // live legacy addons
   "price_1TMwsxLZEOji6sEJZj5yvPct": "extra_domain",
   "price_1TMwudLZEOji6sEJLY129lHV": "extra_campaign",

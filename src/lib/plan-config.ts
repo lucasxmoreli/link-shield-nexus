@@ -5,8 +5,9 @@ import type { LucideIcon } from "lucide-react";
  *  Runtime limits: get_billing_state() / useBillingState (not these numbers alone).
  *  Spec 2 included quotas. Packs replace metered overage.
  *
- *  stripePriceId below = TEST mode (acct test). Swap to live IDs before go-live.
- *  Catalog: supabase/functions/_shared/stripe-catalog.test.json
+ *  stripePriceId below = TEST mode. Live Spec 2 IDs in
+ *  supabase/functions/_shared/stripe-catalog.live.json — swap on go-live.
+ *  Catalog (test): supabase/functions/_shared/stripe-catalog.test.json
  */
 
 export interface TrafficSourceDef {

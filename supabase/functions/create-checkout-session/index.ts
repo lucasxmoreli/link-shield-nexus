@@ -31,18 +31,18 @@ function getCorsHeaders(origin: string | null) {
   };
 }
 
-/** Plan prices only (test + live). No metered / pack IDs here. */
+/** Plan prices only (test + live Spec 2). No metered / pack IDs here. */
 const PLAN_PRICE_IDS = new Set([
   // test — USD Spec 2 (57.99 / 96.99 / 234.99 / 389.99)
   "price_1UG23HLZEOji6sEJoaUpX4t1", // BASIC $57.99
   "price_1UG23OLZEOji6sEJw9z873KX", // PRO $96.99
   "price_1UG23QLZEOji6sEJQQ1Evq5U", // FREEDOM $234.99
   "price_1UG23PLZEOji6sEJ1kjc8qCg", // ENTERPRISE $389.99
-  // live (legacy catalog — until live mirrored)
-  "price_1TLVRnLZEOji6sEJnw9oiVW2",
-  "price_1TLVSrLZEOji6sEJ8sF00dTT",
-  "price_1TLVTYLZEOji6sEJ0mzIvzme",
-  "price_1TLVULLZEOji6sEJ4VyuhzMF",
+  // live — USD Spec 2 (stripe-catalog.live.json)
+  "price_1UGOBLLZEOji6sEJmp2Yp15Q", // BASIC $57.99
+  "price_1UGOejLZEOji6sEJWgTR0NyV", // PRO $96.99
+  "price_1UGOeyLZEOji6sEJu8l6ZlWm", // FREEDOM $234.99
+  "price_1UGOhiLZEOji6sEJX44FJWmM", // ENTERPRISE $389.99
 ]);
 
 Deno.serve(async (req) => {

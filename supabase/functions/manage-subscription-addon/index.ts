@@ -26,8 +26,8 @@ function getCorsHeaders(origin: string | null) {
 type AddonType = "extra_clicks" | "extra_domain" | "extra_campaign";
 type PlanKey = "BASIC" | "PRO" | "FREEDOM" | "ENTERPRISE";
 
-/** Test catalog — Spec 2 packs (USD). Swap to live IDs before go-live. */
-const PACK_PRICES: Record<PlanKey, Partial<Record<AddonType, string>>> = {
+/** Spec 2 packs (USD) — test + live. Selected by STRIPE_SECRET_KEY mode. */
+const PACK_PRICES_TEST: Record<PlanKey, Partial<Record<AddonType, string>>> = {
   BASIC: {
     extra_clicks: "price_1UG1xZLZEOji6sEJf1szGS77",
     extra_domain: "price_1UG1xZLZEOji6sEJXBR5Lwmk",
@@ -48,6 +48,32 @@ const PACK_PRICES: Record<PlanKey, Partial<Record<AddonType, string>>> = {
     extra_domain: "price_1UG1xkLZEOji6sEJ8Su2cqqP",
   },
 };
+
+const PACK_PRICES_LIVE: Record<PlanKey, Partial<Record<AddonType, string>>> = {
+  BASIC: {
+    extra_clicks: "price_1UGQKeLZEOji6sEJ0PfKLOxA",
+    extra_domain: "price_1UGQTtLZEOji6sEJ6ZBm1Wnn",
+    extra_campaign: "price_1UGQYHLZEOji6sEJnCFmj5FK",
+  },
+  PRO: {
+    extra_clicks: "price_1UGQZlLZEOji6sEJY1FXvvhY",
+    extra_domain: "price_1UGQaALZEOji6sEJoPnpk9i6",
+    extra_campaign: "price_1UGQfyLZEOji6sEJ3mT4iR6p",
+  },
+  FREEDOM: {
+    extra_clicks: "price_1UGT34LZEOji6sEJDMcMkauq",
+    extra_domain: "price_1UGT3GLZEOji6sEJ3a147sMB",
+    extra_campaign: "price_1UGT3NLZEOji6sEJnBeQXWvb",
+  },
+  ENTERPRISE: {
+    extra_clicks: "price_1UGT3qLZEOji6sEJFea1Yu8H",
+    extra_domain: "price_1UGT4MLZEOji6sEJ1G2FGC2l",
+  },
+};
+
+function packPricesForSecretKey(secretKey: string | undefined): typeof PACK_PRICES_TEST {
+  return secretKey?.startsWith("sk_live") ? PACK_PRICES_LIVE : PACK_PRICES_TEST;
+}
 
 const CLICK_PACK_MAX = 2;
 
@@ -222,7 +248,8 @@ Deno.serve(async (req) => {
       const planKey = planKeyFromName(profile.plan_name);
       if (!planKey) return json(400, { error: "FREE plan cannot buy packs" });
 
-      const priceId = PACK_PRICES[planKey][addonType];
+      const packPrices = packPricesForSecretKey(stripeKey);
+      const priceId = packPrices[planKey][addonType];
       if (!priceId) {
         return json(400, { error: `Pack not available for ${planKey}` });
       }
