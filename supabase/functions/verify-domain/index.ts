@@ -159,7 +159,27 @@ Deno.serve(async (req) => {
     }
 
     // ── Step 3: Decide verification + build update payload ──
-    const verified = cnameOk && cfActive;
+    //
+    // [PR-3d.3 FIX] verified = cfActive only. Antes era `cnameOk && cfActive`,
+    // o que travava domínios com CNAME proxied pela Cloudflare (nuvem laranja):
+    // o DNS público responde com A records do CF edge em vez de CNAME, então
+    // `cnameOk` virava false mesmo com o domínio funcionando perfeitamente.
+    //
+    // Por construção, a Cloudflare NÃO emite SSL num custom hostname se o
+    // CNAME não estiver apontando pro edge dela. Logo, `cfActive=true` já
+    // implica que o CNAME está correto. Padrão da indústria (Vercel, Netlify,
+    // Render fazem o mesmo).
+    //
+    // `cnameOk` continua sendo calculado pra log de diagnóstico (abaixo) —
+    // útil pra distinguir "DNS-only correto" de "proxied" no futuro debug.
+    if (!cnameOk && cfActive) {
+      console.log(
+        `[verify-domain] AVISO: ${hostname} — CNAME não visível via DNS público ` +
+        `(proxied/nuvem-laranja ou DNS ainda propagando), mas Cloudflare confirmou ` +
+        `SSL ativo. cname_found=${cnameFound ?? "null"}, cname_expected=${CNAME_TARGET}.`
+      );
+    }
+    const verified = cfActive;
 
     const updatePayload: Record<string, unknown> = {
       ssl_status: sslStatus,
