@@ -129,7 +129,7 @@ export default function Requests() {
             </div>
 
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="flex-1 min-w-[140px] sm:flex-none sm:w-[150px] bg-background/50 border-border h-9 text-sm"><SelectValue placeholder={t("requests.allActions")} /></SelectTrigger>
+              <SelectTrigger className="flex-1 min-w-[140px] sm:flex-none sm:w-auto sm:min-w-[150px] gap-2 bg-background/50 border-border h-9 text-sm"><SelectValue placeholder={t("requests.allActions")} /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("requests.allActions")}</SelectItem>
                 <SelectItem value="passed">{t("requests.passedOffer")}</SelectItem>
@@ -138,7 +138,7 @@ export default function Requests() {
             </Select>
 
             <Select value={campaignFilter} onValueChange={setCampaignFilter}>
-              <SelectTrigger className="flex-1 min-w-[140px] sm:flex-none sm:w-[170px] bg-background/50 border-border h-9 text-sm"><SelectValue placeholder={t("requests.allCampaigns")} /></SelectTrigger>
+              <SelectTrigger className="flex-1 min-w-[140px] sm:flex-none sm:w-auto sm:min-w-[170px] gap-2 bg-background/50 border-border h-9 text-sm"><SelectValue placeholder={t("requests.allCampaigns")} /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("requests.allCampaigns")}</SelectItem>
                 {campaignOptions.map((c) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}
@@ -146,7 +146,7 @@ export default function Requests() {
             </Select>
 
             <Select value={deviceFilter} onValueChange={setDeviceFilter}>
-              <SelectTrigger className="flex-1 min-w-[140px] sm:flex-none sm:w-[140px] bg-background/50 border-border h-9 text-sm"><SelectValue placeholder={t("requests.allDevices")} /></SelectTrigger>
+              <SelectTrigger className="flex-1 min-w-[140px] sm:flex-none sm:w-auto sm:min-w-[140px] gap-2 bg-background/50 border-border h-9 text-sm"><SelectValue placeholder={t("requests.allDevices")} /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("requests.allDevices")}</SelectItem>
                 <SelectItem value="mobile">{t("dashboard.mobile")}</SelectItem>
@@ -155,7 +155,7 @@ export default function Requests() {
             </Select>
 
             <Select value={conversionFilter} onValueChange={setConversionFilter}>
-              <SelectTrigger className="flex-1 min-w-[140px] sm:flex-none sm:w-[160px] bg-background/50 border-border h-9 text-sm"><SelectValue placeholder={t("requests.allClicks")} /></SelectTrigger>
+              <SelectTrigger className="flex-1 min-w-[140px] sm:flex-none sm:w-auto sm:min-w-[160px] gap-2 bg-background/50 border-border h-9 text-sm"><SelectValue placeholder={t("requests.allClicks")} /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("requests.allClicks")}</SelectItem>
                 <SelectItem value="sales">{t("requests.salesOnly")}</SelectItem>
@@ -227,7 +227,7 @@ export default function Requests() {
                       })() : <span className="text-muted-foreground">—</span>}
                     </TableCell>
                     <TableCell className="font-mono text-sm">{r.ip_address ?? "—"}</TableCell>
-                    <TableCell><Badge variant="outline" className="border-border text-muted-foreground">{r.device_type ?? "—"}</Badge></TableCell>
+                    <TableCell><Badge variant="outline" className="border-border text-muted-foreground">{r.device_type && ["mobile", "desktop", "tablet"].includes(r.device_type) ? t(`dashboard.${r.device_type}`) : (r.device_type ?? "—")}</Badge></TableCell>
                     <TableCell>
                       {r.action_taken === "offer_page" ? (
                         <Badge variant="outline" className="border-[hsl(var(--success))]/30 bg-[hsl(var(--success))]/10 text-[hsl(var(--success))] text-[11px] whitespace-nowrap">→ {t("requests.destOffer")}</Badge>
