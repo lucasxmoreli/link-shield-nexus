@@ -507,7 +507,6 @@ export default function Analytics() {
   const chartConfig = {
     approved: { label: t("analytics.approved"), color: "hsl(142 71% 45%)" },
     rejected: { label: t("dashboard.threatsBlocked"), color: "hsl(var(--destructive))" },
-    conversions: { label: t("analytics.conversions"), color: "hsl(45 100% 51%)" },
   };
 
   return (
@@ -587,7 +586,6 @@ export default function Analytics() {
             blocked={metrics.blocked + metrics.safePage}
             approved={metrics.approved}
             totalCost={metrics.totalCost}
-            totalRevenue={metrics.totalRevenue}
           />
 
           {/* Cards de tráfego */}
@@ -665,16 +663,6 @@ export default function Analytics() {
                       stroke="hsl(var(--destructive))"
                       fill="hsl(var(--destructive))"
                       fillOpacity={0.2}
-                      strokeWidth={2}
-                      dot={false}
-                      connectNulls
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="conversions"
-                      stroke="hsl(45 100% 51%)"
-                      fill="hsl(45 100% 51%)"
-                      fillOpacity={0.15}
                       strokeWidth={2}
                       dot={false}
                       connectNulls
