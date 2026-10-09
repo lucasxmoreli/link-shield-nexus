@@ -200,6 +200,8 @@ const en = {
       limitReached: "You've reached your plan's campaign limit.",
       domainNotOwned: "That domain is not registered on your account.",
       domainNotVerified: "That domain is not verified yet.",
+      domainRequired: "Select a verified domain. Without a domain the campaign link won't work.",
+      requiredFields: "Fill in name, domain and traffic source.",
       saveFailed: "Couldn't save the campaign. Please try again.",
     },
   },

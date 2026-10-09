@@ -193,6 +193,8 @@ const es = {
       limitReached: "Alcanzaste el límite de campañas de tu plan.",
       domainNotOwned: "Ese dominio no está registrado en tu cuenta.",
       domainNotVerified: "Ese dominio aún no está verificado.",
+      domainRequired: "Selecciona un dominio verificado. Sin dominio el enlace de la campaña no funciona.",
+      requiredFields: "Completa nombre, dominio y fuente de tráfico.",
       saveFailed: "No se pudo guardar la campaña. Inténtalo de nuevo.",
     },
   },

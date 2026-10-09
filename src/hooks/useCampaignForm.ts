@@ -293,6 +293,7 @@ export function useCampaignForm() {
         msg.includes("campaign_limit_reached") ? "campaigns.errors.limitReached" :
         msg.includes("domain_not_owned") ? "campaigns.errors.domainNotOwned" :
         msg.includes("domain_not_verified") ? "campaigns.errors.domainNotVerified" :
+        msg.includes("domain_required") ? "campaigns.errors.domainRequired" :
         null;
       toast.error(key ? t(key) : (msg || t("campaigns.errors.saveFailed")));
     },
@@ -301,6 +302,15 @@ export function useCampaignForm() {
   // ── handleSave (validation + conflict check + mutate) ──
   const handleSave = useCallback(() => {
     setAttemptedSave(true);
+
+    if (!name.trim() || !trafficSource) {
+      toast.error(t("campaigns.errors.requiredFields"));
+      return;
+    }
+    if (!domain) {
+      toast.error(t("campaigns.errors.domainRequired"));
+      return;
+    }
 
     // Normalize URLs before validation
     normalizeSafeUrl(safeUrl);
@@ -343,7 +353,7 @@ export function useCampaignForm() {
 
     saveMutation.mutate();
   }, [
-    safeUrl, offerUrl, offerPageB, abStormEnabled, domain,
+    name, trafficSource, safeUrl, offerUrl, offerPageB, abStormEnabled, domain,
     areDestinationUrlsValid,
     prelanderEnabled, prelanderHeadline, prelanderBody,
     normalizeSafeUrl, normalizeOfferUrl, normalizeOfferPageB,
