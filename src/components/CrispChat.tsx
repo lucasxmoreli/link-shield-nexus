@@ -1,5 +1,7 @@
 import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { useProfile } from "@/hooks/useProfile";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 declare global {
   interface Window {
@@ -9,6 +11,9 @@ declare global {
 }
 
 const CRISP_WEBSITE_ID = "aeb5656c-acac-4770-8da2-60ce101dc724";
+
+// On small screens the launcher sits on top of the form's save bar.
+const FORM_ROUTE = /^\/campaigns\/(new|[^/]+\/(edit|clone))\/?$/;
 
 export function CrispChat() {
   useEffect(() => {
@@ -27,6 +32,15 @@ export function CrispChat() {
     if (!profile?.email || !window.$crisp) return;
     window.$crisp.push(["set", "user:email", [profile.email]]);
   }, [profile?.email]);
+
+  const { pathname } = useLocation();
+  const isMobile = useIsMobile();
+  const hideLauncher = isMobile && FORM_ROUTE.test(pathname);
+
+  useEffect(() => {
+    if (!window.$crisp) return;
+    window.$crisp.push(["do", hideLauncher ? "chat:hide" : "chat:show"]);
+  }, [hideLauncher]);
 
   return null;
 }

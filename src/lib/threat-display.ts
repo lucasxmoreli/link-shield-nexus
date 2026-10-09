@@ -1,4 +1,4 @@
-import { Bot, Ghost, EyeOff, Wifi, Share2, ShieldOff, AlertTriangle } from "lucide-react";
+import { Bot, Ghost, EyeOff, Wifi, Share2, ShieldOff, AlertTriangle, PauseCircle } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 /**
@@ -90,6 +90,16 @@ const THREAT_MAP: Array<{ match: (reason: string) => boolean; display: ThreatDis
       color: "hsl(280, 70%, 60%)",
       bgClass: "bg-purple-500/15",
       badgeClass: "bg-purple-500/15 text-purple-400 border-purple-500/25",
+    },
+  },
+  {
+    match: (r) => r === "campaign_paused",
+    display: {
+      label: "Campanha Pausada",
+      icon: PauseCircle,
+      color: "hsl(0, 0%, 65%)",
+      bgClass: "bg-zinc-500/15",
+      badgeClass: "bg-zinc-500/15 text-zinc-400 border-zinc-500/25",
     },
   },
 ];

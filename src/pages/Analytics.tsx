@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -86,6 +87,7 @@ interface DailyBreakdownStatRow {
 interface RawLogRow {
   status_final: string;
   motivo_limpo: string | null;
+  block_reason: string | null;
   country_code: string | null;
   device_type: string | null;
   created_at: string;
@@ -124,7 +126,8 @@ interface RawLogRow {
  * veriam "ontem" sem isso).
  */
 export default function Analytics() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const dayFormat = i18n.language?.startsWith("en") ? "MM/dd" : "dd/MM";
   const { effectiveUserId } = useAuth();
   const [selectedCampaign, setSelectedCampaign] = useState<string>("");
   const [datePreset, setDatePreset] = useState<DatePreset>("all");
@@ -167,7 +170,7 @@ export default function Analytics() {
       const { data, error } = await supabase
         .from("dashboard_analytics_view" as any)
         .select(
-          "status_final, motivo_limpo, country_code, device_type, created_at, source_platform, cost, is_unique, risk_score, is_conversion, revenue"
+          "status_final, motivo_limpo, block_reason, country_code, device_type, created_at, source_platform, cost, is_unique, risk_score, is_conversion, revenue"
         )
         .eq("campaign_id", selectedCampaign)
         .gte("created_at", spStartOfDay().toISOString())
@@ -342,9 +345,9 @@ export default function Analytics() {
     return eachDayOfInterval({ start: startDate, end: endDate }).map((d) => {
       const dayKey = format(d, "yyyy-MM-dd");
       const v = dayMap[dayKey] || { approved: 0, rejected: 0, conversions: 0 };
-      return { day: format(d, "MM/dd"), ...v };
+      return { day: format(d, dayFormat), ...v };
     });
-  }, [isToday, rawLogs, aggCampaign, dateRange]);
+  }, [isToday, rawLogs, aggCampaign, dateRange, dayFormat]);
 
   // ─── Helper: colapsa rows do agg em map { dimension_value → totais } ──
   // Centraliza o pattern usado em platform/country/device pra evitar
@@ -473,7 +476,9 @@ export default function Analytics() {
       );
       if (blockedLogs.length === 0) return [];
       blockedLogs.forEach((l) => {
-        const motivo = l.motivo_limpo || "Desconhecido";
+        // motivo_limpo is rewritten by the view ("Fantasma / Orgânico"…) and
+        // no longer matches getThreatDisplay; the raw reason does.
+        const motivo = l.block_reason || l.motivo_limpo || "Desconhecido";
         const key = getThreatDisplay(motivo).label;
         grouped[key] = (grouped[key] || 0) + 1;
       });
@@ -516,9 +521,9 @@ export default function Analytics() {
           </h1>
           <p className="text-muted-foreground text-sm">{t("analytics.subtitle")}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
           <Select value={selectedCampaign} onValueChange={setSelectedCampaign}>
-            <SelectTrigger className="w-[220px]">
+            <SelectTrigger className="w-full sm:w-[220px]">
               <SelectValue placeholder={t("analytics.selectCampaign")} />
             </SelectTrigger>
             <SelectContent>
@@ -530,7 +535,7 @@ export default function Analytics() {
             </SelectContent>
           </Select>
           <Select value={datePreset} onValueChange={(v) => setDatePreset(v as DatePreset)}>
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className="w-full sm:w-[160px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -568,6 +573,9 @@ export default function Analytics() {
           <p className="text-muted-foreground text-sm mt-1 max-w-md text-center">
             {t("analytics.emptyDataHint")}
           </p>
+          <Link to="/requests" className="mt-3 text-sm text-primary hover:underline">
+            {t("dashboard.viewFullLog")} →
+          </Link>
         </Card>
       )}
 

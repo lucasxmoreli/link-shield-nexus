@@ -23,8 +23,10 @@ export interface TrendData {
 
 interface MetricsSidebarProps {
   totalRequests: number;
-  botsBlocked: number;
-  safePageHits: number;
+  /** Everything sent to the safe page (bot_blocked + safe_page). */
+  blocked: number;
+  /** Shadow stats never logged in requests_log: prefetch + dedup. */
+  filtered: number;
   realTraffic: number;
   isLoading: boolean;
   /**
@@ -33,8 +35,8 @@ interface MetricsSidebarProps {
    */
   trends?: {
     totalRequests?: TrendData;
-    botsBlocked?: TrendData;
-    safePageHits?: TrendData;
+    blocked?: TrendData;
+    filtered?: TrendData;
     realTraffic?: TrendData;
   };
 }
@@ -121,8 +123,8 @@ function MetricSkeleton() {
 
 export function MetricsSidebar({
   totalRequests,
-  botsBlocked,
-  safePageHits,
+  blocked,
+  filtered,
   realTraffic,
   isLoading,
   trends,
@@ -131,13 +133,13 @@ export function MetricsSidebar({
   const newLabel = t("dashboard.trendNew");
 
   const trendTotal = computeTrend(trends?.totalRequests, newLabel);
-  const trendBots = computeTrend(trends?.botsBlocked, newLabel);
-  const trendSafe = computeTrend(trends?.safePageHits, newLabel);
+  const trendBlocked = computeTrend(trends?.blocked, newLabel);
+  const trendFiltered = computeTrend(trends?.filtered, newLabel);
   const trendReal = computeTrend(trends?.realTraffic, newLabel);
 
   if (isLoading) {
     return (
-      <aside className="flex flex-row lg:flex-col gap-6 lg:gap-0 lg:space-y-10 overflow-x-auto lg:overflow-visible pb-3 lg:pb-0">
+      <aside className="grid grid-cols-2 gap-6 lg:flex lg:flex-col lg:gap-0 lg:space-y-10">
         {Array.from({ length: 4 }).map((_, i) => (
           <MetricSkeleton key={i} />
         ))}
@@ -146,7 +148,7 @@ export function MetricsSidebar({
   }
 
   return (
-    <aside className="flex flex-row lg:flex-col gap-6 lg:gap-0 lg:space-y-10 overflow-x-auto lg:overflow-visible pb-3 lg:pb-0">
+    <aside className="grid grid-cols-2 gap-6 lg:flex lg:flex-col lg:gap-0 lg:space-y-10">
       {/* Section label (desktop only) */}
       <div className="hidden lg:block">
         <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/30 mb-6">
@@ -162,17 +164,17 @@ export function MetricsSidebar({
       />
 
       <MetricItem
-        label={t("dashboard.botsBlocked")}
-        value={botsBlocked}
-        subtitle={t("dashboard.botsBlockedSub")}
-        trend={trendBots}
+        label={t("dashboard.blockedCard")}
+        value={blocked}
+        subtitle={t("dashboard.blockedCardSub")}
+        trend={trendBlocked}
       />
 
       <MetricItem
-        label={t("dashboard.safePageHits")}
-        value={safePageHits}
-        subtitle={t("dashboard.safePageHitsSub")}
-        trend={trendSafe}
+        label={t("dashboard.filteredCard")}
+        value={filtered}
+        subtitle={t("dashboard.filteredCardSub")}
+        trend={trendFiltered}
       />
 
       <MetricItem
@@ -193,9 +195,6 @@ export function MetricsSidebar({
             {t("dashboard.shieldActive")}
           </span>
         </div>
-        <p className="text-[11px] text-muted-foreground/30 mt-1 tabular-nums">
-          {t("dashboard.shieldStats")}
-        </p>
       </div>
     </aside>
   );

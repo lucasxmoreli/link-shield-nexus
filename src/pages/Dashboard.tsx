@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { subDays, getHours, format, eachDayOfInterval } from "date-fns";
 import { spDateString, spStartOfDay } from "@/lib/timezone";
+import { dateFnsLocale } from "@/lib/locale";
 
 import { MetricsSidebar } from "@/components/dashboard/MetricsSidebar";
 import { TrafficFlowChart, type ChartMode } from "@/components/dashboard/TrafficFlowChart";
@@ -74,7 +75,8 @@ export default function Dashboard() {
   const { user, effectiveUserId } = useAuth();
   const [dateRange, setDateRange] = useState("1");
   const [lastUpdated, setLastUpdated] = useState(new Date());
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const dfLocale = dateFnsLocale(i18n.language);
 
   const isToday = dateRange === "1";
 
@@ -280,10 +282,13 @@ export default function Dashboard() {
     };
   }, [isToday, todayRaw, aggStats]);
 
-  const totalRequests = useMemo(() => {
-    const shadow = shadowStats || { dedup: 0, prefetch: 0, ghost: 0 };
-    return metrics.analyzed + shadow.dedup + shadow.prefetch + shadow.ghost;
-  }, [metrics, shadowStats]);
+  // Ghost clicks are also logged in requests_log (action safe_page), so they are
+  // already inside `analyzed`; only prefetch/dedup never reach the log.
+  const filteredValue = (shadowStats?.dedup || 0) + (shadowStats?.prefetch || 0);
+  const previousFilteredValue =
+    (previousShadowStats?.dedup || 0) + (previousShadowStats?.prefetch || 0);
+
+  const totalRequests = metrics.analyzed + filteredValue;
 
   // ─── PERÍODO ANTERIOR (trend real) ───────────────────────────────
   // Sempre vem do agregado (mais leve e cobre todos os ranges históricos).
@@ -301,25 +306,7 @@ export default function Dashboard() {
     };
   }, [prevAggStats, dateRange]);
 
-  const previousTotalRequests = useMemo(() => {
-    const shadow = previousShadowStats || { dedup: 0, prefetch: 0, ghost: 0 };
-    return (
-      previousMetrics.analyzed + shadow.dedup + shadow.prefetch + shadow.ghost
-    );
-  }, [previousMetrics, previousShadowStats]);
-
-  const safePageHitsValue = useMemo(
-    () =>
-      (shadowStats?.ghost || 0) +
-      (shadowStats?.prefetch || 0) +
-      (shadowStats?.dedup || 0),
-    [shadowStats]
-  );
-
-  const previousSafePageHits = useMemo(() => {
-    const shadow = previousShadowStats || { dedup: 0, prefetch: 0, ghost: 0 };
-    return shadow.dedup + shadow.prefetch + shadow.ghost;
-  }, [previousShadowStats]);
+  const previousTotalRequests = previousMetrics.analyzed + previousFilteredValue;
 
   const trends = useMemo(() => {
     if (dateRange === "all") return undefined;
@@ -328,13 +315,13 @@ export default function Dashboard() {
         current: totalRequests,
         previous: previousTotalRequests,
       },
-      botsBlocked: {
+      blocked: {
         current: metrics.blocked,
         previous: previousMetrics.blocked,
       },
-      safePageHits: {
-        current: safePageHitsValue,
-        previous: previousSafePageHits,
+      filtered: {
+        current: filteredValue,
+        previous: previousFilteredValue,
       },
       realTraffic: {
         current: metrics.approved,
@@ -347,8 +334,8 @@ export default function Dashboard() {
     previousTotalRequests,
     metrics,
     previousMetrics,
-    safePageHitsValue,
-    previousSafePageHits,
+    filteredValue,
+    previousFilteredValue,
   ]);
 
   // ─── CHART MODE ──────────────────────────────────────────────────
@@ -391,7 +378,7 @@ export default function Dashboard() {
     if (isToday) {
       const approved = todayRaw.filter((l) => l.status_final === "Aprovado").length;
       const blocked = todayRaw.filter((l) => l.status_final !== "Aprovado").length;
-      return [{ label: format(new Date(), "MMM d"), approved, blocked }];
+      return [{ label: format(new Date(), "d MMM", { locale: dfLocale }), approved, blocked }];
     }
 
     // !isToday: agregado pode ter múltiplas linhas por dia (uma por
@@ -436,11 +423,11 @@ export default function Dashboard() {
       const dayKey = format(d, "yyyy-MM-dd");
       const v = dayMap[dayKey] || { approved: 0, blocked: 0 };
       return {
-        label: format(d, "MMM d"),
+        label: format(d, "d MMM", { locale: dfLocale }),
         ...v,
       };
     });
-  }, [isHourlyChart, isToday, todayRaw, aggStats, dateRange]);
+  }, [isHourlyChart, isToday, todayRaw, aggStats, dateRange, dfLocale]);
 
   // ─── isLoading consolidado ───────────────────────────────────────
   // TanStack v5: query desabilitada tem isLoading=false. Então isso só
@@ -518,8 +505,8 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-6 lg:gap-8">
           <MetricsSidebar
             totalRequests={totalRequests}
-            botsBlocked={metrics.blocked}
-            safePageHits={safePageHitsValue}
+            blocked={metrics.blocked}
+            filtered={filteredValue}
             realTraffic={metrics.approved}
             isLoading={isLoading}
             trends={trends}

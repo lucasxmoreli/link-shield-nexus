@@ -3,7 +3,9 @@ import { Monitor, Smartphone, Radio } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import { formatDistanceToNowStrict } from "date-fns";
+import { dateFnsLocale, regionName } from "@/lib/locale";
 
 interface LogRow {
   action_taken: string;
@@ -30,22 +32,9 @@ function countryFlag(code: string | null): string {
   return String.fromCodePoint(...codePoints);
 }
 
-const COUNTRY_NAMES: Record<string, string> = {
-  BR: "Brazil", US: "United States", SG: "Singapore", VN: "Vietnam",
-  FI: "Finland", DE: "Germany", GB: "United Kingdom", CA: "Canada",
-  FR: "France", JP: "Japan", AU: "Australia", AR: "Argentina",
-  CO: "Colombia", CL: "Chile", UY: "Uruguay", PE: "Peru", MX: "Mexico", SA: "Saudi Arabia", BD: "Bangladesh",
-  EG: "Egypt", EC: "Ecuador", BE: "Belgium", NL: "Netherlands",
-  PT: "Portugal", ES: "Spain", IT: "Italy", IN: "India",
-};
-
-function countryName(code: string | null): string {
-  if (!code) return "Unknown";
-  return COUNTRY_NAMES[code.toUpperCase()] || code.toUpperCase();
-}
-
 export function LiveStreamList({ logs, isLoading }: LiveStreamListProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const locale = dateFnsLocale(i18n.language);
   const recentLogs = useMemo(() => logs.slice(0, 8), [logs]);
 
   if (isLoading) {
@@ -87,7 +76,7 @@ export function LiveStreamList({ logs, isLoading }: LiveStreamListProps) {
             const isClean = log.status_final === "Aprovado";
             const timeAgo = formatDistanceToNowStrict(
               new Date(log.created_at),
-              { addSuffix: false }
+              { addSuffix: false, locale }
             );
             const DeviceIcon =
               log.device_type === "desktop" ? Monitor : Smartphone;
@@ -98,7 +87,7 @@ export function LiveStreamList({ logs, isLoading }: LiveStreamListProps) {
                 className="flex items-center justify-between py-2 border-b border-white/[0.04] last:border-0"
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <span className="text-[11px] text-muted-foreground/35 tabular-nums w-14 shrink-0">
+                  <span className="text-[11px] text-muted-foreground/35 tabular-nums w-20 shrink-0">
                     {timeAgo}
                   </span>
                   <div className="flex items-center gap-1.5 min-w-0">
@@ -106,7 +95,7 @@ export function LiveStreamList({ logs, isLoading }: LiveStreamListProps) {
                       {countryFlag(log.country_code)}
                     </span>
                     <span className="text-xs text-muted-foreground/60 truncate">
-                      {countryName(log.country_code)}
+                      {regionName(log.country_code, i18n.language)}
                     </span>
                   </div>
                 </div>
@@ -133,12 +122,12 @@ export function LiveStreamList({ logs, isLoading }: LiveStreamListProps) {
 
       {recentLogs.length > 0 && (
         <div className="mt-3 pt-2.5 border-t border-white/[0.04]">
-          <a
-            href="/requests"
+          <Link
+            to="/requests"
             className="text-xs text-muted-foreground/40 hover:text-muted-foreground transition-colors"
           >
             {t("dashboard.viewFullLog")} →
-          </a>
+          </Link>
         </div>
       )}
     </div>

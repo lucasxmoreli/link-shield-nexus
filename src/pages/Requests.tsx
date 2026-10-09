@@ -11,15 +11,15 @@ import { Search, X, Globe, DollarSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
-import { actionToStatusFinal, getStatusBadgeConfig } from "@/lib/status-utils";
 import { getBlockReasonLabel } from "@/lib/blockReasonLabels";
+import { intlLocale } from "@/lib/locale";
 
 type DatePreset = "all" | "today" | "7d" | "30d";
 
 export default function Requests() {
   const { user, effectiveUserId } = useAuth();
-  const { t } = useTranslation();
-
+  const { t, i18n } = useTranslation();
+  const locale = intlLocale(i18n.language);
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -38,7 +38,7 @@ export default function Requests() {
     enabled: !!user,
   });
 
-  // Fetch global blacklist IPs to identify global vs user blocks
+  // Global blacklist IPs visible to this user (RLS: own rows only).
   const { data: globalBlacklistIps = new Set<string>() } = useQuery({
     queryKey: ["global_blacklist_ips", user?.id],
     queryFn: async () => {
@@ -51,20 +51,7 @@ export default function Requests() {
     },
     enabled: !!user,
   });
-
-  // Count global blacklist IPs
-  const { data: globalBlacklistCount = 0 } = useQuery({
-    queryKey: ["global_blacklist_count"],
-    queryFn: async () => {
-      const { count, error } = await supabase
-        .from("blocked_ips")
-        .select("id", { count: "exact", head: true })
-        .eq("is_global", true);
-      if (error) throw error;
-      return count ?? 0;
-    },
-    enabled: !!user,
-  });
+  const globalBlacklistCount = globalBlacklistIps.size;
 
   const campaignOptions = useMemo(() => {
     const map = new Map<string, string>();
@@ -142,7 +129,7 @@ export default function Requests() {
             </div>
 
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[150px] bg-background/50 border-border h-9 text-sm"><SelectValue placeholder={t("requests.allActions")} /></SelectTrigger>
+              <SelectTrigger className="flex-1 min-w-[140px] sm:flex-none sm:w-[150px] bg-background/50 border-border h-9 text-sm"><SelectValue placeholder={t("requests.allActions")} /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("requests.allActions")}</SelectItem>
                 <SelectItem value="passed">{t("requests.passedOffer")}</SelectItem>
@@ -151,7 +138,7 @@ export default function Requests() {
             </Select>
 
             <Select value={campaignFilter} onValueChange={setCampaignFilter}>
-              <SelectTrigger className="w-[170px] bg-background/50 border-border h-9 text-sm"><SelectValue placeholder={t("requests.allCampaigns")} /></SelectTrigger>
+              <SelectTrigger className="flex-1 min-w-[140px] sm:flex-none sm:w-[170px] bg-background/50 border-border h-9 text-sm"><SelectValue placeholder={t("requests.allCampaigns")} /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("requests.allCampaigns")}</SelectItem>
                 {campaignOptions.map((c) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}
@@ -159,7 +146,7 @@ export default function Requests() {
             </Select>
 
             <Select value={deviceFilter} onValueChange={setDeviceFilter}>
-              <SelectTrigger className="w-[140px] bg-background/50 border-border h-9 text-sm"><SelectValue placeholder={t("requests.allDevices")} /></SelectTrigger>
+              <SelectTrigger className="flex-1 min-w-[140px] sm:flex-none sm:w-[140px] bg-background/50 border-border h-9 text-sm"><SelectValue placeholder={t("requests.allDevices")} /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("requests.allDevices")}</SelectItem>
                 <SelectItem value="mobile">{t("dashboard.mobile")}</SelectItem>
@@ -168,7 +155,7 @@ export default function Requests() {
             </Select>
 
             <Select value={conversionFilter} onValueChange={setConversionFilter}>
-              <SelectTrigger className="w-[160px] bg-background/50 border-border h-9 text-sm"><SelectValue placeholder={t("requests.allClicks")} /></SelectTrigger>
+              <SelectTrigger className="flex-1 min-w-[140px] sm:flex-none sm:w-[160px] bg-background/50 border-border h-9 text-sm"><SelectValue placeholder={t("requests.allClicks")} /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("requests.allClicks")}</SelectItem>
                 <SelectItem value="sales">{t("requests.salesOnly")}</SelectItem>
@@ -227,7 +214,7 @@ export default function Requests() {
               ) : (
                 filtered.map((r) => (
                   <TableRow key={r.id} className="border-border">
-                    <TableCell className="text-sm text-muted-foreground font-mono">{new Date(r.created_at).toLocaleString()}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground font-mono">{new Date(r.created_at).toLocaleString(locale)}</TableCell>
                     <TableCell>{r.campaigns?.name ?? "—"}</TableCell>
                     <TableCell className="font-mono text-sm text-primary">{r.campaigns?.hash ?? "—"}</TableCell>
                     <TableCell>{r.country_code ?? "—"}</TableCell>
@@ -241,7 +228,13 @@ export default function Requests() {
                     </TableCell>
                     <TableCell className="font-mono text-sm">{r.ip_address ?? "—"}</TableCell>
                     <TableCell><Badge variant="outline" className="border-border text-muted-foreground">{r.device_type ?? "—"}</Badge></TableCell>
-                    <TableCell>{(() => { const cfg = getStatusBadgeConfig(actionToStatusFinal(r.action_taken)); return <Badge variant="outline" className={`${cfg.className} text-[11px] font-mono`}>{cfg.label}</Badge>; })()}</TableCell>
+                    <TableCell>
+                      {r.action_taken === "offer_page" ? (
+                        <Badge variant="outline" className="border-[hsl(var(--success))]/30 bg-[hsl(var(--success))]/10 text-[hsl(var(--success))] text-[11px] whitespace-nowrap">→ {t("requests.destOffer")}</Badge>
+                      ) : (
+                        <Badge variant="outline" className="border-destructive/30 bg-destructive/10 text-destructive text-[11px] whitespace-nowrap">→ {t("requests.destSafe")}</Badge>
+                      )}
+                    </TableCell>
                     <TableCell>
                       {r.is_conversion ? (
                         <Badge variant="outline" className="bg-success/20 text-success border-0 gap-1">
