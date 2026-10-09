@@ -858,6 +858,12 @@ const es = {
     realResults: "Resultados reales.",
     authDescription: "Filtra bots y moderadores en tiempo real. Tus visitantes ven la oferta, todos los demás ven la página segura.",
     detection: "Detección",
+    heroTitle: "Cloaking de otro nivel para campañas de tráfico de élite",
+    heroSubtitle: "Protege tus embudos con filtrado de bots en tiempo real, cloaking inteligente y seguridad enfocada en el rendimiento.",
+    confirmedElsewhereHint: "¿Confirmaste en otro dispositivo? Entra aquí con tu correo y contraseña.",
+    alreadyConfirmedSignIn: "Ya confirmé, entrar",
+    showPassword: "Mostrar contraseña",
+    hidePassword: "Ocultar contraseña",
     detectionFull: "Detección de Bots",
     latency: "Latencia",
     // === Turno B.2.5.3 — Invite Codes B2B Hardened ===
@@ -904,6 +910,9 @@ const es = {
     updateSuccess: "Contraseña actualizada. Redirigiendo a tu panel…",
     updateFailed: "No se pudo actualizar la contraseña. El enlace puede haber expirado.",
     validatingSession: "Validando enlace de recuperación…",
+    linkExpired: "Este enlace de recuperación expiró o ya fue usado. Pide uno nuevo en la pantalla de inicio de sesión.",
+    requestNewLink: "Pedir un enlace nuevo",
+    samePassword: "La nueva contraseña debe ser diferente de la actual.",
   },
 
   landing: {

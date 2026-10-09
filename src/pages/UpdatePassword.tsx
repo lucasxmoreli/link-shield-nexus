@@ -28,6 +28,13 @@ export default function UpdatePassword() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [recoveryReady, setRecoveryReady] = useState(false);
+  // GoTrue reports expired/reused links as #error=...&error_code=otp_expired (implicit)
+  // or ?error=... (PKCE); no session is created in that case.
+  const [linkInvalid] = useState(() => {
+    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const query = new URLSearchParams(window.location.search);
+    return Boolean(hash.get("error") || hash.get("error_code") || query.get("error") || query.get("error_code"));
+  });
   const navigate = useNavigate();
   const { t } = useTranslation();
 
@@ -87,7 +94,22 @@ export default function UpdatePassword() {
       if (error) {
         // Erros comuns: "Auth session missing" (link expirado) / "New password should be different"
         console.error("[update-password] updateUser failed:", error.message);
-        toast.error(error.message || t("updatePassword.updateFailed"));
+        const code = String((error as { code?: string }).code || "");
+        const msg = error.message?.toLowerCase() || "";
+        if (code === "same_password" || msg.includes("should be different")) {
+          toast.error(t("updatePassword.samePassword"));
+        } else if (
+          code === "weak_password" ||
+          msg.includes("pwned") ||
+          msg.includes("weak and easy") ||
+          msg.includes("known to be weak")
+        ) {
+          toast.error(t("auth.passwordPwned"));
+        } else if (msg.includes("session")) {
+          toast.error(t("updatePassword.linkExpired"));
+        } else {
+          toast.error(t("updatePassword.updateFailed"));
+        }
         setLoading(false);
         return;
       }
@@ -172,13 +194,14 @@ export default function UpdatePassword() {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     minLength={6}
-                    className="pl-10 pr-10 h-11 bg-secondary/50 border-border focus:border-primary/50 transition-colors"
+                    className="pl-10 pr-12 h-11 bg-secondary/50 border-border focus:border-primary/50 transition-colors"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    tabIndex={-1}
+                    aria-label={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
+                    aria-pressed={showPassword}
+                    className="absolute right-0.5 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground hover:text-foreground transition-colors"
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -221,13 +244,14 @@ export default function UpdatePassword() {
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
                     minLength={6}
-                    className="pl-10 pr-10 h-11 bg-secondary/50 border-border focus:border-primary/50 transition-colors"
+                    className="pl-10 pr-12 h-11 bg-secondary/50 border-border focus:border-primary/50 transition-colors"
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirm(!showConfirm)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    tabIndex={-1}
+                    aria-label={showConfirm ? t("auth.hidePassword") : t("auth.showPassword")}
+                    aria-pressed={showConfirm}
+                    className="absolute right-0.5 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground hover:text-foreground transition-colors"
                   >
                     {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -261,7 +285,17 @@ export default function UpdatePassword() {
                 {t("updatePassword.submitButton")}
               </Button>
 
-              {!recoveryReady && (
+              {!recoveryReady && linkInvalid && (
+                <div className="space-y-3 text-center">
+                  <p className="text-xs text-destructive leading-relaxed">
+                    {t("updatePassword.linkExpired")}
+                  </p>
+                  <Button asChild type="button" variant="secondary" className="w-full h-11">
+                    <Link to="/auth">{t("updatePassword.requestNewLink")}</Link>
+                  </Button>
+                </div>
+              )}
+              {!recoveryReady && !linkInvalid && (
                 <p className="text-xs text-center text-muted-foreground leading-relaxed">
                   {t("updatePassword.validatingSession")}
                 </p>

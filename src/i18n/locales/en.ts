@@ -876,6 +876,12 @@ const en = {
     realResults: "Real results.",
     authDescription: "Filter bots and moderators in real time. Your visitors see the offer, everyone else sees the safe page.",
     detection: "Detection",
+    heroTitle: "Next-level cloaking for elite traffic campaigns",
+    heroSubtitle: "Protect your funnels with real-time bot filtering, smart cloaking, and performance-first security.",
+    confirmedElsewhereHint: "Confirmed on another device? Sign in here with your email and password.",
+    alreadyConfirmedSignIn: "I've confirmed, sign in",
+    showPassword: "Show password",
+    hidePassword: "Hide password",
     detectionFull: "Bot Detection",
     latency: "Latency",
   },
@@ -900,6 +906,9 @@ const en = {
     updateSuccess: "Password updated. Redirecting you to your dashboard…",
     updateFailed: "Unable to update password. The reset link may have expired.",
     validatingSession: "Validating reset link…",
+    linkExpired: "This reset link has expired or was already used. Request a new one from the sign-in screen.",
+    requestNewLink: "Request a new link",
+    samePassword: "Your new password must be different from the current one.",
   },
 
   // Landing

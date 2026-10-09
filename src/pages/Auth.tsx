@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Turnstile } from "@marsidev/react-turnstile";
 import { supabase } from "@/integrations/supabase/client";
@@ -48,6 +48,39 @@ export default function Auth() {
     setCaptchaToken(null);
     setTurnstileKey((k) => k + 1);
   }, []);
+
+  // Confirmation link opened in another tab of this browser creates a session in
+  // shared storage; pick it up here. Another device never shares it, hence the
+  // explicit "already confirmed" button in the check_email view.
+  useEffect(() => {
+    if (view !== "check_email") return;
+    let done = false;
+    const goToDashboard = () => {
+      if (done) return;
+      done = true;
+      navigate("/dashboard");
+    };
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) goToDashboard();
+    });
+
+    const startedAt = Date.now();
+    const poll = window.setInterval(async () => {
+      if (Date.now() - startedAt > 10 * 60 * 1000) {
+        window.clearInterval(poll);
+        return;
+      }
+      const { data } = await supabase.auth.getSession();
+      if (data.session) goToDashboard();
+    }, 5000);
+
+    return () => {
+      done = true;
+      sub.subscription.unsubscribe();
+      window.clearInterval(poll);
+    };
+  }, [view, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -230,6 +263,18 @@ export default function Auth() {
   const canRegister =
     !loading && passwordAcceptable && email.trim().length > 0 && !!captchaToken;
 
+  const passwordToggle = (
+    <button
+      type="button"
+      onClick={() => setShowPassword(!showPassword)}
+      aria-label={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
+      aria-pressed={showPassword}
+      className="absolute right-0.5 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground hover:text-foreground transition-colors"
+    >
+      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+    </button>
+  );
+
   const turnstileWidget = (
     <div className="flex justify-center min-h-[65px]">
       <Turnstile
@@ -260,10 +305,10 @@ export default function Auth() {
           </div>
           <div className="space-y-4">
             <h2 className="text-3xl font-bold leading-tight">
-              Next-level cloaking for elite traffic campaigns
+              {t("auth.heroTitle")}
             </h2>
             <p className="text-muted-foreground text-lg leading-relaxed">
-              Protect your funnels with real-time bot filtering, smart cloaking, and performance-first security.
+              {t("auth.heroSubtitle")}
             </p>
           </div>
           <div className="flex gap-6 pt-4">
@@ -318,10 +363,8 @@ export default function Auth() {
                   <label className="text-sm font-medium text-foreground">{t("auth.passwordLabel")}</label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input type={showPassword ? "text" : "password"} placeholder={t("auth.passwordPlaceholder")} value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} className="pl-10 pr-10 h-11 bg-secondary/50 border-border focus:border-primary/50 transition-colors" />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" tabIndex={-1}>
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
+                    <Input type={showPassword ? "text" : "password"} placeholder={t("auth.passwordPlaceholder")} value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} className="pl-10 pr-12 h-11 bg-secondary/50 border-border focus:border-primary/50 transition-colors" />
+                    {passwordToggle}
                   </div>
                 </div>
 
@@ -375,11 +418,9 @@ export default function Auth() {
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       minLength={6}
-                      className="pl-10 pr-10 h-11 bg-secondary/50 border-border focus:border-primary/50 transition-colors"
+                      className="pl-10 pr-12 h-11 bg-secondary/50 border-border focus:border-primary/50 transition-colors"
                     />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" tabIndex={-1}>
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
+                    {passwordToggle}
                   </div>
 
                   {password.length > 0 && (
@@ -401,7 +442,7 @@ export default function Auth() {
                     </div>
                   )}
 
-                  <PasswordCriteriaList password={password} />
+                  <PasswordCriteriaList password={password} hideWhenEmpty={false} />
                   {password.length > 0 && (
                     <p className="text-[11px] text-muted-foreground leading-relaxed pt-1">
                       {t("password.breachHint")}
@@ -430,16 +471,19 @@ export default function Auth() {
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   {t("auth.checkEmailBody", { email: email.trim().toLowerCase() })}
                 </p>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {t("auth.confirmedElsewhereHint")}
+                </p>
                 <Button
                   type="button"
-                  variant="secondary"
-                  className="w-full h-11"
+                  className="w-full h-11 font-semibold"
                   onClick={() => {
                     setView("login");
+                    setPassword("");
                     resetTurnstile();
                   }}
                 >
-                  {t("auth.backToSignIn")}
+                  {t("auth.alreadyConfirmedSignIn")}
                 </Button>
               </div>
             )}
