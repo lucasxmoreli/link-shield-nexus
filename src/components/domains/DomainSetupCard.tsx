@@ -24,6 +24,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import type { DomainRow } from "@/hooks/useDomains";
 import { DnsFlowDiagram } from "@/components/domains/DnsFlowDiagram";
 
@@ -77,39 +79,39 @@ interface SslConfig {
   isPending: boolean;
 }
 
-const getSslConfig = (status: string | null): SslConfig => {
+const getSslConfig = (status: string | null, t: TFunction): SslConfig => {
   switch (status) {
     case "active":
       return {
-        label: "SSL Ativo",
+        label: t("domains.setup.sslActive"),
         className: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
         icon: CheckCircle2,
         isPending: false,
       };
     case "pending_validation":
       return {
-        label: "Aguardando validação DNS",
+        label: t("domains.setup.sslPendingValidation"),
         className: "border-amber-500/30 bg-amber-500/10 text-amber-400",
         icon: Loader2,
         isPending: true,
       };
     case "pending_issuance":
       return {
-        label: "Emitindo certificado",
+        label: t("domains.setup.sslPendingIssuance"),
         className: "border-amber-500/30 bg-amber-500/10 text-amber-400",
         icon: Loader2,
         isPending: true,
       };
     case "pending_deployment":
       return {
-        label: "Implantando",
+        label: t("domains.setup.sslPendingDeployment"),
         className: "border-amber-500/30 bg-amber-500/10 text-amber-400",
         icon: Loader2,
         isPending: true,
       };
     default:
       return {
-        label: status || "Pendente",
+        label: status || t("domains.setup.sslPending"),
         className: "border-amber-500/30 bg-amber-500/10 text-amber-400",
         icon: Clock,
         isPending: false,
@@ -120,13 +122,13 @@ const getSslConfig = (status: string | null): SslConfig => {
 // Safe clipboard wrapper — navigator.clipboard.writeText can fail in insecure
 // contexts, Safari private mode, iframes without permissions, etc. Failing
 // silently and showing a success toast is lying to the user.
-const copyToClipboard = async (value: string, label: string): Promise<void> => {
+const copyToClipboard = async (value: string, t: TFunction): Promise<void> => {
   try {
     await navigator.clipboard.writeText(value);
-    toast.success(`${label} copiado`);
+    toast.success(t("domains.valueCopied"));
   } catch (err) {
     console.error("[DomainSetupCard] clipboard write failed:", err);
-    toast.error("Não foi possível copiar. Copie manualmente.");
+    toast.error(t("domains.setup.copyFailed"));
   }
 };
 
@@ -134,25 +136,27 @@ const copyToClipboard = async (value: string, label: string): Promise<void> => {
 // Proxied = routing path, needs Cloudflare interception. DNS only = raw CNAME,
 // resolved directly by external CAs for certificate validation.
 const ProxyIndicator = ({ proxied }: { proxied: boolean }) => {
+  const { t } = useTranslation();
   if (proxied) {
     return (
       <div className="flex items-center gap-1.5">
         <Cloud className="h-3.5 w-3.5 text-orange-500 fill-orange-500" aria-hidden="true" />
-        <span className="text-orange-400 font-medium text-[11px]">Ativado</span>
-        <span className="text-[10px] text-muted-foreground">(nuvem laranja)</span>
+        <span className="text-orange-400 font-medium text-[11px]">{t("domains.setup.proxyOn")}</span>
+        <span className="text-[10px] text-muted-foreground">{t("domains.setup.proxyOnHint")}</span>
       </div>
     );
   }
   return (
     <div className="flex items-center gap-1.5">
       <Cloud className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
-      <span className="text-muted-foreground font-medium text-[11px]">Desativado</span>
-      <span className="text-[10px] text-muted-foreground">(DNS only, cinza)</span>
+      <span className="text-muted-foreground font-medium text-[11px]">{t("domains.setup.proxyOff")}</span>
+      <span className="text-[10px] text-muted-foreground">{t("domains.setup.proxyOffHint")}</span>
     </div>
   );
 };
 
 export function DomainSetupCard({ domain, onVerify, onDelete }: DomainSetupCardProps) {
+  const { t } = useTranslation();
   // Per-card loading states — isolated from other cards rendered by the parent.
   // Previously the parent passed global isDeleting/isVerifying flags which caused
   // all cards to show spinner when any single card was mid-action.
@@ -172,7 +176,9 @@ export function DomainSetupCard({ domain, onVerify, onDelete }: DomainSetupCardP
   const hasDcvCname = Boolean(dcvCnameName && dcvCnameTarget);
   const hasTxtFallback = Boolean(sslTxtName && sslTxtValue);
 
-  const sslConfig = getSslConfig(domain.ssl_status);
+  const sslConfig = getSslConfig(domain.ssl_status, t);
+  const dcvCnameHost = dcvCnameName ? getDnsHost(dcvCnameName) : "";
+  const sslTxtHost = sslTxtName ? getDnsHost(sslTxtName) : "";
   const SslIcon = sslConfig.icon;
 
   // Verify handler — manages its own loading state, awaits parent promise,
@@ -225,7 +231,7 @@ export function DomainSetupCard({ domain, onVerify, onDelete }: DomainSetupCardP
             <div className="min-w-0">
               <p className="text-sm font-mono text-foreground truncate">{domain.url}</p>
               <p className="text-[11px] text-muted-foreground mt-0.5">
-                Configure os registros DNS abaixo no seu provedor de domínio
+                {t("domains.setup.configureBelow")}
               </p>
             </div>
           </div>
@@ -258,15 +264,21 @@ export function DomainSetupCard({ domain, onVerify, onDelete }: DomainSetupCardP
                 1
               </span>
               <span className="text-xs font-semibold text-foreground uppercase tracking-wider">
-                Registro CNAME (Roteamento)
+                {t("domains.setup.routingTitle")}
               </span>
+              <Badge
+                variant="outline"
+                className="ml-auto text-[9px] uppercase border-[#004BFF]/30 bg-[#004BFF]/10 text-[#004BFF] shrink-0"
+              >
+                {t("domains.setup.required")}
+              </Badge>
             </div>
 
             <div className="grid grid-cols-[80px_1fr] gap-x-3 gap-y-1.5 text-xs">
-              <span className="text-muted-foreground font-mono">Tipo</span>
+              <span className="text-muted-foreground font-mono">{t("domains.setup.type")}</span>
               <span className="font-mono text-foreground">CNAME</span>
 
-              <span className="text-muted-foreground font-mono">Host</span>
+              <span className="text-muted-foreground font-mono">{t("domains.setup.host")}</span>
               <div className="flex items-center gap-2 min-w-0">
                 <code className="px-2 py-0.5 rounded bg-black/40 font-mono text-foreground border border-white/[0.06] shrink-0">
                   {getDnsHost(domain.url)}
@@ -275,17 +287,17 @@ export function DomainSetupCard({ domain, onVerify, onDelete }: DomainSetupCardP
                   variant="ghost"
                   size="icon"
                   className="h-6 w-6 shrink-0 text-muted-foreground hover:text-foreground hover:bg-white/5"
-                  onClick={() => copyToClipboard(getDnsHost(domain.url), "Host")}
-                  aria-label="Copiar host do CNAME de roteamento"
+                  onClick={() => copyToClipboard(getDnsHost(domain.url), t)}
+                  aria-label={t("domains.setup.copyAria", { field: t("domains.setup.host") })}
                 >
                   <Copy className="h-3 w-3" aria-hidden="true" />
                 </Button>
                 <span className="text-[10px] text-muted-foreground truncate">
-                  (nome do registro no seu provedor de DNS)
+                  {t("domains.setup.hostHint")}
                 </span>
               </div>
 
-              <span className="text-muted-foreground font-mono">Aponta para</span>
+              <span className="text-muted-foreground font-mono">{t("domains.setup.pointsTo")}</span>
               <div className="flex items-center gap-1.5 min-w-0">
                 <code className="flex-1 px-2 py-1 rounded bg-black/40 font-mono text-[#004BFF] border border-[#004BFF]/20 truncate">
                   {CNAME_TARGET}
@@ -294,14 +306,14 @@ export function DomainSetupCard({ domain, onVerify, onDelete }: DomainSetupCardP
                   variant="ghost"
                   size="icon"
                   className="h-6 w-6 shrink-0 text-muted-foreground hover:text-foreground hover:bg-white/5"
-                  onClick={() => copyToClipboard(CNAME_TARGET, "CNAME")}
-                  aria-label="Copiar alvo do CNAME de roteamento"
+                  onClick={() => copyToClipboard(CNAME_TARGET, t)}
+                  aria-label={t("domains.setup.copyAria", { field: t("domains.setup.pointsTo") })}
                 >
                   <Copy className="h-3 w-3" aria-hidden="true" />
                 </Button>
               </div>
 
-              <span className="text-muted-foreground font-mono">Proxy</span>
+              <span className="text-muted-foreground font-mono">{t("domains.setup.proxy")}</span>
               <ProxyIndicator proxied={true} />
             </div>
           </div>
@@ -314,37 +326,37 @@ export function DomainSetupCard({ domain, onVerify, onDelete }: DomainSetupCardP
                   2
                 </span>
                 <span className="text-xs font-semibold text-foreground uppercase tracking-wider">
-                  Registro CNAME (Validação SSL)
+                  {t("domains.setup.sslCnameTitle")}
                 </span>
                 <Badge
                   variant="outline"
                   className="ml-auto text-[9px] uppercase border-emerald-500/30 bg-emerald-500/10 text-emerald-400 shrink-0"
                 >
-                  Permanente
+                  {t("domains.setup.recommended")}
                 </Badge>
               </div>
 
               <div className="grid grid-cols-[80px_1fr] gap-x-3 gap-y-1.5 text-xs">
-                <span className="text-muted-foreground font-mono">Tipo</span>
+                <span className="text-muted-foreground font-mono">{t("domains.setup.type")}</span>
                 <span className="font-mono text-foreground">CNAME</span>
 
-                <span className="text-muted-foreground font-mono">Host</span>
+                <span className="text-muted-foreground font-mono">{t("domains.setup.host")}</span>
                 <div className="flex items-center gap-1.5 min-w-0">
                   <code className="flex-1 px-2 py-1 rounded bg-black/40 font-mono text-foreground border border-white/[0.06] truncate text-[11px]">
-                    {dcvCnameName}
+                    {dcvCnameHost}
                   </code>
                   <Button
                     variant="ghost"
                     size="icon"
                     className="h-6 w-6 shrink-0 text-muted-foreground hover:text-foreground hover:bg-white/5"
-                    onClick={() => copyToClipboard(dcvCnameName, "Host CNAME")}
-                    aria-label="Copiar host do CNAME de validação SSL"
+                    onClick={() => copyToClipboard(dcvCnameHost, t)}
+                    aria-label={t("domains.setup.copyAria", { field: t("domains.setup.host") })}
                   >
                     <Copy className="h-3 w-3" aria-hidden="true" />
                   </Button>
                 </div>
 
-                <span className="text-muted-foreground font-mono">Aponta para</span>
+                <span className="text-muted-foreground font-mono">{t("domains.setup.pointsTo")}</span>
                 <div className="flex items-center gap-1.5 min-w-0">
                   <code className="flex-1 px-2 py-1 rounded bg-black/40 font-mono text-emerald-400 border border-emerald-500/20 truncate text-[11px]">
                     {dcvCnameTarget}
@@ -353,22 +365,20 @@ export function DomainSetupCard({ domain, onVerify, onDelete }: DomainSetupCardP
                     variant="ghost"
                     size="icon"
                     className="h-6 w-6 shrink-0 text-muted-foreground hover:text-foreground hover:bg-white/5"
-                    onClick={() => copyToClipboard(dcvCnameTarget, "Alvo CNAME")}
-                    aria-label="Copiar alvo do CNAME de validação SSL"
+                    onClick={() => copyToClipboard(dcvCnameTarget, t)}
+                    aria-label={t("domains.setup.copyAria", { field: t("domains.setup.pointsTo") })}
                   >
                     <Copy className="h-3 w-3" aria-hidden="true" />
                   </Button>
                 </div>
 
-                <span className="text-muted-foreground font-mono">Proxy</span>
+                <span className="text-muted-foreground font-mono">{t("domains.setup.proxy")}</span>
                 <ProxyIndicator proxied={false} />
               </div>
 
               <div className="flex items-start gap-1.5 text-[10px] text-emerald-400/80 leading-relaxed pt-0.5">
                 <Info className="h-3 w-3 shrink-0 mt-0.5" aria-hidden="true" />
-                <span>
-                  Este CNAME é permanente e renova o SSL automaticamente. Configure uma vez e esqueça.
-                </span>
+                <span>{t("domains.setup.sslCnameNote")}</span>
               </div>
             </div>
           )}
@@ -381,31 +391,31 @@ export function DomainSetupCard({ domain, onVerify, onDelete }: DomainSetupCardP
                   2
                 </span>
                 <span className="text-xs font-semibold text-foreground uppercase tracking-wider">
-                  Registro TXT (Validação SSL)
+                  {t("domains.setup.sslTxtTitle")}
                 </span>
               </div>
 
               <div className="grid grid-cols-[80px_1fr] gap-x-3 gap-y-1.5 text-xs">
-                <span className="text-muted-foreground font-mono">Tipo</span>
+                <span className="text-muted-foreground font-mono">{t("domains.setup.type")}</span>
                 <span className="font-mono text-foreground">TXT</span>
 
-                <span className="text-muted-foreground font-mono">Host</span>
+                <span className="text-muted-foreground font-mono">{t("domains.setup.host")}</span>
                 <div className="flex items-center gap-1.5 min-w-0">
                   <code className="flex-1 px-2 py-1 rounded bg-black/40 font-mono text-foreground border border-white/[0.06] truncate text-[11px]">
-                    {sslTxtName}
+                    {sslTxtHost}
                   </code>
                   <Button
                     variant="ghost"
                     size="icon"
                     className="h-6 w-6 shrink-0 text-muted-foreground hover:text-foreground hover:bg-white/5"
-                    onClick={() => copyToClipboard(sslTxtName, "Host TXT")}
-                    aria-label="Copiar host do TXT de validação SSL"
+                    onClick={() => copyToClipboard(sslTxtHost, t)}
+                    aria-label={t("domains.setup.copyAria", { field: t("domains.setup.host") })}
                   >
                     <Copy className="h-3 w-3" aria-hidden="true" />
                   </Button>
                 </div>
 
-                <span className="text-muted-foreground font-mono">Valor</span>
+                <span className="text-muted-foreground font-mono">{t("domains.setup.value")}</span>
                 <div className="flex items-center gap-1.5 min-w-0">
                   <code className="flex-1 px-2 py-1 rounded bg-black/40 font-mono text-[#004BFF] border border-[#004BFF]/20 truncate text-[11px]">
                     {sslTxtValue}
@@ -414,14 +424,14 @@ export function DomainSetupCard({ domain, onVerify, onDelete }: DomainSetupCardP
                     variant="ghost"
                     size="icon"
                     className="h-6 w-6 shrink-0 text-muted-foreground hover:text-foreground hover:bg-white/5"
-                    onClick={() => copyToClipboard(sslTxtValue, "Valor TXT")}
-                    aria-label="Copiar valor do TXT de validação SSL"
+                    onClick={() => copyToClipboard(sslTxtValue, t)}
+                    aria-label={t("domains.setup.copyAria", { field: t("domains.setup.value") })}
                   >
                     <Copy className="h-3 w-3" aria-hidden="true" />
                   </Button>
                 </div>
 
-                <span className="text-muted-foreground font-mono">Proxy</span>
+                <span className="text-muted-foreground font-mono">{t("domains.setup.proxy")}</span>
                 <ProxyIndicator proxied={false} />
               </div>
             </div>
@@ -432,8 +442,7 @@ export function DomainSetupCard({ domain, onVerify, onDelete }: DomainSetupCardP
             <div className="flex items-start gap-2 rounded-md border border-amber-500/20 bg-amber-500/[0.04] p-3">
               <Loader2 className="h-3.5 w-3.5 text-amber-400 shrink-0 mt-0.5 animate-spin" aria-hidden="true" />
               <div className="text-[11px] text-amber-400/90 leading-relaxed">
-                Aguardando geração do token de validação SSL pela Cloudflare. Clique em{" "}
-                <span className="font-semibold">Verificar agora</span> em alguns segundos para capturar o registro.
+                {t("domains.setup.awaitingToken")}
               </div>
             </div>
           )}
@@ -443,7 +452,7 @@ export function DomainSetupCard({ domain, onVerify, onDelete }: DomainSetupCardP
             <summary className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-white/[0.03] transition-colors list-none">
               <HelpCircle className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden="true" />
               <span className="text-[11px] text-muted-foreground flex-1">
-                Por que um registro fica com proxy e o outro não?
+                {t("domains.setup.helpSummary")}
               </span>
               <span
                 className="text-[10px] text-muted-foreground/60 group-open:rotate-180 transition-transform shrink-0"
@@ -456,21 +465,22 @@ export function DomainSetupCard({ domain, onVerify, onDelete }: DomainSetupCardP
               <div className="flex items-start gap-2">
                 <Cloud className="h-3 w-3 text-orange-500 fill-orange-500 shrink-0 mt-0.5" aria-hidden="true" />
                 <p>
-                  <span className="text-foreground font-medium">CNAME de Roteamento (proxy ativado):</span>{" "}
-                  precisa estar com a nuvem laranja para que a Cloudflare entregue o tráfego do seu domínio ao CloakerX com SSL, proteção contra bots e cache ativos.
+                  <span className="text-foreground font-medium">{t("domains.setup.helpRoutingLabel")}</span>{" "}
+                  {t("domains.setup.helpRoutingDesc")}
                 </p>
               </div>
               <div className="flex items-start gap-2">
                 <Cloud className="h-3 w-3 text-muted-foreground shrink-0 mt-0.5" aria-hidden="true" />
                 <p>
-                  <span className="text-foreground font-medium">CNAME de Validação SSL (DNS only):</span>{" "}
-                  precisa estar com a nuvem cinza para que a Autoridade Certificadora consiga ler o registro e emitir o certificado SSL. Se ficar com proxy ativado, a emissão falha.
+                  <span className="text-foreground font-medium">{t("domains.setup.helpSslLabel")}</span>{" "}
+                  {t("domains.setup.helpSslDesc")}
                 </p>
               </div>
               <div className="flex items-start gap-2 pt-1 border-t border-white/[0.04] mt-2">
                 <AlertCircle className="h-3 w-3 text-amber-400 shrink-0 mt-0.5" aria-hidden="true" />
                 <p className="text-amber-400/90">
-                  <span className="font-medium">Importante:</span> configure exatamente como mostrado. Não inverta os estados de proxy entre os dois registros.
+                  <span className="font-medium">{t("domains.setup.helpImportantLabel")}</span>{" "}
+                  {t("domains.setup.helpImportantDesc")}
                 </p>
               </div>
             </div>
@@ -489,10 +499,7 @@ export function DomainSetupCard({ domain, onVerify, onDelete }: DomainSetupCardP
           {/* SSL Notice */}
           <div className="flex items-start gap-2 text-[11px] text-muted-foreground leading-relaxed pt-1">
             <Clock className="h-3 w-3 shrink-0 mt-0.5" aria-hidden="true" />
-            <span>
-              O certificado SSL pode levar até <span className="text-foreground font-medium">15 minutos</span> para ser gerado
-              após a propagação dos registros DNS. Você pode clicar em verificar a qualquer momento.
-            </span>
+            <span>{t("domains.setup.sslNotice")}</span>
           </div>
 
           {/* Actions */}
@@ -508,12 +515,12 @@ export function DomainSetupCard({ domain, onVerify, onDelete }: DomainSetupCardP
               {isDeleting ? (
                 <>
                   <Loader2 className="h-3 w-3 mr-1.5 animate-spin" aria-hidden="true" />
-                  Excluindo...
+                  {t("domains.setup.deleting")}
                 </>
               ) : (
                 <>
                   <Trash2 className="h-3 w-3 mr-1.5" aria-hidden="true" />
-                  Excluir
+                  {t("domains.setup.delete")}
                 </>
               )}
             </Button>
@@ -528,12 +535,12 @@ export function DomainSetupCard({ domain, onVerify, onDelete }: DomainSetupCardP
               {isVerifying ? (
                 <>
                   <Loader2 className="h-3 w-3 mr-1.5 animate-spin" aria-hidden="true" />
-                  Verificando...
+                  {t("domains.setup.verifyingNow")}
                 </>
               ) : (
                 <>
                   <CheckCircle2 className="h-3 w-3 mr-1.5" aria-hidden="true" />
-                  Verificar agora
+                  {t("domains.setup.verifyNow")}
                 </>
               )}
             </Button>
@@ -554,20 +561,19 @@ export function DomainSetupCard({ domain, onVerify, onDelete }: DomainSetupCardP
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <AlertCircle className="h-4 w-4 text-destructive shrink-0" aria-hidden="true" />
-              Excluir domínio
+              {t("domains.setup.deleteTitle")}
             </AlertDialogTitle>
             <AlertDialogDescription className="text-sm text-muted-foreground pt-2 space-y-2">
-              <span className="block">
-                Você está prestes a excluir{" "}
-                <span className="font-mono text-foreground break-all">{dialogDomainLabel}</span>.
+              <span className="block break-all">
+                {t("domains.setup.deleteIntro", { domain: dialogDomainLabel })}
               </span>
               <span className="block text-amber-400/90 text-[13px]">
-                Esta ação é <span className="font-semibold">permanente</span>. O domínio será removido da sua conta e do Cloudflare, e qualquer tráfego apontando para ele deixará de funcionar imediatamente.
+                {t("domains.setup.deleteWarning")}
               </span>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting}>{t("domains.setup.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 // Prevent default dialog close — we close manually after await
@@ -580,12 +586,12 @@ export function DomainSetupCard({ domain, onVerify, onDelete }: DomainSetupCardP
               {isDeleting ? (
                 <>
                   <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" aria-hidden="true" />
-                  Excluindo...
+                  {t("domains.setup.deleting")}
                 </>
               ) : (
                 <>
                   <Trash2 className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" />
-                  Sim, excluir
+                  {t("domains.setup.confirmDelete")}
                 </>
               )}
             </AlertDialogAction>

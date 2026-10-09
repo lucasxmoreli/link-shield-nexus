@@ -36,11 +36,7 @@ export function AddDomainModal({ open, onOpenChange, url, onUrlChange, onSubmit,
               autoFocus
             />
             <p className="text-xs text-muted-foreground leading-relaxed mt-2">
-              Digite o domínio que deseja usar. Na próxima tela, forneceremos os registros{" "}
-              <span className="text-foreground font-medium">CNAME</span> e{" "}
-              <span className="text-foreground font-medium">TXT</span>{" "}
-              que você precisará configurar no seu provedor (Cloudflare, GoDaddy, HostGator, etc)
-              para a emissão automática do seu certificado SSL.
+              {t("domains.addModalHint")}
             </p>
           </div>
 
