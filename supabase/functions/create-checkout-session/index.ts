@@ -32,18 +32,25 @@ function getCorsHeaders(origin: string | null) {
 }
 
 /** Plan prices only (test + live Spec 2). No metered / pack IDs here. */
-const PLAN_PRICE_IDS = new Set([
-  // test — USD Spec 2 (57.99 / 96.99 / 234.99 / 389.99)
-  "price_1UG23HLZEOji6sEJoaUpX4t1", // BASIC $57.99
-  "price_1UG23OLZEOji6sEJw9z873KX", // PRO $96.99
-  "price_1UG23QLZEOji6sEJQQ1Evq5U", // FREEDOM $234.99
-  "price_1UG23PLZEOji6sEJ1kjc8qCg", // ENTERPRISE $389.99
-  // live — USD Spec 2 (stripe-catalog.live.json)
-  "price_1UGOBLLZEOji6sEJmp2Yp15Q", // BASIC $57.99
-  "price_1UGOejLZEOji6sEJWgTR0NyV", // PRO $96.99
-  "price_1UGOeyLZEOji6sEJu8l6ZlWm", // FREEDOM $234.99
-  "price_1UGOhiLZEOji6sEJX44FJWmM", // ENTERPRISE $389.99
-]);
+const PLAN_PRICES: Record<string, { test: string; live: string }> = {
+  STARTER: { test: "price_1UP4BvDpoy5qrQ4csSJCwRT4", live: "price_1UP4DvRZUfaPgdN8hr6HdJJU" }, // $34.99
+  BASIC: { test: "price_1UP4DSDpoy5qrQ4cCSwtiW94", live: "price_1UP4DwRZUfaPgdN8ERBuRniJ" }, // $57.99
+  PRO: { test: "price_1UP4DTDpoy5qrQ4cSWbhQtmz", live: "price_1UP4DwRZUfaPgdN8HhGCeco1" }, // $96.99
+  FREEDOM: { test: "price_1UP4DUDpoy5qrQ4cxmrR2clI", live: "price_1UP4DyRZUfaPgdN8lUlpnKuh" }, // $234.99
+  ENTERPRISE: { test: "price_1UP4DUDpoy5qrQ4c3DCbIbj0", live: "price_1UP4DyRZUfaPgdN8B882PfW0" }, // $389.99
+};
+
+/** The panel may still send the other mode's ID while the secret key is being swapped,
+ *  so resolve the plan from either ID and charge the price that matches the key mode. */
+function resolvePlanPrice(priceId: string, isLive: boolean): string | null {
+  const plan = Object.values(PLAN_PRICES).find((p) => p.test === priceId || p.live === priceId);
+  if (!plan) return null;
+  return isLive ? plan.live : plan.test;
+}
+
+function isMissingResource(err: unknown): boolean {
+  return (err as { code?: string })?.code === "resource_missing";
+}
 
 Deno.serve(async (req) => {
   const origin = req.headers.get("origin");
@@ -85,14 +92,15 @@ Deno.serve(async (req) => {
       return json(400, { error: "Invalid price_id" });
     }
 
-    if (!PLAN_PRICE_IDS.has(price_id)) {
-      return json(400, { error: "Unknown plan price_id" });
-    }
-
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) {
       console.error("[create-checkout-session] STRIPE_SECRET_KEY not configured");
       return json(500, { error: "Stripe not configured" });
+    }
+
+    const planPriceId = resolvePlanPrice(price_id, stripeKey.startsWith("sk_live"));
+    if (!planPriceId) {
+      return json(400, { error: "Unknown plan price_id" });
     }
 
     const stripe = new Stripe(stripeKey, {
@@ -121,6 +129,17 @@ Deno.serve(async (req) => {
     }
 
     let customerId = profile.stripe_customer_id;
+    if (customerId) {
+      // A customer created in test mode does not exist in live mode (and vice versa).
+      try {
+        const existing = await stripe.customers.retrieve(customerId);
+        if (existing.deleted) customerId = null;
+      } catch (err) {
+        if (!isMissingResource(err)) throw err;
+        console.warn(`[create-checkout-session] customer ${customerId} missing in this mode, recreating`);
+        customerId = null;
+      }
+    }
     if (!customerId) {
       const customer = await stripe.customers.create({
         email: profile.email || user.email,
@@ -145,7 +164,7 @@ Deno.serve(async (req) => {
       customer: customerId,
       client_reference_id: user.id,
       mode: "subscription",
-      line_items: [{ price: price_id, quantity: 1 }],
+      line_items: [{ price: planPriceId, quantity: 1 }],
       success_url: `${requestOrigin}/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${requestOrigin}/billing?checkout=cancelled`,
       metadata: { supabase_user_id: user.id },

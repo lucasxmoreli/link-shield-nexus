@@ -24,7 +24,7 @@ import { waitForCheckoutActivation } from "@/lib/waitForCheckoutActivation";
 /** Stripe checkout ON (test catalog USD). Edge still requires STRIPE_CHECKOUT_DISABLED=false. */
 const STRIPE_CHECKOUT_ENABLED = true;
 
-const STARTER_PLANS = PLANS.filter((p) => ["FREE", "BASIC PLAN", "PRO PLAN"].includes(p.name));
+const STARTER_PLANS = PLANS.filter((p) => ["STARTER PLAN", "BASIC PLAN", "PRO PLAN"].includes(p.name));
 const SCALE_PLANS = PLANS.filter((p) => ["FREEDOM PLAN", "ENTERPRISE CONQUEST"].includes(p.name));
 
 // ─────────────────────────────────────────────────────────────────────────────

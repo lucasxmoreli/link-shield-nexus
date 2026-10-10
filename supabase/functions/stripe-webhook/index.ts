@@ -8,56 +8,52 @@ const corsHeaders = {
 
 // Mapa do price fixed → config interno do plano (Spec 2 quotas)
 const PRICE_TO_PLAN: Record<string, { plan_name: string; max_clicks: number; max_domains: number; max_campaigns: number }> = {
-  // test USD Spec 2 (57.99 / 96.99 / 234.99 / 389.99)
-  "price_1UG23HLZEOji6sEJoaUpX4t1": { plan_name: "BASIC PLAN",          max_clicks:    8000, max_domains:  1, max_campaigns:  3 },
-  "price_1UG23OLZEOji6sEJw9z873KX": { plan_name: "PRO PLAN",            max_clicks:   20000, max_domains:  3, max_campaigns:  8 },
-  "price_1UG23QLZEOji6sEJQQ1Evq5U": { plan_name: "FREEDOM PLAN",        max_clicks:  100000, max_domains: 10, max_campaigns: 20 },
-  "price_1UG23PLZEOji6sEJ1kjc8qCg": { plan_name: "ENTERPRISE CONQUEST", max_clicks:  300000, max_domains: 20, max_campaigns: -1 },
+  // sandbox USD Spec 2 (stripe-catalog.test.json)
+  "price_1UP4BvDpoy5qrQ4csSJCwRT4": { plan_name: "STARTER PLAN",        max_clicks:    5000, max_domains:  1, max_campaigns:  1 },
+  "price_1UP4DSDpoy5qrQ4cCSwtiW94": { plan_name: "BASIC PLAN",          max_clicks:    8000, max_domains:  1, max_campaigns:  3 },
+  "price_1UP4DTDpoy5qrQ4cSWbhQtmz": { plan_name: "PRO PLAN",            max_clicks:   20000, max_domains:  3, max_campaigns:  8 },
+  "price_1UP4DUDpoy5qrQ4cxmrR2clI": { plan_name: "FREEDOM PLAN",        max_clicks:  100000, max_domains: 10, max_campaigns: 20 },
+  "price_1UP4DUDpoy5qrQ4c3DCbIbj0": { plan_name: "ENTERPRISE CONQUEST", max_clicks:  300000, max_domains: 20, max_campaigns: -1 },
   // live USD Spec 2 (stripe-catalog.live.json)
-  "price_1UGOBLLZEOji6sEJmp2Yp15Q": { plan_name: "BASIC PLAN",          max_clicks:    8000, max_domains:  1, max_campaigns:  3 },
-  "price_1UGOejLZEOji6sEJWgTR0NyV": { plan_name: "PRO PLAN",            max_clicks:   20000, max_domains:  3, max_campaigns:  8 },
-  "price_1UGOeyLZEOji6sEJu8l6ZlWm": { plan_name: "FREEDOM PLAN",        max_clicks:  100000, max_domains: 10, max_campaigns: 20 },
-  "price_1UGOhiLZEOji6sEJX44FJWmM": { plan_name: "ENTERPRISE CONQUEST", max_clicks:  300000, max_domains: 20, max_campaigns: -1 },
-  // live legacy (existing subs only — blocked from new checkout allowlist)
-  "price_1TLVRnLZEOji6sEJnw9oiVW2": { plan_name: "BASIC PLAN",          max_clicks:    20000, max_domains:  3, max_campaigns:  5 },
-  "price_1TLVSrLZEOji6sEJ8sF00dTT": { plan_name: "PRO PLAN",            max_clicks:   100000, max_domains: 10, max_campaigns: 20 },
-  "price_1TLVTYLZEOji6sEJ0mzIvzme": { plan_name: "FREEDOM PLAN",        max_clicks:   300000, max_domains: 20, max_campaigns: 50 },
-  "price_1TLVULLZEOji6sEJ4VyuhzMF": { plan_name: "ENTERPRISE CONQUEST", max_clicks:  1000000, max_domains: 25, max_campaigns: -1 },
+  "price_1UP4DvRZUfaPgdN8hr6HdJJU": { plan_name: "STARTER PLAN",        max_clicks:    5000, max_domains:  1, max_campaigns:  1 },
+  "price_1UP4DwRZUfaPgdN8ERBuRniJ": { plan_name: "BASIC PLAN",          max_clicks:    8000, max_domains:  1, max_campaigns:  3 },
+  "price_1UP4DwRZUfaPgdN8HhGCeco1": { plan_name: "PRO PLAN",            max_clicks:   20000, max_domains:  3, max_campaigns:  8 },
+  "price_1UP4DyRZUfaPgdN8lUlpnKuh": { plan_name: "FREEDOM PLAN",        max_clicks:  100000, max_domains: 10, max_campaigns: 20 },
+  "price_1UP4DyRZUfaPgdN8B882PfW0": { plan_name: "ENTERPRISE CONQUEST", max_clicks:  300000, max_domains: 20, max_campaigns: -1 },
 };
 
 // Legacy live metered map — DO NOT auto-heal for Spec 2 (packs replace overage).
 // Kept empty so new USD plans never get metered items attached.
 const PLAN_METERED_MAP: Record<string, string> = {};
 
-// Pack / addon prices → tipo (test + live Spec 2 + legacy live addons)
+// Pack / addon prices → tipo (sandbox + live Spec 2)
 const ADDON_PRICE_TO_TYPE: Record<string, "extra_clicks" | "extra_domain" | "extra_campaign"> = {
-  // test packs
-  "price_1UG1xZLZEOji6sEJf1szGS77": "extra_clicks",
-  "price_1UG1xZLZEOji6sEJXBR5Lwmk": "extra_domain",
-  "price_1UG1xbLZEOji6sEJozZXJhZ0": "extra_campaign",
-  "price_1UG1xbLZEOji6sEJbCkXukRD": "extra_clicks",
-  "price_1UG1xdLZEOji6sEJne54x6gr": "extra_domain",
-  "price_1UG1xfLZEOji6sEJ0GIFjbLE": "extra_campaign",
-  "price_1UG1xfLZEOji6sEJrTF5ANZB": "extra_clicks",
-  "price_1UG1xiLZEOji6sEJIMl4BVvx": "extra_domain",
-  "price_1UG1xjLZEOji6sEJY6fldVxi": "extra_campaign",
-  "price_1UG1xkLZEOji6sEJVppD5P1n": "extra_clicks",
-  "price_1UG1xkLZEOji6sEJ8Su2cqqP": "extra_domain",
-  // live Spec 2 packs
-  "price_1UGQKeLZEOji6sEJ0PfKLOxA": "extra_clicks",
-  "price_1UGQTtLZEOji6sEJ6ZBm1Wnn": "extra_domain",
-  "price_1UGQYHLZEOji6sEJnCFmj5FK": "extra_campaign",
-  "price_1UGQZlLZEOji6sEJY1FXvvhY": "extra_clicks",
-  "price_1UGQaALZEOji6sEJoPnpk9i6": "extra_domain",
-  "price_1UGQfyLZEOji6sEJ3mT4iR6p": "extra_campaign",
-  "price_1UGT34LZEOji6sEJDMcMkauq": "extra_clicks",
-  "price_1UGT3GLZEOji6sEJ3a147sMB": "extra_domain",
-  "price_1UGT3NLZEOji6sEJnBeQXWvb": "extra_campaign",
-  "price_1UGT3qLZEOji6sEJFea1Yu8H": "extra_clicks",
-  "price_1UGT4MLZEOji6sEJ1G2FGC2l": "extra_domain",
-  // live legacy addons
-  "price_1TMwsxLZEOji6sEJZj5yvPct": "extra_domain",
-  "price_1TMwudLZEOji6sEJLY129lHV": "extra_campaign",
+  // sandbox packs
+  "price_1UP4DVDpoy5qrQ4cpM7o9fzZ": "extra_clicks",
+  "price_1UP4DWDpoy5qrQ4cbOpFquFt": "extra_clicks",
+  "price_1UP4DXDpoy5qrQ4cEPiR18Wz": "extra_domain",
+  "price_1UP4DXDpoy5qrQ4czm6VSRyt": "extra_campaign",
+  "price_1UP4DdDpoy5qrQ4cax3Tuz46": "extra_clicks",
+  "price_1UP4DdDpoy5qrQ4cPsKuvnXS": "extra_domain",
+  "price_1UP4DeDpoy5qrQ4cvE5RX2Ty": "extra_campaign",
+  "price_1UP4DiDpoy5qrQ4c828TP5dj": "extra_clicks",
+  "price_1UP4DiDpoy5qrQ4cPbQ9OxKO": "extra_domain",
+  "price_1UP4DkDpoy5qrQ4cWc2gjLmJ": "extra_campaign",
+  "price_1UP4DoDpoy5qrQ4cCQds71c9": "extra_clicks",
+  "price_1UP4DpDpoy5qrQ4cmjCVsWN1": "extra_domain",
+  // live packs
+  "price_1UP4E3RZUfaPgdN8mpuV7Bm8": "extra_clicks",
+  "price_1UP4E4RZUfaPgdN8ghpYeWLP": "extra_clicks",
+  "price_1UP4E4RZUfaPgdN8t81aF9cT": "extra_domain",
+  "price_1UP4E4RZUfaPgdN8vFJwr2tT": "extra_campaign",
+  "price_1UP4EHRZUfaPgdN8RezRnlUy": "extra_clicks",
+  "price_1UP4EHRZUfaPgdN8BUwO8zfX": "extra_domain",
+  "price_1UP4EJRZUfaPgdN8fxw5FYV2": "extra_campaign",
+  "price_1UP4ELRZUfaPgdN8Aey2nKfg": "extra_clicks",
+  "price_1UP4ELRZUfaPgdN89PiUdG3l": "extra_domain",
+  "price_1UP4EMRZUfaPgdN8S44oyG2Q": "extra_campaign",
+  "price_1UP4ENRZUfaPgdN81aYnIAj1": "extra_clicks",
+  "price_1UP4ENRZUfaPgdN8WYq2DqHO": "extra_domain",
 };
 
 const FREE_PLAN = { plan_name: "FREE", max_clicks: 0, max_domains: 0, max_campaigns: 0 };

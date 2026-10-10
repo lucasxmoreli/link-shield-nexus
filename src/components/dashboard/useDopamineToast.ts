@@ -7,7 +7,7 @@ import { subHours } from "date-fns";
 import { useTranslation } from "react-i18next";
 
 const PLAN_THRESHOLDS: Record<string, number> = {
-  Free: 15, "Basic Plan": 15, "BASIC PLAN": 15,
+  Free: 15, "STARTER PLAN": 10, "Basic Plan": 15, "BASIC PLAN": 15,
   "Pro Plan": 50, "PRO PLAN": 50,
   "Freedom Plan": 200, "FREEDOM PLAN": 200,
   "Enterprise Conquest": 500, "ENTERPRISE CONQUEST": 500,

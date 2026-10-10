@@ -24,50 +24,56 @@ function getCorsHeaders(origin: string | null) {
 }
 
 type AddonType = "extra_clicks" | "extra_domain" | "extra_campaign";
-type PlanKey = "BASIC" | "PRO" | "FREEDOM" | "ENTERPRISE";
+type PlanKey = "STARTER" | "BASIC" | "PRO" | "FREEDOM" | "ENTERPRISE";
 
-/** Spec 2 packs (USD) — test + live. Selected by STRIPE_SECRET_KEY mode. */
+/** Spec 2 packs (USD) — sandbox + live. Selected by STRIPE_SECRET_KEY mode. */
 const PACK_PRICES_TEST: Record<PlanKey, Partial<Record<AddonType, string>>> = {
+  STARTER: {
+    extra_clicks: "price_1UP4DVDpoy5qrQ4cpM7o9fzZ",
+  },
   BASIC: {
-    extra_clicks: "price_1UG1xZLZEOji6sEJf1szGS77",
-    extra_domain: "price_1UG1xZLZEOji6sEJXBR5Lwmk",
-    extra_campaign: "price_1UG1xbLZEOji6sEJozZXJhZ0",
+    extra_clicks: "price_1UP4DWDpoy5qrQ4cbOpFquFt",
+    extra_domain: "price_1UP4DXDpoy5qrQ4cEPiR18Wz",
+    extra_campaign: "price_1UP4DXDpoy5qrQ4czm6VSRyt",
   },
   PRO: {
-    extra_clicks: "price_1UG1xbLZEOji6sEJbCkXukRD",
-    extra_domain: "price_1UG1xdLZEOji6sEJne54x6gr",
-    extra_campaign: "price_1UG1xfLZEOji6sEJ0GIFjbLE",
+    extra_clicks: "price_1UP4DdDpoy5qrQ4cax3Tuz46",
+    extra_domain: "price_1UP4DdDpoy5qrQ4cPsKuvnXS",
+    extra_campaign: "price_1UP4DeDpoy5qrQ4cvE5RX2Ty",
   },
   FREEDOM: {
-    extra_clicks: "price_1UG1xfLZEOji6sEJrTF5ANZB",
-    extra_domain: "price_1UG1xiLZEOji6sEJIMl4BVvx",
-    extra_campaign: "price_1UG1xjLZEOji6sEJY6fldVxi",
+    extra_clicks: "price_1UP4DiDpoy5qrQ4c828TP5dj",
+    extra_domain: "price_1UP4DiDpoy5qrQ4cPbQ9OxKO",
+    extra_campaign: "price_1UP4DkDpoy5qrQ4cWc2gjLmJ",
   },
   ENTERPRISE: {
-    extra_clicks: "price_1UG1xkLZEOji6sEJVppD5P1n",
-    extra_domain: "price_1UG1xkLZEOji6sEJ8Su2cqqP",
+    extra_clicks: "price_1UP4DoDpoy5qrQ4cCQds71c9",
+    extra_domain: "price_1UP4DpDpoy5qrQ4cmjCVsWN1",
   },
 };
 
 const PACK_PRICES_LIVE: Record<PlanKey, Partial<Record<AddonType, string>>> = {
+  STARTER: {
+    extra_clicks: "price_1UP4E3RZUfaPgdN8mpuV7Bm8",
+  },
   BASIC: {
-    extra_clicks: "price_1UGQKeLZEOji6sEJ0PfKLOxA",
-    extra_domain: "price_1UGQTtLZEOji6sEJ6ZBm1Wnn",
-    extra_campaign: "price_1UGQYHLZEOji6sEJnCFmj5FK",
+    extra_clicks: "price_1UP4E4RZUfaPgdN8ghpYeWLP",
+    extra_domain: "price_1UP4E4RZUfaPgdN8t81aF9cT",
+    extra_campaign: "price_1UP4E4RZUfaPgdN8vFJwr2tT",
   },
   PRO: {
-    extra_clicks: "price_1UGQZlLZEOji6sEJY1FXvvhY",
-    extra_domain: "price_1UGQaALZEOji6sEJoPnpk9i6",
-    extra_campaign: "price_1UGQfyLZEOji6sEJ3mT4iR6p",
+    extra_clicks: "price_1UP4EHRZUfaPgdN8RezRnlUy",
+    extra_domain: "price_1UP4EHRZUfaPgdN8BUwO8zfX",
+    extra_campaign: "price_1UP4EJRZUfaPgdN8fxw5FYV2",
   },
   FREEDOM: {
-    extra_clicks: "price_1UGT34LZEOji6sEJDMcMkauq",
-    extra_domain: "price_1UGT3GLZEOji6sEJ3a147sMB",
-    extra_campaign: "price_1UGT3NLZEOji6sEJnBeQXWvb",
+    extra_clicks: "price_1UP4ELRZUfaPgdN8Aey2nKfg",
+    extra_domain: "price_1UP4ELRZUfaPgdN89PiUdG3l",
+    extra_campaign: "price_1UP4EMRZUfaPgdN8S44oyG2Q",
   },
   ENTERPRISE: {
-    extra_clicks: "price_1UGT3qLZEOji6sEJFea1Yu8H",
-    extra_domain: "price_1UGT4MLZEOji6sEJ1G2FGC2l",
+    extra_clicks: "price_1UP4ENRZUfaPgdN81aYnIAj1",
+    extra_domain: "price_1UP4ENRZUfaPgdN8WYq2DqHO",
   },
 };
 
@@ -83,6 +89,7 @@ function planKeyFromName(planName: string | null | undefined): PlanKey | null {
   if (u.includes("FREEDOM")) return "FREEDOM";
   if (u.includes("PRO")) return "PRO";
   if (u.includes("BASIC")) return "BASIC";
+  if (u.includes("STARTER")) return "STARTER";
   return null;
 }
 
