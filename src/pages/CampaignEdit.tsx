@@ -18,7 +18,6 @@ import SafePageConfig from "@/components/campaigns/edit/SafePageConfig";
 import OfferPageConfig from "@/components/campaigns/edit/OfferPageConfig";
 import PreLanderConfig, { type PreLanderConfigHandle } from "@/components/campaigns/edit/PreLanderConfig";
 import BehavioralModeConfig from "@/components/campaigns/edit/BehavioralModeConfig";
-import SecurityConfig from "@/components/campaigns/edit/SecurityConfig";
 import WebhookPostbackConfig from "@/components/campaigns/edit/WebhookPostbackConfig";
 import TargetingConfig from "@/components/campaigns/edit/TargetingConfig";
 
