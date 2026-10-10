@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Zap, Copy, Check, Info } from "lucide-react";
+import { Zap, Copy, Check, Info, FlaskConical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,7 +17,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { toast } from "sonner";
-import { buildDefaultTrackingUrl } from "@/components/campaigns/CampaignLinkGenerator";
+import { buildDefaultTrackingUrl, buildTrackingUrl } from "@/components/campaigns/CampaignLinkGenerator";
 
 export interface CampaignFinalLinkData {
   name: string;
@@ -54,6 +54,15 @@ export default function CampaignFinalLinkModal({
     toast.success(t("campaignEdit.linkCopied"));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  // Only click_id: any other param would carry a literal macro and be blocked as a
+  // platform bot. A fresh value each time, because a reused click_id is blocked too.
+  const handleCopyTestLink = () => {
+    const root = buildTrackingUrl(campaign.domain || "yourdomain.com", campaign.hash, []);
+    const testId = `teste${Math.random().toString(36).slice(2, 10)}`;
+    navigator.clipboard.writeText(`${root}?click_id=${testId}`);
+    toast.success(t("campaignEdit.testLinkCopied"), { duration: 8000 });
   };
 
   const handleClose = () => {
@@ -109,6 +118,10 @@ export default function CampaignFinalLinkModal({
           <Button className="w-full gap-2" size="lg" onClick={handleCopy}>
             {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
             {t("campaignEdit.copyFinalUrl")}
+          </Button>
+          <Button variant="outline" className="w-full gap-2" onClick={handleCopyTestLink}>
+            <FlaskConical className="h-4 w-4" />
+            {t("campaignEdit.copyTestLink")}
           </Button>
         </div>
 
