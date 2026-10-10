@@ -29,3 +29,11 @@ supabase/.temp/
 # Local bundles / deploy payloads
 *.zip
 _deploy_*.json
+
+# Local agent / tooling files
+.agents/
+.claude/skills/
+.cursor/
+CLAUDE.md
+deno.lock
+skills-lock.json
