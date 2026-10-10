@@ -19,11 +19,6 @@ import type { CampaignFinalLinkData } from "@/components/campaigns/CampaignFinal
 
 // ── Types ──────────────────────────────────────────────
 
-export interface OfferEntry {
-  url: string;
-  weight: number;
-}
-
 export interface PostbackParam {
   key: string;
   value: string;
@@ -64,14 +59,9 @@ export function useCampaignForm() {
   const [domain, setDomain] = useState("");
   const [trafficSource, setTrafficSource] = useState("");
   const [safeUrl, setSafeUrl] = useState("");
-  const [offerMode, setOfferMode] = useState<"single" | "ab">("single");
   const [offerUrl, setOfferUrl] = useState("");
   const [offerPageB, setOfferPageB] = useState("");
   const [abStormEnabled, setAbStormEnabled] = useState(false);
-  const [abOffers, setAbOffers] = useState<OfferEntry[]>([
-    { url: "", weight: 50 },
-    { url: "", weight: 50 },
-  ]);
   const [targetCountries, setTargetCountries] = useState<string[]>([]);
   const [targetDevices, setTargetDevices] = useState<string[]>([]);
   const [strictMode, setStrictMode] = useState(true);
@@ -151,9 +141,7 @@ export function useCampaignForm() {
   // ── Validation (derived, no state) ──────────
   const areDestinationUrlsValid =
     isValidAbsoluteUrl(safeUrl) &&
-    (offerMode === "single"
-      ? isValidAbsoluteUrl(offerUrl)
-      : abOffers.every((o) => isValidAbsoluteUrl(o.url))) &&
+    isValidAbsoluteUrl(offerUrl) &&
     (!abStormEnabled || !offerPageB.trim() || isValidAbsoluteUrl(offerPageB));
 
   const prelanderValid =
@@ -166,7 +154,7 @@ export function useCampaignForm() {
     domain &&
     trafficSource &&
     safeUrl &&
-    (offerMode === "single" ? offerUrl : abOffers.every((o) => o.url)) &&
+    offerUrl &&
     areDestinationUrlsValid
   );
 
@@ -234,10 +222,7 @@ export function useCampaignForm() {
         domain: domain || null,
         traffic_source: trafficSource,
         safe_url: ensureAbsoluteUrl(safeUrl),
-        offer_url:
-          offerMode === "single"
-            ? ensureAbsoluteUrl(offerUrl)
-            : abOffers.map((o) => ensureAbsoluteUrl(o.url)).join(","),
+        offer_url: ensureAbsoluteUrl(offerUrl),
         offer_page_b: abStormEnabled && offerPageB.trim() ? ensureAbsoluteUrl(offerPageB.trim()) : null,
         // O engine agora opera exclusivamente via Redirect 302 — não enviamos
         // mais safe_page_method / offer_page_method no payload.
@@ -387,11 +372,9 @@ export function useCampaignForm() {
       domain,
       trafficSource,
       safeUrl,
-      offerMode,
       offerUrl,
       offerPageB,
       abStormEnabled,
-      abOffers,
       targetCountries,
       targetDevices,
       strictMode,
@@ -416,11 +399,9 @@ export function useCampaignForm() {
       setDomain,
       setTrafficSource,
       setSafeUrl,
-      setOfferMode,
       setOfferUrl,
       setOfferPageB,
       setAbStormEnabled: handleAbStormToggle,
-      setAbOffers,
       setTargetCountries,
       setTargetDevices,
       setStrictMode,

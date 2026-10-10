@@ -54,7 +54,7 @@ export default function WebhookPostbackConfig({
         <Label className="text-xs text-muted-foreground">{t("campaignEdit.webhookBaseUrl")}</Label>
         <Input
           placeholder="https://tracker.com/postback"
-          className="bg-secondary border-border font-mono text-xs"
+          className="bg-secondary border-border font-mono text-base md:text-xs"
           value={postbackBaseUrl}
           onChange={(e) => onPostbackBaseUrlChange(e.target.value)}
         />
@@ -68,7 +68,7 @@ export default function WebhookPostbackConfig({
             <div key={index} className="flex gap-2 items-center">
               <Input
                 placeholder={t("campaignEdit.paramKey")}
-                className="bg-secondary border-border font-mono text-xs w-28 shrink-0"
+                className="bg-secondary border-border font-mono text-base md:text-xs w-28 shrink-0"
                 value={param.key}
                 onChange={(e) => {
                   const updated = [...postbackParams];
@@ -79,7 +79,7 @@ export default function WebhookPostbackConfig({
               {param.isCustom ? (
                 <Input
                   placeholder={t("campaignEdit.paramValue")}
-                  className="bg-secondary border-border font-mono text-xs flex-1"
+                  className="bg-secondary border-border font-mono text-base md:text-xs flex-1"
                   value={param.value}
                   onChange={(e) => {
                     const updated = [...postbackParams];

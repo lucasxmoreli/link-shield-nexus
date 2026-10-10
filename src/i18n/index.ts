@@ -26,4 +26,19 @@ i18n
     },
   });
 
+const DOCUMENT_META: Record<string, { lang: string; title: string }> = {
+  pt: { lang: "pt-BR", title: "CloakerX | Proteção de Tráfego de Alta Performance" },
+  en: { lang: "en", title: "CloakerX | High-Performance Traffic Protection" },
+  es: { lang: "es", title: "CloakerX | Protección de Tráfico de Alto Rendimiento" },
+};
+
+function syncDocumentMeta() {
+  const meta = DOCUMENT_META[i18n.resolvedLanguage ?? "en"] ?? DOCUMENT_META.en;
+  document.documentElement.lang = meta.lang;
+  document.title = meta.title;
+}
+
+syncDocumentMeta();
+i18n.on("languageChanged", syncDocumentMeta);
+
 export default i18n;
