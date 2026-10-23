@@ -35,7 +35,7 @@ export function AddDomainModal({ open, onOpenChange, url, onUrlChange, onSubmit,
               onKeyDown={(e) => { if (e.key === "Enter" && url) onSubmit(); }}
               autoFocus
             />
-            <p className="text-xs text-muted-foreground leading-relaxed mt-2">
+            <p className="text-sm text-amber-100/90 leading-relaxed mt-3 rounded-md border border-amber-500/20 bg-amber-500/10 px-3 py-2">
               {t("domains.addModalHint")}
             </p>
           </div>

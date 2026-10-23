@@ -249,6 +249,9 @@ export function DomainSetupCard({ domain, onVerify, onDelete }: DomainSetupCardP
 
         {/* DNS Records */}
         <div className="p-4 space-y-3">
+          <p className="text-xs text-amber-100/90 leading-relaxed rounded-md border border-amber-500/20 bg-amber-500/10 px-3 py-2">
+            {t("domains.setup.notOnHosting")}
+          </p>
           {/* Visual flow diagram — Sprint 2 item 2.3 */}
           <DnsFlowDiagram
             domain={domain.url}

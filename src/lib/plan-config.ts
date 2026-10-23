@@ -5,7 +5,7 @@ import type { LucideIcon } from "lucide-react";
  *  Runtime limits: get_billing_state() / useBillingState (not these numbers alone).
  *  Spec 2 included quotas. Packs replace metered overage.
  *
- *  stripePriceId below = LIVE IDs (supabase/functions/_shared/stripe-catalog.live.json).
+ *  stripePriceId below = live IDs of acct_1TLTvILZEOji6sEJ.
  *  create-checkout-session maps them to the sandbox twin when STRIPE_SECRET_KEY is sk_test.
  */
 
@@ -68,29 +68,6 @@ export const PLANS: PlanData[] = [
     stripeMeteredPriceId: null,
   },
   {
-    name: "STARTER PLAN",
-    price: "$34.99",
-    priceNum: "34.99",
-    description: "Entry plan to start protecting one campaign. Upgrade anytime as you scale.",
-    features: [
-      { text: "5,000 clicks / month", available: true },
-      { text: "1 domain", available: true },
-      { text: "1 campaign", available: true },
-      { text: "Click packs up to 10k clicks", available: true },
-      { text: "Vip support: Text us in the chat", available: true },
-    ],
-    visibleSources: 2,
-    buttonText: "Select Plan",
-    highlighted: false,
-    isFree: false,
-    maxClicksLimit: 5000,
-    maxDomains: 1,
-    maxCampaigns: 1,
-    extraClickPrice: 0,
-    stripePriceId: "price_1UP4DvRZUfaPgdN8hr6HdJJU",
-    stripeMeteredPriceId: null,
-  },
-  {
     name: "BASIC PLAN",
     price: "$57.99",
     priceNum: "57.99",
@@ -110,7 +87,7 @@ export const PLANS: PlanData[] = [
     maxDomains: 1,
     maxCampaigns: 3,
     extraClickPrice: 0,
-    stripePriceId: "price_1UP4DwRZUfaPgdN8ERBuRniJ",
+    stripePriceId: "price_1UGOBLLZEOji6sEJmp2Yp15Q",
     stripeMeteredPriceId: null,
   },
   {
@@ -134,7 +111,7 @@ export const PLANS: PlanData[] = [
     maxDomains: 3,
     maxCampaigns: 8,
     extraClickPrice: 0,
-    stripePriceId: "price_1UP4DwRZUfaPgdN8HhGCeco1",
+    stripePriceId: "price_1UGOejLZEOji6sEJWgTR0NyV",
     stripeMeteredPriceId: null,
   },
   {
@@ -157,7 +134,7 @@ export const PLANS: PlanData[] = [
     maxDomains: 10,
     maxCampaigns: 20,
     extraClickPrice: 0,
-    stripePriceId: "price_1UP4DyRZUfaPgdN8lUlpnKuh",
+    stripePriceId: "price_1UGOeyLZEOji6sEJu8l6ZlWm",
     stripeMeteredPriceId: null,
   },
   {
@@ -180,7 +157,7 @@ export const PLANS: PlanData[] = [
     maxDomains: 20,
     maxCampaigns: -1,
     extraClickPrice: 0,
-    stripePriceId: "price_1UP4DyRZUfaPgdN8B882PfW0",
+    stripePriceId: "price_1UGOhiLZEOji6sEJX44FJWmM",
     stripeMeteredPriceId: null,
   },
 ];
