@@ -85,7 +85,7 @@ export function PackCapacityCard({
                 })}
           </p>
         </div>
-        {resource.state === "at_limit" && (
+        {resource.state === "at_limit" && view.cta.type !== "buy" && (
           <Badge variant="outline" className="border-destructive/40 text-destructive shrink-0">
             {t("billing.packs.badgeAtLimit")}
           </Badge>

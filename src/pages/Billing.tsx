@@ -170,7 +170,13 @@ export default function Billing() {
       queryClient.invalidateQueries({ queryKey: ["profile"] });
       queryClient.invalidateQueries({ queryKey: ["billing_state"] });
 
-      if (result === "ACTIVE") {
+      let active = result === "ACTIVE";
+      if (!active) {
+        const { data: gate } = await supabase.rpc("get_my_profile_gate").maybeSingle();
+        active = (gate as { activation_status?: string | null } | null)?.activation_status === "ACTIVE";
+      }
+
+      if (active) {
         toast({
           title: t("billing.checkoutSuccess"),
           description: t("billing.checkoutSuccessDesc"),

@@ -1,4 +1,4 @@
-﻿import { createClient } from "jsr:@supabase/supabase-js@2";
+import { createClient } from "jsr:@supabase/supabase-js@2";
 import Stripe from "npm:stripe@17.5.0";
 
 const corsHeaders = {
@@ -241,6 +241,16 @@ async function handleCheckoutCompleted(
   const meteredItem = findMeteredItem(subscription);
   const { start: periodStart, end: periodEnd } = periodUnix(subscription);
 
+  const { data: existing } = await admin
+    .from("profiles")
+    .select("subscription_status, stripe_subscription_id")
+    .eq("user_id", userId)
+    .maybeSingle();
+  const keepPaidStatus =
+    existing?.stripe_subscription_id === subscriptionId &&
+    (existing.subscription_status === "active" || existing.subscription_status === "trialing") &&
+    (subscription.status === "incomplete" || subscription.status === "incomplete_expired");
+
   mustWrite(
     "checkout.completed/profiles",
     await admin
@@ -255,7 +265,7 @@ async function handleCheckoutCompleted(
         max_domains: planConfig.max_domains,
         max_campaigns: planConfig.max_campaigns,
         current_clicks: 0,
-        subscription_status: subscription.status,
+        subscription_status: keepPaidStatus ? existing!.subscription_status : subscription.status,
         is_suspended: false,
         billing_cycle_start: periodStart
           ? new Date(periodStart * 1000).toISOString()
@@ -323,7 +333,7 @@ async function handleSubscriptionUpdated(
 
   const { data: currentProfile, error: fetchError } = await admin
     .from("profiles")
-    .select("billing_cycle_start")
+    .select("billing_cycle_start, subscription_status, stripe_subscription_id")
     .eq("user_id", userId)
     .single();
 
@@ -340,6 +350,10 @@ async function handleSubscriptionUpdated(
     : null;
 
   const isCycleRenewal = oldCycleStartISO !== null && oldCycleStartISO !== newCycleStartISO;
+  const keepPaidStatus =
+    currentProfile?.stripe_subscription_id === subscription.id &&
+    (currentProfile.subscription_status === "active" || currentProfile.subscription_status === "trialing") &&
+    (subscription.status === "incomplete" || subscription.status === "incomplete_expired");
 
   const updatePayload: Record<string, unknown> = {
     stripe_subscription_id: subscription.id,
@@ -349,8 +363,8 @@ async function handleSubscriptionUpdated(
     max_clicks: planConfig.max_clicks,
     max_domains: planConfig.max_domains,
     max_campaigns: planConfig.max_campaigns,
-    subscription_status: subscription.status,
-    is_suspended: isSuspended,
+    subscription_status: keepPaidStatus ? currentProfile!.subscription_status : subscription.status,
+    is_suspended: keepPaidStatus ? false : isSuspended,
     billing_cycle_start: newCycleStartISO,
     billing_cycle_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
   };
@@ -627,6 +641,38 @@ async function handleInvoicePaid(
     }, { onConflict: "stripe_invoice_id" }),
     false,
   );
+
+  const invoiceSubId =
+    typeof invoice.subscription === "string"
+      ? invoice.subscription
+      : invoice.subscription?.id ?? null;
+
+  if (invoiceSubId) {
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("stripe_subscription_id, stripe_packs_subscription_id")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    const isPackInvoice = profile?.stripe_packs_subscription_id === invoiceSubId;
+    const isPlanInvoice =
+      !profile?.stripe_subscription_id || profile.stripe_subscription_id === invoiceSubId;
+
+    if (!isPackInvoice && isPlanInvoice) {
+      mustWrite(
+        "invoice.paid/activate",
+        await admin
+          .from("profiles")
+          .update({
+            stripe_subscription_id: profile?.stripe_subscription_id ?? invoiceSubId,
+            subscription_status: "active",
+            is_suspended: false,
+          })
+          .eq("user_id", userId)
+          .select("user_id"),
+      );
+    }
+  }
 
   console.log(`[invoice.paid] User ${userId} -> ${invoice.id}`);
 }

@@ -592,7 +592,7 @@ const en = {
     checkoutProcessing: "Confirming payment…",
     checkoutProcessingDesc: "Waiting for Stripe to activate your plan. This usually takes a few seconds.",
     checkoutPending: "Payment received — activation pending",
-    checkoutPendingDesc: "We got the checkout return, but your plan is not ACTIVE yet. Refresh in a minute or contact support if it stays free.",
+    checkoutPendingDesc: "Payment is in. The plan is unlocking. Refresh the page in a few seconds.",
     checkoutCancelled: "Checkout cancelled",
     checkoutCancelledDesc: "No charge was made. You can try again whenever you want.",
     // ── Sprint 6: Client Portal MVP ──

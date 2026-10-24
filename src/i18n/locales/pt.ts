@@ -576,7 +576,7 @@ const pt = {
     checkoutProcessing: "Confirmando pagamento…",
     checkoutProcessingDesc: "Aguardando o Stripe ativar seu plano. Costuma levar alguns segundos.",
     checkoutPending: "Pagamento ok — ativação pendente",
-    checkoutPendingDesc: "O checkout voltou, mas o plano ainda não está ACTIVE. Atualize em um minuto ou fale com o suporte se continuar FREE.",
+    checkoutPendingDesc: "O pagamento entrou. O plano está liberando. Atualize a página em alguns segundos.",
     checkoutCancelled: "Checkout cancelado",
     checkoutCancelledDesc: "Nenhuma cobrança foi realizada. Você pode tentar novamente quando quiser.",
     // ── Sprint 6: Client Portal MVP ──
