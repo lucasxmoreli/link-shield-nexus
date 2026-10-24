@@ -4,7 +4,7 @@ import { useSearchParams } from "react-router-dom";
 import { Check, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -454,7 +454,7 @@ export default function Billing() {
           }
         }}
       >
-        <DialogContent className="sm:max-w-md border-primary/20 bg-card">
+        <DialogContent className="sm:max-w-md overflow-x-hidden border-primary/20 bg-card">
           {selectedPlan && (
             <>
               <DialogHeader className="text-center sm:text-center space-y-3 pb-2">
@@ -495,11 +495,11 @@ export default function Billing() {
                   </div>
                 )}
               </div>
-              <DialogFooter className="flex-col gap-2 pt-2">
+              <div className="flex flex-col gap-2 w-full min-w-0 pt-2">
                 <Button
                   onClick={() => handleConfirmUpgrade("brl")}
                   disabled={checkoutLoading || !selectedPlan.stripePriceId}
-                  className="w-full h-auto py-3 font-semibold bg-primary hover:bg-primary/90 text-primary-foreground"
+                  className="w-full whitespace-normal h-auto py-3 font-semibold bg-primary hover:bg-primary/90 text-primary-foreground"
                 >
                   {checkoutLoading ? (
                     <>
@@ -507,7 +507,7 @@ export default function Billing() {
                       {t("billing.redirecting")}
                     </>
                   ) : (
-                    <span className="flex flex-col items-center leading-tight">
+                    <span className="flex flex-col items-center leading-tight text-center">
                       <span>{t("billing.payInBrl", { amount: selectedPlan.checkoutBrl })}</span>
                       <span className="text-[11px] font-normal opacity-80">{t("billing.payInBrlHint")}</span>
                     </span>
@@ -517,9 +517,9 @@ export default function Billing() {
                   onClick={() => handleConfirmUpgrade("usd")}
                   disabled={checkoutLoading || !selectedPlan.stripePriceId}
                   variant="outline"
-                  className="w-full h-auto py-3 font-semibold"
+                  className="w-full whitespace-normal h-auto py-3 font-semibold"
                 >
-                  <span className="flex flex-col items-center leading-tight">
+                  <span className="flex flex-col items-center leading-tight text-center">
                     <span>{t("billing.payInUsd", { amount: selectedPlan.price })}</span>
                     <span className="text-[11px] font-normal opacity-80">{t("billing.payInUsdHint")}</span>
                   </span>
@@ -534,7 +534,7 @@ export default function Billing() {
                 >
                   {t("common.cancel")}
                 </Button>
-              </DialogFooter>
+              </div>
             </>
           )}
         </DialogContent>
