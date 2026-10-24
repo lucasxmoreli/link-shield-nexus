@@ -454,87 +454,52 @@ export default function Billing() {
           }
         }}
       >
-        <DialogContent className="sm:max-w-md overflow-x-hidden border-primary/20 bg-card">
+        <DialogContent className="sm:max-w-md max-h-none overflow-visible border-primary/20 bg-card">
           {selectedPlan && (
             <>
-              <DialogHeader className="text-center sm:text-center space-y-3 pb-2">
-                <Badge className="mx-auto w-fit bg-primary/15 text-primary border-0 text-[10px] tracking-widest px-3 py-1">{t("billing.selectedPlan")}</Badge>
-                <DialogTitle className="text-2xl sm:text-3xl font-bold tracking-tight">{selectedPlan.name}</DialogTitle>
-                <div className="flex items-baseline justify-center gap-1">
-                  <span className="text-4xl sm:text-5xl font-bold font-mono">{selectedPlan.price}</span>
-                  <span className="text-muted-foreground text-sm">/mo</span>
-                </div>
-                <p className="text-sm text-muted-foreground leading-relaxed max-w-xs mx-auto">{selectedPlan.description}</p>
+              <DialogHeader className="items-center space-y-1 text-center sm:text-center">
+                <DialogTitle className="text-xl font-semibold tracking-tight">{selectedPlan.name}</DialogTitle>
+                <p className="text-sm text-muted-foreground leading-snug max-w-[18rem]">
+                  {selectedPlan.description}
+                </p>
               </DialogHeader>
-              <div className="space-y-5 py-4">
-                <div className="space-y-2.5">
-                  <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">{t("billing.whatsIncluded")}</p>
-                  <ul className="space-y-2">
-                    {selectedPlan.features.filter(f => f.available).map((f) => (
-                      <li key={f.text} className="flex items-center gap-2.5 text-sm">
-                        <div className="h-5 w-5 rounded-full bg-success/15 flex items-center justify-center shrink-0"><Check size={12} className="text-success" /></div>
-                        <span>{f.text}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                {selectedPlan.visibleSources > 0 && (
-                  <div className="space-y-2.5">
-                    <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">{t("billing.includedSources")}</p>
-                    <div className="flex flex-wrap gap-2">
-                      {TRAFFIC_SOURCES.slice(0, selectedPlan.visibleSources).map((src) => {
-                        const Icon = src.icon;
-                        return (
-                          <div key={src.name} className="flex items-center gap-1.5 rounded-lg border border-border bg-secondary/50 px-2.5 py-1.5">
-                            <Icon size={14} style={{ color: src.color }} />
-                            <span className="text-xs font-medium">{src.name}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div className="flex flex-col gap-2 w-full min-w-0 pt-2">
+              <div className="grid grid-cols-2 gap-3">
                 <Button
                   onClick={() => handleConfirmUpgrade("brl")}
                   disabled={checkoutLoading || !selectedPlan.stripePriceId}
-                  className="w-full whitespace-normal h-auto py-3 font-semibold bg-primary hover:bg-primary/90 text-primary-foreground"
+                  className="h-auto whitespace-normal flex-col gap-1 px-3 py-4 bg-primary hover:bg-primary/90 text-primary-foreground"
                 >
                   {checkoutLoading ? (
-                    <>
-                      <Loader2 size={16} className="animate-spin mr-2" />
-                      {t("billing.redirecting")}
-                    </>
+                    <Loader2 size={16} className="animate-spin" />
                   ) : (
-                    <span className="flex flex-col items-center leading-tight text-center">
-                      <span>{t("billing.payInBrl", { amount: selectedPlan.checkoutBrl })}</span>
-                      <span className="text-[11px] font-normal opacity-80">{t("billing.payInBrlHint")}</span>
-                    </span>
+                    <>
+                      <span className="text-[11px] font-medium opacity-80">{t("billing.payBrlShort")}</span>
+                      <span className="text-lg font-semibold font-mono leading-none">{selectedPlan.checkoutBrl}</span>
+                      <span className="text-[11px] font-normal opacity-80 leading-snug">{t("billing.payInBrlHint")}</span>
+                    </>
                   )}
                 </Button>
                 <Button
                   onClick={() => handleConfirmUpgrade("usd")}
                   disabled={checkoutLoading || !selectedPlan.stripePriceId}
                   variant="outline"
-                  className="w-full whitespace-normal h-auto py-3 font-semibold"
+                  className="h-auto whitespace-normal flex-col gap-1 px-3 py-4"
                 >
-                  <span className="flex flex-col items-center leading-tight text-center">
-                    <span>{t("billing.payInUsd", { amount: selectedPlan.price })}</span>
-                    <span className="text-[11px] font-normal opacity-80">{t("billing.payInUsdHint")}</span>
-                  </span>
-                </Button>
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    setSelectedPlan(null);
-                    setCheckoutLoading(false);
-                  }}
-                  className="w-full"
-                >
-                  {t("common.cancel")}
+                  <span className="text-[11px] font-medium text-muted-foreground">{t("billing.payUsdShort")}</span>
+                  <span className="text-lg font-semibold font-mono leading-none">{selectedPlan.price}</span>
+                  <span className="text-[11px] font-normal text-muted-foreground leading-snug">{t("billing.payInUsdHint")}</span>
                 </Button>
               </div>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setSelectedPlan(null);
+                  setCheckoutLoading(false);
+                }}
+                className="h-9 text-muted-foreground"
+              >
+                {t("common.cancel")}
+              </Button>
             </>
           )}
         </DialogContent>
