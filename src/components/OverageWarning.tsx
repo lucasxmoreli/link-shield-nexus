@@ -29,7 +29,10 @@ export function OverageWarning() {
 
   if (isLoading || !profile?.is_suspended) return null;
 
-  const goToBilling = () => navigate("/billing");
+  const goToBilling = () => {
+    setIsModalDismissed(true);
+    navigate("/billing?tab=plans");
+  };
 
   // ── Persistent Banner (after modal dismiss) ──
   if (isModalDismissed) {

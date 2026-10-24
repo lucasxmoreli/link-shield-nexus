@@ -563,6 +563,7 @@ const en = {
     starterPlans: "Starter Plans",
     scaleEnterprise: "Scale & Enterprise",
     currentPlan: "Current Plan",
+    choosePlan: "Subscribe",
     downgrade: "Downgrade",
     yourPlan: "YOUR PLAN",
     whatsIncluded: "What's included",
@@ -1196,11 +1197,11 @@ const en = {
     blocked_generic: "Blocked",
   },
   overage: {
-    modalTitle: "🚀 Your campaign is taking off!",
-    modalDesc: "You've reached the click limit on your current plan. But don't worry — we haven't paused your traffic. You're still receiving leads and making sales! We're only charging a small overage fee to keep your scale running.",
-    modalBtn: "Settle Invoice / Upgrade Plan",
-    bannerText: "⚠️ You've reached your plan limit. Your traffic is still active and being billed as overage.",
-    bannerBtn: "View Plans",
+    modalTitle: "Your payment was not completed",
+    modalDesc: "This account has no confirmed card charge. Nothing was billed for extra clicks. Choose a plan to continue. Checkout charges in Brazilian reais.",
+    modalBtn: "View plans and billing",
+    bannerText: "Your payment was not completed. Choose a plan to unlock the account.",
+    bannerBtn: "View plans",
   },
 };
 

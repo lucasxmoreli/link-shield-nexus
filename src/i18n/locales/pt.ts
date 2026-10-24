@@ -547,6 +547,7 @@ const pt = {
     starterPlans: "Planos Iniciais",
     scaleEnterprise: "Escala e Empresarial",
     currentPlan: "Plano Atual",
+    choosePlan: "Assinar",
     downgrade: "Downgrade",
     yourPlan: "SEU PLANO",
     whatsIncluded: "O que está incluído",
@@ -1192,11 +1193,11 @@ accountDeleted: {
     blocked_generic: "Bloqueado",
   },
   overage: {
-    modalTitle: "🚀 Sua campanha está voando!",
-    modalDesc: "Você atingiu o limite de cliques do seu plano atual. Mas fique tranquilo: não pausamos o seu tráfego e você continua recebendo leads e fazendo vendas! Estamos cobrando apenas uma taxa mínima pelo tráfego excedente para não interromper sua escala.",
-    modalBtn: "Regularizar Fatura / Fazer Upgrade",
-    bannerText: "⚠️ Você atingiu o limite do plano. Seu tráfego continua ativo e sendo cobrado como excedente.",
-    bannerBtn: "Ver Planos",
+    modalTitle: "Seu pagamento não foi concluído",
+    modalDesc: "A conta não teve uma cobrança confirmada no cartão. Nada foi cobrado por clique extra. Escolha um plano para continuar. O checkout cobra em real.",
+    modalBtn: "Ver planos e cobranças",
+    bannerText: "Seu pagamento não foi concluído. Escolha um plano para liberar a conta.",
+    bannerBtn: "Ver planos",
   },
 };
 

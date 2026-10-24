@@ -547,6 +547,7 @@ const es = {
     starterPlans: "Planes Iniciales",
     scaleEnterprise: "Escala y Empresarial",
     currentPlan: "Plan Actual",
+    choosePlan: "Suscribirse",
     downgrade: "Downgrade",
     yourPlan: "TU PLAN",
     whatsIncluded: "Qué incluye",
@@ -1174,11 +1175,11 @@ const es = {
     blocked_generic: "Bloqueado",
   },
   overage: {
-    modalTitle: "🚀 ¡Tu campaña está despegando!",
-    modalDesc: "Has alcanzado el límite de clics de tu plan actual. Pero tranquilo: no pausamos tu tráfico. ¡Sigues recibiendo leads y generando ventas! Solo estamos cobrando una tarifa mínima por el tráfico excedente para no interrumpir tu escala.",
-    modalBtn: "Regularizar Factura / Hacer Upgrade",
-    bannerText: "⚠️ Has alcanzado el límite de tu plan. Tu tráfico sigue activo y se cobra como excedente.",
-    bannerBtn: "Ver Planes",
+    modalTitle: "Tu pago no se completó",
+    modalDesc: "La cuenta no tiene un cobro confirmado en la tarjeta. No se cobró ningún clic extra. Elige un plan para continuar. El checkout cobra en reales.",
+    modalBtn: "Ver planes y facturación",
+    bannerText: "Tu pago no se completó. Elige un plan para liberar la cuenta.",
+    bannerBtn: "Ver planes",
   },
 };
 

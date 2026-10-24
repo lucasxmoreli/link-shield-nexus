@@ -31,13 +31,17 @@ const SCALE_PLANS = PLANS.filter((p) => ["FREEDOM PLAN", "ENTERPRISE CONQUEST"].
 // PlanCard (componente interno usado na tab Plans — inalterado)
 // ─────────────────────────────────────────────────────────────────────────────
 
-function PlanCard({ plan, userPlan, userPlanIndex, onSelect, t, checkoutDisabled }: { plan: PlanData; userPlan: PlanData; userPlanIndex: number; onSelect: (plan: PlanData) => void; t: any; checkoutDisabled?: boolean }) {
+function PlanCard({ plan, userPlan, userPlanIndex, onSelect, t, checkoutDisabled, holdsPlan }: { plan: PlanData; userPlan: PlanData; userPlanIndex: number; onSelect: (plan: PlanData) => void; t: any; checkoutDisabled?: boolean; holdsPlan: boolean }) {
   const idx = PLANS.findIndex((p) => p.name === plan.name);
+  const isCurrent = holdsPlan && plan.name === userPlan.name;
   const getButtonState = () => {
-    if (plan.name === userPlan.name) return { text: t("billing.currentPlan"), disabled: true, style: "bg-muted text-muted-foreground cursor-not-allowed hover:bg-muted" };
+    if (isCurrent) return { text: t("billing.currentPlan"), disabled: true, style: "bg-muted text-muted-foreground cursor-not-allowed hover:bg-muted" };
     // Checkout Stripe desligado (flag) → "Em breve"
     if (checkoutDisabled) {
       return { text: t("billing.checkoutComingSoon"), disabled: true, style: "bg-muted text-muted-foreground cursor-not-allowed hover:bg-muted" };
+    }
+    if (!holdsPlan) {
+      return { text: t("billing.choosePlan"), disabled: false, style: plan.highlighted ? "bg-orange-500 hover:bg-orange-600 text-white" : "bg-primary text-primary-foreground hover:bg-primary/90" };
     }
     if (idx < userPlanIndex) return { text: t("billing.downgrade"), disabled: false, style: "bg-secondary text-secondary-foreground hover:bg-secondary/80" };
     if (plan.highlighted) return { text: t("common.upgrade"), disabled: false, style: "bg-orange-500 hover:bg-orange-600 text-white" };
@@ -46,13 +50,13 @@ function PlanCard({ plan, userPlan, userPlanIndex, onSelect, t, checkoutDisabled
   const btn = getButtonState();
 
   return (
-    <div className={`relative flex flex-col rounded-xl border p-4 sm:p-6 bg-card text-card-foreground hover:-translate-y-3 hover:scale-[1.03] hover:z-50 hover:shadow-[0_0_50px_hsl(271,81%,56%,0.25)] transition-all duration-300 ease-out ${plan.name === userPlan.name ? "border-primary/50 ring-2 ring-primary/40" : plan.highlighted ? "border-primary/50 ring-1 ring-primary/30 shadow-[0_0_30px_hsl(271_81%_56%/0.15)]" : "border-border"}`}>
+    <div className={`relative flex flex-col rounded-xl border p-4 sm:p-6 bg-card text-card-foreground hover:-translate-y-3 hover:scale-[1.03] hover:z-50 hover:shadow-[0_0_50px_hsl(271,81%,56%,0.25)] transition-all duration-300 ease-out ${isCurrent ? "border-primary/50 ring-2 ring-primary/40" : plan.highlighted ? "border-primary/50 ring-1 ring-primary/30 shadow-[0_0_30px_hsl(271_81%_56%/0.15)]" : "border-border"}`}>
       {plan.badge && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
           <Badge className="bg-primary text-primary-foreground border-0 text-[10px] tracking-wider px-3 py-1 whitespace-nowrap">{plan.badge}</Badge>
         </div>
       )}
-      {plan.name === userPlan.name && (
+      {isCurrent && (
         <div className="absolute -top-3 right-4 z-10">
           <Badge className="bg-success text-white border-0 text-[10px] tracking-wider px-3 py-1">{t("billing.yourPlan")}</Badge>
         </div>
@@ -92,7 +96,7 @@ function PlanCard({ plan, userPlan, userPlanIndex, onSelect, t, checkoutDisabled
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function Billing() {
-  const { user, effectiveUserId, refreshActivationStatus } = useAuth();
+  const { user, effectiveUserId, refreshActivationStatus, activationStatus } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { t } = useTranslation();
@@ -201,6 +205,7 @@ export default function Billing() {
 
   // ── Dados derivados ──
   const userPlan = getPlanByName(profile?.plan_name);
+  const holdsPlan = activationStatus === "ACTIVE";
   const userPlanIndex = PLANS.findIndex((p) => p.name === userPlan.name);
   const isScalePlan = SCALE_PLANS.some((p) => p.name === userPlan.name);
   const defaultPlanTab = isScalePlan ? "scale" : "starter";
@@ -251,7 +256,7 @@ export default function Billing() {
 
   const handlePlanClick = (plan: PlanData) => {
     if (!STRIPE_CHECKOUT_ENABLED) return;
-    if (plan.name === userPlan.name) return;
+    if (holdsPlan && plan.name === userPlan.name) return;
     setSelectedPlan(plan);
   };
 
@@ -403,6 +408,7 @@ export default function Billing() {
                     onSelect={handlePlanClick}
                     t={t}
                     checkoutDisabled={!STRIPE_CHECKOUT_ENABLED}
+                    holdsPlan={holdsPlan}
                   />
                 ))}
               </div>
@@ -418,6 +424,7 @@ export default function Billing() {
                     onSelect={handlePlanClick}
                     t={t}
                     checkoutDisabled={!STRIPE_CHECKOUT_ENABLED}
+                    holdsPlan={holdsPlan}
                   />
                 ))}
               </div>
