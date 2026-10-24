@@ -103,6 +103,7 @@ export default function Billing() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [selectedPlan, setSelectedPlan] = useState<PlanData | null>(null);
+  const [checkoutCurrency, setCheckoutCurrency] = useState<"brl" | "usd" | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   const isViewOnly = !!user?.id && !!effectiveUserId && effectiveUserId !== user.id;
@@ -257,6 +258,8 @@ export default function Billing() {
   const handlePlanClick = (plan: PlanData) => {
     if (!STRIPE_CHECKOUT_ENABLED) return;
     if (holdsPlan && plan.name === userPlan.name) return;
+    setCheckoutCurrency(null);
+    setCheckoutLoading(false);
     setSelectedPlan(plan);
   };
 
@@ -448,8 +451,10 @@ export default function Billing() {
       <Dialog
         open={!!selectedPlan && STRIPE_CHECKOUT_ENABLED}
         onOpenChange={(open) => {
+          if (!open && checkoutLoading) return;
           if (!open) {
             setSelectedPlan(null);
+            setCheckoutCurrency(null);
             setCheckoutLoading(false);
           }
         }}
@@ -463,37 +468,58 @@ export default function Billing() {
                   {t(selectedPlan.descriptionKey)}
                 </p>
               </DialogHeader>
-              <div className="grid grid-cols-2 gap-3">
-                <Button
-                  onClick={() => handleConfirmUpgrade("brl")}
+              <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label={t("billing.chooseCurrency")}>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={checkoutCurrency === "brl"}
                   disabled={checkoutLoading || !selectedPlan.stripePriceId}
-                  className="h-auto whitespace-normal flex-col gap-1 px-3 py-4 bg-primary hover:bg-primary/90 text-primary-foreground"
+                  onClick={() => setCheckoutCurrency("brl")}
+                  className={`h-auto rounded-lg border px-3 py-3 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60 ${checkoutCurrency === "brl" ? "border-primary bg-primary/15 text-foreground" : "border-border text-muted-foreground hover:border-primary/40"}`}
                 >
-                  {checkoutLoading ? (
-                    <Loader2 size={16} className="animate-spin" />
-                  ) : (
-                    <>
-                      <span className="text-[11px] font-medium opacity-80">{t("billing.payBrlShort")}</span>
-                      <span className="text-lg font-semibold font-mono leading-none">{selectedPlan.checkoutBrl}</span>
-                      <span className="text-[11px] font-normal opacity-80 leading-snug">{t("billing.payInBrlHint")}</span>
-                    </>
-                  )}
-                </Button>
-                <Button
-                  onClick={() => handleConfirmUpgrade("usd")}
+                  <span className="block text-[11px] font-medium">{t("billing.payBrlShort")}</span>
+                  <span className="mt-1 block text-lg font-semibold font-mono leading-none text-foreground">{selectedPlan.checkoutBrl}</span>
+                  <span className="mt-1 block text-[11px] leading-snug">{t("billing.payInBrlHint")}</span>
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={checkoutCurrency === "usd"}
                   disabled={checkoutLoading || !selectedPlan.stripePriceId}
-                  variant="outline"
-                  className="h-auto whitespace-normal flex-col gap-1 px-3 py-4"
+                  onClick={() => setCheckoutCurrency("usd")}
+                  className={`h-auto rounded-lg border px-3 py-3 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60 ${checkoutCurrency === "usd" ? "border-primary bg-primary/15 text-foreground" : "border-border text-muted-foreground hover:border-primary/40"}`}
                 >
-                  <span className="text-[11px] font-medium text-muted-foreground">{t("billing.payUsdShort")}</span>
-                  <span className="text-lg font-semibold font-mono leading-none">{selectedPlan.price}</span>
-                  <span className="text-[11px] font-normal text-muted-foreground leading-snug">{t("billing.payInUsdHint")}</span>
-                </Button>
+                  <span className="block text-[11px] font-medium">{t("billing.payUsdShort")}</span>
+                  <span className="mt-1 block text-lg font-semibold font-mono leading-none text-foreground">{selectedPlan.price}</span>
+                  <span className="mt-1 block text-[11px] leading-snug">{t("billing.payInUsdHint")}</span>
+                </button>
               </div>
               <Button
+                onClick={() => {
+                  if (checkoutCurrency) handleConfirmUpgrade(checkoutCurrency);
+                }}
+                disabled={checkoutLoading || !checkoutCurrency || !selectedPlan.stripePriceId}
+                className="h-11 w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+              >
+                {checkoutLoading ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    {t("billing.openingCheckout")}
+                  </>
+                ) : checkoutCurrency ? (
+                  t("billing.payAmount", {
+                    amount: checkoutCurrency === "usd" ? selectedPlan.price : selectedPlan.checkoutBrl,
+                  })
+                ) : (
+                  t("billing.confirmPayment")
+                )}
+              </Button>
+              <Button
                 variant="ghost"
+                disabled={checkoutLoading}
                 onClick={() => {
                   setSelectedPlan(null);
+                  setCheckoutCurrency(null);
                   setCheckoutLoading(false);
                 }}
                 className="h-9 text-muted-foreground"
