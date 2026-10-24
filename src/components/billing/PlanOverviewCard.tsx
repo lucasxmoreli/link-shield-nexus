@@ -62,7 +62,7 @@ export function PlanOverviewCard({
               {t("billing.planCardTitle")}
             </p>
             <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-1">
-              {plan.name}
+              {t(plan.nameKey)}
             </h2>
             <p className="text-lg text-muted-foreground font-mono">
               {plan.price}

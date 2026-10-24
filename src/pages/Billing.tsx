@@ -51,9 +51,9 @@ function PlanCard({ plan, userPlan, userPlanIndex, onSelect, t, checkoutDisabled
 
   return (
     <div className={`relative flex flex-col rounded-xl border p-4 sm:p-6 bg-card text-card-foreground hover:-translate-y-3 hover:scale-[1.03] hover:z-50 hover:shadow-[0_0_50px_hsl(271,81%,56%,0.25)] transition-all duration-300 ease-out ${isCurrent ? "border-primary/50 ring-2 ring-primary/40" : plan.highlighted ? "border-primary/50 ring-1 ring-primary/30 shadow-[0_0_30px_hsl(271_81%_56%/0.15)]" : "border-border"}`}>
-      {plan.badge && (
+      {plan.badgeKey && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
-          <Badge className="bg-primary text-primary-foreground border-0 text-[10px] tracking-wider px-3 py-1 whitespace-nowrap">{plan.badge}</Badge>
+          <Badge className="bg-primary text-primary-foreground border-0 text-[10px] tracking-wider px-3 py-1 whitespace-nowrap">{t(plan.badgeKey)}</Badge>
         </div>
       )}
       {isCurrent && (
@@ -61,14 +61,14 @@ function PlanCard({ plan, userPlan, userPlanIndex, onSelect, t, checkoutDisabled
           <Badge className="bg-success text-white border-0 text-[10px] tracking-wider px-3 py-1">{t("billing.yourPlan")}</Badge>
         </div>
       )}
-      <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground mb-4">{plan.name}</p>
-      <div className="mb-4"><span className="text-4xl font-bold font-mono">{plan.price}</span><span className="text-muted-foreground text-sm">/mo</span></div>
-      <p className="text-sm text-muted-foreground mb-6 leading-relaxed">{plan.description}</p>
+      <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground mb-4">{t(plan.nameKey)}</p>
+      <div className="mb-4"><span className="text-4xl font-bold font-mono">{plan.price}</span><span className="text-muted-foreground text-sm">{t("billing.perMonth")}</span></div>
+      <p className="text-sm text-muted-foreground mb-6 leading-relaxed">{t(plan.descriptionKey)}</p>
       <ul className="space-y-3 mb-6">
         {plan.features.map((f) => (
-          <li key={f.text} className="flex items-start gap-2 text-sm">
+          <li key={f.key} className="flex items-start gap-2 text-sm">
             {f.available ? <Check size={16} className="text-success mt-0.5 shrink-0" /> : <X size={16} className="text-destructive mt-0.5 shrink-0" />}
-            <span className={f.available ? "text-foreground" : "text-muted-foreground"}>{f.text}</span>
+            <span className={f.available ? "text-foreground" : "text-muted-foreground"}>{t(f.key)}</span>
           </li>
         ))}
       </ul>
@@ -458,9 +458,9 @@ export default function Billing() {
           {selectedPlan && (
             <>
               <DialogHeader className="items-center space-y-1 text-center sm:text-center">
-                <DialogTitle className="text-xl font-semibold tracking-tight">{selectedPlan.name}</DialogTitle>
+                <DialogTitle className="text-xl font-semibold tracking-tight">{t(selectedPlan.nameKey)}</DialogTitle>
                 <p className="text-sm text-muted-foreground leading-snug max-w-[18rem]">
-                  {selectedPlan.description}
+                  {t(selectedPlan.descriptionKey)}
                 </p>
               </DialogHeader>
               <div className="grid grid-cols-2 gap-3">
