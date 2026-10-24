@@ -1,5 +1,5 @@
 -- STARTER plan (US$ 34.99): 5k clicks / 1 domain / 1 campaign.
--- Click packs are not sold on this plan yet, so the hard cap equals the included quota.
+-- Click packs only: +2,500 for US$ 9.99, max 2 per cycle. Hard cap 10k / 1 / 1.
 -- Additive: only adds the STARTER branch; every other plan keeps its values.
 -- Rollback: re-apply billing_state_for from 20260915190000_stripe_usd_packs_reopen_checkout.sql
 -- (or the previous live definition) without the STARTER branch.
@@ -79,8 +79,8 @@ BEGIN
   -- Spec 3 hard caps + USD pack prices
   CASE v_plan_key
     WHEN 'STARTER' THEN
-      v_cap_clicks := 5000; v_cap_domains := 1; v_cap_campaigns := 1;
-      v_unit_clicks := 0; v_price_clicks := NULL;
+      v_cap_clicks := 10000; v_cap_domains := 1; v_cap_campaigns := 1;
+      v_unit_clicks := 2500; v_price_clicks := 999;
       v_price_domain := NULL; v_price_campaign := NULL;
     WHEN 'BASIC' THEN
       v_cap_clicks := 18000; v_cap_domains := 3; v_cap_campaigns := 5;
@@ -166,3 +166,7 @@ BEGIN
   );
 END;
 $function$;
+
+UPDATE public.plan_limits
+SET hard_cap_clicks = 10000
+WHERE plan_code = 'STARTER';

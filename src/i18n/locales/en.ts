@@ -203,6 +203,7 @@ const en = {
       domainNotVerified: "That domain is not verified yet.",
       domainRequired: "Select a verified domain. Without a domain the campaign link won't work.",
       requiredFields: "Fill in name, domain and traffic source.",
+      sourceNotInPlan: "This plan only allows TikTok Ads.",
       saveFailed: "Couldn't save the campaign. Please try again.",
     },
   },

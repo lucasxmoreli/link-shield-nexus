@@ -292,6 +292,10 @@ export function useCampaignForm() {
       toast.error(t("campaigns.errors.requiredFields"));
       return;
     }
+    if (!allowedSources.some((src) => src.key === trafficSource)) {
+      toast.error(t("campaigns.errors.sourceNotInPlan"));
+      return;
+    }
     if (!domain) {
       toast.error(t("campaigns.errors.domainRequired"));
       return;
@@ -338,7 +342,7 @@ export function useCampaignForm() {
 
     saveMutation.mutate();
   }, [
-    name, trafficSource, safeUrl, offerUrl, offerPageB, abStormEnabled, domain,
+    name, trafficSource, allowedSources, safeUrl, offerUrl, offerPageB, abStormEnabled, domain,
     areDestinationUrlsValid,
     prelanderEnabled, prelanderHeadline, prelanderBody,
     normalizeSafeUrl, normalizeOfferUrl, normalizeOfferPageB,

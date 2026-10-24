@@ -44,6 +44,8 @@ const ADDON_PRICE_TO_TYPE: Record<string, "extra_clicks" | "extra_domain" | "ext
   "price_1UG1xjLZEOji6sEJY6fldVxi": "extra_campaign",
   "price_1UG1xkLZEOji6sEJVppD5P1n": "extra_clicks",
   "price_1UG1xkLZEOji6sEJ8Su2cqqP": "extra_domain",
+  // live STARTER click pack (+2,500 / US$ 9.99). No sandbox twin.
+  "price_1UU0wALZEOji6sEJFWGI33qv": "extra_clicks",
   // live Spec 2 packs
   "price_1UGQKeLZEOji6sEJ0PfKLOxA": "extra_clicks",
   "price_1UGQTtLZEOji6sEJ6ZBm1Wnn": "extra_domain",

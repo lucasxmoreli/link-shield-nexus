@@ -157,9 +157,17 @@ Deno.serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err: any) {
-    console.error("[get-payment-method] Error:", err);
+    const message = String(err?.message || "");
+    const missingInThisMode = err?.code === "resource_missing" || /test mode/i.test(message);
+    if (missingInThisMode) {
+      return new Response(
+        JSON.stringify({ payment_method: null }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    console.error("[get-payment-method] Error:", message);
     return new Response(
-      JSON.stringify({ error: err.message || "Internal error" }),
+      JSON.stringify({ error: message || "Internal error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

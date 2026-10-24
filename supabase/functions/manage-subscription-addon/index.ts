@@ -1,4 +1,4 @@
-import { createClient } from "jsr:@supabase/supabase-js@2";
+﻿import { createClient } from "jsr:@supabase/supabase-js@2";
 import Stripe from "npm:stripe@17.5.0";
 
 const ALLOWED_ORIGINS = [
@@ -26,54 +26,53 @@ function getCorsHeaders(origin: string | null) {
 type AddonType = "extra_clicks" | "extra_domain" | "extra_campaign";
 type PlanKey = "STARTER" | "BASIC" | "PRO" | "FREEDOM" | "ENTERPRISE";
 
-/** Spec 2 packs (USD) — sandbox + live. Selected by STRIPE_SECRET_KEY mode. */
+/** Live-only. No sandbox twin; sk_test would not find this price. */
+const STARTER_CLICK_PACK = "price_1UU0wALZEOji6sEJFWGI33qv";
+
+/** Spec 2 packs (USD) — test + live. Selected by STRIPE_SECRET_KEY mode. */
 const PACK_PRICES_TEST: Record<PlanKey, Partial<Record<AddonType, string>>> = {
-  STARTER: {
-    extra_clicks: "price_1UP4DVDpoy5qrQ4cpM7o9fzZ",
-  },
+  STARTER: { extra_clicks: STARTER_CLICK_PACK },
   BASIC: {
-    extra_clicks: "price_1UP4DWDpoy5qrQ4cbOpFquFt",
-    extra_domain: "price_1UP4DXDpoy5qrQ4cEPiR18Wz",
-    extra_campaign: "price_1UP4DXDpoy5qrQ4czm6VSRyt",
+    extra_clicks: "price_1UG1xZLZEOji6sEJf1szGS77",
+    extra_domain: "price_1UG1xZLZEOji6sEJXBR5Lwmk",
+    extra_campaign: "price_1UG1xbLZEOji6sEJozZXJhZ0",
   },
   PRO: {
-    extra_clicks: "price_1UP4DdDpoy5qrQ4cax3Tuz46",
-    extra_domain: "price_1UP4DdDpoy5qrQ4cPsKuvnXS",
-    extra_campaign: "price_1UP4DeDpoy5qrQ4cvE5RX2Ty",
+    extra_clicks: "price_1UG1xbLZEOji6sEJbCkXukRD",
+    extra_domain: "price_1UG1xdLZEOji6sEJne54x6gr",
+    extra_campaign: "price_1UG1xfLZEOji6sEJ0GIFjbLE",
   },
   FREEDOM: {
-    extra_clicks: "price_1UP4DiDpoy5qrQ4c828TP5dj",
-    extra_domain: "price_1UP4DiDpoy5qrQ4cPbQ9OxKO",
-    extra_campaign: "price_1UP4DkDpoy5qrQ4cWc2gjLmJ",
+    extra_clicks: "price_1UG1xfLZEOji6sEJrTF5ANZB",
+    extra_domain: "price_1UG1xiLZEOji6sEJIMl4BVvx",
+    extra_campaign: "price_1UG1xjLZEOji6sEJY6fldVxi",
   },
   ENTERPRISE: {
-    extra_clicks: "price_1UP4DoDpoy5qrQ4cCQds71c9",
-    extra_domain: "price_1UP4DpDpoy5qrQ4cmjCVsWN1",
+    extra_clicks: "price_1UG1xkLZEOji6sEJVppD5P1n",
+    extra_domain: "price_1UG1xkLZEOji6sEJ8Su2cqqP",
   },
 };
 
 const PACK_PRICES_LIVE: Record<PlanKey, Partial<Record<AddonType, string>>> = {
-  STARTER: {
-    extra_clicks: "price_1UP4E3RZUfaPgdN8mpuV7Bm8",
-  },
+  STARTER: { extra_clicks: STARTER_CLICK_PACK },
   BASIC: {
-    extra_clicks: "price_1UP4E4RZUfaPgdN8ghpYeWLP",
-    extra_domain: "price_1UP4E4RZUfaPgdN8t81aF9cT",
-    extra_campaign: "price_1UP4E4RZUfaPgdN8vFJwr2tT",
+    extra_clicks: "price_1UGQKeLZEOji6sEJ0PfKLOxA",
+    extra_domain: "price_1UGQTtLZEOji6sEJ6ZBm1Wnn",
+    extra_campaign: "price_1UGQYHLZEOji6sEJnCFmj5FK",
   },
   PRO: {
-    extra_clicks: "price_1UP4EHRZUfaPgdN8RezRnlUy",
-    extra_domain: "price_1UP4EHRZUfaPgdN8BUwO8zfX",
-    extra_campaign: "price_1UP4EJRZUfaPgdN8fxw5FYV2",
+    extra_clicks: "price_1UGQZlLZEOji6sEJY1FXvvhY",
+    extra_domain: "price_1UGQaALZEOji6sEJoPnpk9i6",
+    extra_campaign: "price_1UGQfyLZEOji6sEJ3mT4iR6p",
   },
   FREEDOM: {
-    extra_clicks: "price_1UP4ELRZUfaPgdN8Aey2nKfg",
-    extra_domain: "price_1UP4ELRZUfaPgdN89PiUdG3l",
-    extra_campaign: "price_1UP4EMRZUfaPgdN8S44oyG2Q",
+    extra_clicks: "price_1UGT34LZEOji6sEJDMcMkauq",
+    extra_domain: "price_1UGT3GLZEOji6sEJ3a147sMB",
+    extra_campaign: "price_1UGT3NLZEOji6sEJnBeQXWvb",
   },
   ENTERPRISE: {
-    extra_clicks: "price_1UP4ENRZUfaPgdN81aYnIAj1",
-    extra_domain: "price_1UP4ENRZUfaPgdN8WYq2DqHO",
+    extra_clicks: "price_1UGT3qLZEOji6sEJFea1Yu8H",
+    extra_domain: "price_1UGT4MLZEOji6sEJ1G2FGC2l",
   },
 };
 
@@ -159,9 +158,11 @@ async function ensurePacksSubscription(
     invoice_settings: { default_payment_method: defaultPaymentMethod },
   });
 
+  const isLive = (Deno.env.get("STRIPE_SECRET_KEY") ?? "").startsWith("sk_live");
   const created = await stripe.subscriptions.create({
     customer: customerId,
     items: [{ price: priceId, quantity: 1 }],
+    ...(isLive ? { currency: "brl" as const } : {}),
     collection_method: "charge_automatically",
     payment_behavior: "error_if_incomplete",
     default_payment_method: defaultPaymentMethod,

@@ -196,6 +196,7 @@ const pt = {
       domainNotVerified: "Esse domínio ainda não foi verificado.",
       domainRequired: "Selecione um domínio verificado. Sem domínio o link da campanha não funciona.",
       requiredFields: "Preencha nome, domínio e fonte de tráfego.",
+      sourceNotInPlan: "Esse plano só aceita TikTok Ads.",
       saveFailed: "Não foi possível salvar a campanha. Tente novamente.",
     },
   },
