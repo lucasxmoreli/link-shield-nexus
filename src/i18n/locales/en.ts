@@ -592,6 +592,8 @@ const en = {
     needResourceDomain: "domains",
     needResourceCampaign: "campaigns",
     needResourceClicks: "clicks",
+    starterAnnounce: "Your previous plan did not charge your card. The Starter plan is here: US$ 34.99 per month, with 5,000 clicks, 1 domain, and 1 campaign.",
+    starterAnnounceCta: "View plans and billing",
 
     packs: {
       headerTitle: "Plan usage and headroom",

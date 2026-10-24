@@ -576,6 +576,8 @@ const pt = {
     needResourceDomain: "domínios",
     needResourceCampaign: "campanhas",
     needResourceClicks: "cliques",
+    starterAnnounce: "Seu plano anterior não gerou cobrança no cartão. O plano Starter chegou: US$ 34,99 por mês, com 5 mil cliques, 1 domínio e 1 campanha.",
+    starterAnnounceCta: "Ver planos e cobranças",
 
     packs: {
       headerTitle: "Uso e fôlego do plano",

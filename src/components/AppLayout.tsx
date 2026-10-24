@@ -2,6 +2,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { OverageWarning } from "@/components/OverageWarning";
 import { AdminViewBanner } from "@/components/AdminViewBanner";
+import { StarterPlanBanner } from "@/components/StarterPlanBanner";
 import { CrispChat } from "@/components/CrispChat";
 import { Outlet } from "react-router-dom";
 import { SidebarTrigger, SidebarProvider } from "@/components/ui/sidebar";
@@ -19,6 +20,7 @@ export function AppLayout() {
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
           <AdminViewBanner />
+          <StarterPlanBanner />
           {(profileMissing || gateError) && (
             <div
               role="alert"

@@ -22,6 +22,7 @@ export interface ProfileData {
   // Ground truth for the workspace paywall: only "ACTIVE" unlocks gated
   // features; everything else (INVITED / PAST_DUE / CANCELED) is locked.
   activation_status: string | null;
+  stripe_price_id: string | null;
 }
 
 export function useProfile() {

@@ -33,13 +33,16 @@ function getCorsHeaders(origin: string | null) {
 
 /** Plan prices only (test + live Spec 2). No metered / pack IDs here. */
 const PLAN_PRICES: Record<string, { test: string; live: string }> = {
+  STARTER: { test: "price_1UU0QVLZEOji6sEJd1KOYFZD", live: "price_1UU0QVLZEOji6sEJd1KOYFZD" }, // $34.99, live only
   BASIC: { test: "price_1UG23HLZEOji6sEJoaUpX4t1", live: "price_1UGOBLLZEOji6sEJmp2Yp15Q" }, // $57.99
   PRO: { test: "price_1UG23OLZEOji6sEJw9z873KX", live: "price_1UGOejLZEOji6sEJWgTR0NyV" }, // $96.99
   FREEDOM: { test: "price_1UG23QLZEOji6sEJQQ1Evq5U", live: "price_1UGOeyLZEOji6sEJu8l6ZlWm" }, // $234.99
   ENTERPRISE: { test: "price_1UG23PLZEOji6sEJ1kjc8qCg", live: "price_1UGOhiLZEOji6sEJX44FJWmM" }, // $389.99
 };
 
-const TEST_PLAN_PRICE_IDS = new Set(Object.values(PLAN_PRICES).map((p) => p.test));
+const TEST_PLAN_PRICE_IDS = new Set(
+  Object.values(PLAN_PRICES).filter((p) => p.test !== p.live).map((p) => p.test),
+);
 
 /** The panel may still send the other mode's ID while the secret key is being swapped,
  *  so resolve the plan from either ID and charge the price that matches the key mode. */
@@ -112,7 +115,7 @@ Deno.serve(async (req) => {
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
     const { data: profile, error: profileError } = await adminClient
       .from("profiles")
-      .select("user_id, email, stripe_customer_id, stripe_price_id, activation_status")
+      .select("user_id, email, stripe_customer_id, stripe_price_id, activation_status, plan_name")
       .eq("user_id", user.id)
       .single();
 
@@ -124,7 +127,8 @@ Deno.serve(async (req) => {
     // Test-mode subscriptions activated the workspace without a real charge.
     // Those accounts may open Checkout again and pay the live price.
     const paidOnlyInTest = TEST_PLAN_PRICE_IDS.has(profile.stripe_price_id);
-    if (profile.activation_status === "ACTIVE" && !paidOnlyInTest) {
+    const downgradedToFree = (profile.plan_name || "").trim().toUpperCase() === "FREE";
+    if (profile.activation_status === "ACTIVE" && !paidOnlyInTest && !downgradedToFree) {
       console.warn(`[create-checkout-session] User ${user.id} already ACTIVE`);
       return json(409, {
         error: "Workspace already activated. Use the customer portal to change plans.",
@@ -162,13 +166,28 @@ Deno.serve(async (req) => {
     }
 
     const requestOrigin = req.headers.get("origin") || "https://www.cloakerx.com";
+    const isLive = stripeKey.startsWith("sk_live");
+
+    // An open USD subscription blocks a BRL checkout on the same customer.
+    if (isLive && customerId) {
+      const incomplete = await stripe.subscriptions.list({
+        customer: customerId,
+        status: "incomplete",
+        limit: 20,
+      });
+      for (const sub of incomplete.data) {
+        await stripe.subscriptions.cancel(sub.id);
+      }
+    }
 
     // Plan only — packs bought separately (no metered overage).
+    // Live charges BRL. The price stays the USD price id; Stripe uses currency_options.brl.
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       client_reference_id: user.id,
       mode: "subscription",
       line_items: [{ price: planPriceId, quantity: 1 }],
+      ...(isLive ? { currency: "brl" as const } : {}),
       success_url: `${requestOrigin}/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${requestOrigin}/billing?checkout=cancelled`,
       metadata: { supabase_user_id: user.id },
