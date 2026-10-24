@@ -91,10 +91,11 @@ Deno.serve(async (req) => {
     const { data: { user }, error: authError } = await userClient.auth.getUser();
     if (authError || !user) return json(401, { error: "Unauthorized" });
 
-    const { price_id } = await req.json();
+    const { price_id, currency } = await req.json();
     if (!price_id || typeof price_id !== "string" || !price_id.startsWith("price_")) {
       return json(400, { error: "Invalid price_id" });
     }
+    const chargeCurrency = currency === "usd" ? "usd" : "brl";
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) {
@@ -180,14 +181,13 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Plan only — packs bought separately (no metered overage).
-    // Live charges BRL. The price stays the USD price id; Stripe uses currency_options.brl.
+    // Plan only. Live uses the currency the customer picked on the plan dialog.
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       client_reference_id: user.id,
       mode: "subscription",
       line_items: [{ price: planPriceId, quantity: 1 }],
-      ...(isLive ? { currency: "brl" as const } : {}),
+      ...(isLive ? { currency: chargeCurrency } : {}),
       success_url: `${requestOrigin}/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${requestOrigin}/billing?checkout=cancelled`,
       metadata: { supabase_user_id: user.id },

@@ -42,6 +42,8 @@ export interface PlanData {
   stripePriceId: string | null;
   /** @deprecated Always null — no metered line item. */
   stripeMeteredPriceId: string | null;
+  /** Frozen BRL amount shown before checkout. Charge uses the Stripe price. */
+  checkoutBrl: string;
 }
 
 export const PLANS: PlanData[] = [
@@ -66,6 +68,7 @@ export const PLANS: PlanData[] = [
     extraClickPrice: 0,
     stripePriceId: null,
     stripeMeteredPriceId: null,
+    checkoutBrl: "R$ 0,00",
   },
   {
     name: "STARTER PLAN",
@@ -90,6 +93,7 @@ export const PLANS: PlanData[] = [
     extraClickPrice: 0,
     stripePriceId: "price_1UU0QVLZEOji6sEJd1KOYFZD",
     stripeMeteredPriceId: null,
+    checkoutBrl: "R$ 162,12",
   },
   {
     name: "BASIC PLAN",
@@ -113,6 +117,7 @@ export const PLANS: PlanData[] = [
     extraClickPrice: 0,
     stripePriceId: "price_1UGOBLLZEOji6sEJmp2Yp15Q",
     stripeMeteredPriceId: null,
+    checkoutBrl: "R$ 268,69",
   },
   {
     name: "PRO PLAN",
@@ -137,6 +142,7 @@ export const PLANS: PlanData[] = [
     extraClickPrice: 0,
     stripePriceId: "price_1UGOejLZEOji6sEJWgTR0NyV",
     stripeMeteredPriceId: null,
+    checkoutBrl: "R$ 449,40",
   },
   {
     name: "FREEDOM PLAN",
@@ -160,6 +166,7 @@ export const PLANS: PlanData[] = [
     extraClickPrice: 0,
     stripePriceId: "price_1UGOeyLZEOji6sEJu8l6ZlWm",
     stripeMeteredPriceId: null,
+    checkoutBrl: "R$ 1.088,82",
   },
   {
     name: "ENTERPRISE CONQUEST",
@@ -183,6 +190,7 @@ export const PLANS: PlanData[] = [
     extraClickPrice: 0,
     stripePriceId: "price_1UGOhiLZEOji6sEJX44FJWmM",
     stripeMeteredPriceId: null,
+    checkoutBrl: "R$ 1.807,00",
   },
 ];
 

@@ -1,4 +1,4 @@
-﻿import { createClient } from "jsr:@supabase/supabase-js@2";
+import { createClient } from "jsr:@supabase/supabase-js@2";
 import Stripe from "npm:stripe@17.5.0";
 
 const ALLOWED_ORIGINS = [
@@ -159,10 +159,11 @@ async function ensurePacksSubscription(
   });
 
   const isLive = (Deno.env.get("STRIPE_SECRET_KEY") ?? "").startsWith("sk_live");
+  const planCurrency = (planSub.currency || "usd").toLowerCase() === "brl" ? "brl" : "usd";
   const created = await stripe.subscriptions.create({
     customer: customerId,
     items: [{ price: priceId, quantity: 1 }],
-    ...(isLive ? { currency: "brl" as const } : {}),
+    ...(isLive ? { currency: planCurrency } : {}),
     collection_method: "charge_automatically",
     payment_behavior: "error_if_incomplete",
     default_payment_method: defaultPaymentMethod,

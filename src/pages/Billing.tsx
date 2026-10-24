@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Check, X, Zap, Loader2 } from "lucide-react";
+import { Check, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -273,7 +273,7 @@ export default function Billing() {
     setSearchParams(params, { replace: true });
   };
 
-  const handleConfirmUpgrade = async () => {
+  const handleConfirmUpgrade = async (currency: "brl" | "usd") => {
     if (!STRIPE_CHECKOUT_ENABLED) return;
     if (!selectedPlan) return;
 
@@ -290,7 +290,7 @@ export default function Billing() {
 
     try {
       const { data, error } = await supabase.functions.invoke("create-checkout-session", {
-        body: { price_id: selectedPlan.stripePriceId },
+        body: { price_id: selectedPlan.stripePriceId, currency },
       });
 
       if (error) throw error;
@@ -495,21 +495,11 @@ export default function Billing() {
                   </div>
                 )}
               </div>
-              <DialogFooter className="flex-col sm:flex-row gap-2 pt-2">
+              <DialogFooter className="flex-col gap-2 pt-2">
                 <Button
-                  variant="outline"
-                  onClick={() => {
-                    setSelectedPlan(null);
-                    setCheckoutLoading(false);
-                  }}
-                  className="sm:flex-1"
-                >
-                  {t("common.cancel")}
-                </Button>
-                <Button
-                  onClick={handleConfirmUpgrade}
-                  disabled={checkoutLoading}
-                  className={`sm:flex-1 font-semibold ${selectedPlan.highlighted ? "bg-orange-500 hover:bg-orange-600 text-white" : "bg-primary hover:bg-primary/90 text-primary-foreground"}`}
+                  onClick={() => handleConfirmUpgrade("brl")}
+                  disabled={checkoutLoading || !selectedPlan.stripePriceId}
+                  className="w-full h-auto py-3 font-semibold bg-primary hover:bg-primary/90 text-primary-foreground"
                 >
                   {checkoutLoading ? (
                     <>
@@ -517,11 +507,32 @@ export default function Billing() {
                       {t("billing.redirecting")}
                     </>
                   ) : (
-                    <>
-                      <Zap size={16} className="mr-2" />
-                      {selectedPlan.stripePriceId ? t("billing.proceedToCheckout") : t("common.confirm")}
-                    </>
+                    <span className="flex flex-col items-center leading-tight">
+                      <span>{t("billing.payInBrl", { amount: selectedPlan.checkoutBrl })}</span>
+                      <span className="text-[11px] font-normal opacity-80">{t("billing.payInBrlHint")}</span>
+                    </span>
                   )}
+                </Button>
+                <Button
+                  onClick={() => handleConfirmUpgrade("usd")}
+                  disabled={checkoutLoading || !selectedPlan.stripePriceId}
+                  variant="outline"
+                  className="w-full h-auto py-3 font-semibold"
+                >
+                  <span className="flex flex-col items-center leading-tight">
+                    <span>{t("billing.payInUsd", { amount: selectedPlan.price })}</span>
+                    <span className="text-[11px] font-normal opacity-80">{t("billing.payInUsdHint")}</span>
+                  </span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setSelectedPlan(null);
+                    setCheckoutLoading(false);
+                  }}
+                  className="w-full"
+                >
+                  {t("common.cancel")}
                 </Button>
               </DialogFooter>
             </>
