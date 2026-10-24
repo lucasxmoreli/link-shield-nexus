@@ -9,6 +9,7 @@ import { AppLayout } from "@/components/AppLayout";
 import Landing from "./pages/Landing";
 import Dashboard from "./pages/Dashboard";
 import Domains from "./pages/Domains";
+import DomainGuide from "./pages/DomainGuide";
 import Campaigns from "./pages/Campaigns";
 import CampaignEdit from "./pages/CampaignEdit";
 import Requests from "./pages/Requests";
@@ -70,6 +71,7 @@ const App = () => (
                 limits), not in the router.
               */}
               <Route path="/domains" element={<Domains />} />
+              <Route path="/domains/guia" element={<DomainGuide />} />
               <Route path="/campaigns" element={<Campaigns />} />
               <Route path="/campaigns/new" element={<CampaignEdit />} />
               <Route path="/campaigns/:id/edit" element={<CampaignEdit />} />

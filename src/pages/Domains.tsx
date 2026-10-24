@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Plus, CheckCircle, Trash2, Lock, Globe } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
@@ -192,7 +192,12 @@ export default function Domains() {
   return (
     <div className="space-y-4 sm:space-y-6">
       <div className="flex items-center justify-between gap-2">
-        <h1 className="text-xl sm:text-2xl font-bold">{t("domains.title")}</h1>
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold">{t("domains.title")}</h1>
+          <Link to="/domains/guia" className="text-sm text-primary hover:underline">
+            {t("domains.guideLink")}
+          </Link>
+        </div>
         {isViewOnly ? (
           <Button variant="outline" disabled title={t("domains.viewOnlyHint")}>
             <Lock className="h-4 w-4 mr-1" /> {t("domains.viewOnlyAdd")}

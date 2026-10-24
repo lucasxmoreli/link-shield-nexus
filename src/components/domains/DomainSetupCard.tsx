@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Copy,
   CheckCircle2,
@@ -177,6 +178,7 @@ export function DomainSetupCard({ domain, onVerify, onDelete }: DomainSetupCardP
   const hasTxtFallback = Boolean(sslTxtName && sslTxtValue);
 
   const sslConfig = getSslConfig(domain.ssl_status, t);
+  const dnsHost = getDnsHost(domain.url);
   const dcvCnameHost = dcvCnameName ? getDnsHost(dcvCnameName) : "";
   const sslTxtHost = sslTxtName ? getDnsHost(sslTxtName) : "";
   const SslIcon = sslConfig.icon;
@@ -249,9 +251,17 @@ export function DomainSetupCard({ domain, onVerify, onDelete }: DomainSetupCardP
 
         {/* DNS Records */}
         <div className="p-4 space-y-3">
-          <p className="text-xs text-amber-100/90 leading-relaxed rounded-md border border-amber-500/20 bg-amber-500/10 px-3 py-2">
-            {t("domains.setup.notOnHosting")}
-          </p>
+          <ol className="space-y-1.5 rounded-md border border-amber-500/20 bg-amber-500/10 px-3 py-2.5 text-xs text-amber-50/95 leading-relaxed">
+            {(["step1", "step2", "step3", "step4"] as const).map((key, index) => (
+              <li key={key} className="flex gap-2">
+                <span className="font-semibold text-[#7aa2ff] shrink-0">{index + 1}.</span>
+                <span>{t(`domains.setup.${key}`)}</span>
+              </li>
+            ))}
+          </ol>
+          <Link to="/domains/guia" className="inline-block text-xs text-primary hover:underline">
+            {t("domains.guideLink")}
+          </Link>
           {/* Visual flow diagram — Sprint 2 item 2.3 */}
           <DnsFlowDiagram
             domain={domain.url}
@@ -266,12 +276,12 @@ export function DomainSetupCard({ domain, onVerify, onDelete }: DomainSetupCardP
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#004BFF]/15 text-[#004BFF] text-[10px] font-bold">
                 1
               </span>
-              <span className="text-xs font-semibold text-foreground uppercase tracking-wider">
+              <span className="text-xs font-semibold text-foreground">
                 {t("domains.setup.routingTitle")}
               </span>
               <Badge
                 variant="outline"
-                className="ml-auto text-[9px] uppercase border-[#004BFF]/30 bg-[#004BFF]/10 text-[#004BFF] shrink-0"
+                className="ml-auto text-[10px] border-[#004BFF]/30 bg-[#004BFF]/10 text-[#004BFF] shrink-0"
               >
                 {t("domains.setup.required")}
               </Badge>
@@ -284,20 +294,17 @@ export function DomainSetupCard({ domain, onVerify, onDelete }: DomainSetupCardP
               <span className="text-muted-foreground font-mono">{t("domains.setup.host")}</span>
               <div className="flex items-center gap-2 min-w-0">
                 <code className="px-2 py-0.5 rounded bg-black/40 font-mono text-foreground border border-white/[0.06] shrink-0">
-                  {getDnsHost(domain.url)}
+                  {dnsHost}
                 </code>
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-6 w-6 shrink-0 text-muted-foreground hover:text-foreground hover:bg-white/5"
-                  onClick={() => copyToClipboard(getDnsHost(domain.url), t)}
+                  onClick={() => copyToClipboard(dnsHost, t)}
                   aria-label={t("domains.setup.copyAria", { field: t("domains.setup.host") })}
                 >
                   <Copy className="h-3 w-3" aria-hidden="true" />
                 </Button>
-                <span className="text-[10px] text-muted-foreground truncate">
-                  {t("domains.setup.hostHint")}
-                </span>
               </div>
 
               <span className="text-muted-foreground font-mono">{t("domains.setup.pointsTo")}</span>
@@ -319,7 +326,36 @@ export function DomainSetupCard({ domain, onVerify, onDelete }: DomainSetupCardP
               <span className="text-muted-foreground font-mono">{t("domains.setup.proxy")}</span>
               <ProxyIndicator proxied={true} />
             </div>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              {dnsHost === "@" ? t("domains.setup.hostApex") : t("domains.setup.hostSub", { name: dnsHost })}
+            </p>
+            <p className="text-[11px] text-orange-300/95 leading-relaxed">{t("domains.setup.orangeCloud")}</p>
           </div>
+
+          {!hasDcvCname && !hasTxtFallback && (
+            <div className="flex items-start gap-2 rounded-md border border-amber-500/20 bg-amber-500/[0.04] p-3">
+              <Loader2 className="h-3.5 w-3.5 text-amber-400 shrink-0 mt-0.5 animate-spin" aria-hidden="true" />
+              <div className="text-[11px] text-amber-400/90 leading-relaxed">
+                {t("domains.setup.awaitingToken")}
+              </div>
+            </div>
+          )}
+
+          {(hasDcvCname || hasTxtFallback) && (
+          <details className="group rounded-md border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+            <summary className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-white/[0.03] transition-colors list-none">
+              <HelpCircle className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden="true" />
+              <span className="text-[11px] text-muted-foreground flex-1">
+                {t("domains.setup.secondRecordSummary")}
+              </span>
+              <span
+                className="text-[10px] text-muted-foreground/60 group-open:rotate-180 transition-transform shrink-0"
+                aria-hidden="true"
+              >
+                ▼
+              </span>
+            </summary>
+            <div className="px-3 pb-3 pt-2 space-y-3 border-t border-white/[0.04]">
 
           {/* Record 2: SSL Validation — Delegated DCV CNAME (preferred) — MUST be DNS only */}
           {hasDcvCname && dcvCnameName && dcvCnameTarget && (
@@ -440,16 +476,6 @@ export function DomainSetupCard({ domain, onVerify, onDelete }: DomainSetupCardP
             </div>
           )}
 
-          {/* Degenerate case: no SSL tokens captured yet */}
-          {!hasDcvCname && !hasTxtFallback && (
-            <div className="flex items-start gap-2 rounded-md border border-amber-500/20 bg-amber-500/[0.04] p-3">
-              <Loader2 className="h-3.5 w-3.5 text-amber-400 shrink-0 mt-0.5 animate-spin" aria-hidden="true" />
-              <div className="text-[11px] text-amber-400/90 leading-relaxed">
-                {t("domains.setup.awaitingToken")}
-              </div>
-            </div>
-          )}
-
           {/* Help block — collapsible, explains the proxy asymmetry */}
           <details className="group rounded-md border border-white/[0.06] bg-white/[0.02] overflow-hidden">
             <summary className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-white/[0.03] transition-colors list-none">
@@ -488,6 +514,9 @@ export function DomainSetupCard({ domain, onVerify, onDelete }: DomainSetupCardP
               </div>
             </div>
           </details>
+            </div>
+          </details>
+          )}
 
           {/* Verification Errors */}
           {domain.verification_errors && (
