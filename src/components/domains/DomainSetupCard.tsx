@@ -341,37 +341,21 @@ export function DomainSetupCard({ domain, onVerify, onDelete }: DomainSetupCardP
             </div>
           )}
 
-          {(hasDcvCname || hasTxtFallback) && (
-          <details className="group rounded-md border border-white/[0.06] bg-white/[0.02] overflow-hidden">
-            <summary className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-white/[0.03] transition-colors list-none">
-              <HelpCircle className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden="true" />
-              <span className="text-[11px] text-muted-foreground flex-1">
-                {t("domains.setup.secondRecordSummary")}
-              </span>
-              <span
-                className="text-[10px] text-muted-foreground/60 group-open:rotate-180 transition-transform shrink-0"
-                aria-hidden="true"
-              >
-                ▼
-              </span>
-            </summary>
-            <div className="px-3 pb-3 pt-2 space-y-3 border-t border-white/[0.04]">
-
-          {/* Record 2: SSL Validation — Delegated DCV CNAME (preferred) — MUST be DNS only */}
+          {/* Record 2: SSL Validation — Delegated DCV CNAME — MUST be DNS only */}
           {hasDcvCname && dcvCnameName && dcvCnameTarget && (
             <div className="rounded-md border border-emerald-500/15 bg-emerald-500/[0.03] p-3 space-y-2.5">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-400 text-[10px] font-bold shrink-0">
                   2
                 </span>
-                <span className="text-xs font-semibold text-foreground uppercase tracking-wider">
+                <span className="text-xs font-semibold text-foreground">
                   {t("domains.setup.sslCnameTitle")}
                 </span>
                 <Badge
                   variant="outline"
-                  className="ml-auto text-[9px] uppercase border-emerald-500/30 bg-emerald-500/10 text-emerald-400 shrink-0"
+                  className="ml-auto text-[10px] border-[#004BFF]/30 bg-[#004BFF]/10 text-[#004BFF] shrink-0"
                 >
-                  {t("domains.setup.recommended")}
+                  {t("domains.setup.required")}
                 </Badge>
               </div>
 
@@ -429,9 +413,15 @@ export function DomainSetupCard({ domain, onVerify, onDelete }: DomainSetupCardP
                 <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#004BFF]/15 text-[#004BFF] text-[10px] font-bold">
                   2
                 </span>
-                <span className="text-xs font-semibold text-foreground uppercase tracking-wider">
+                <span className="text-xs font-semibold text-foreground">
                   {t("domains.setup.sslTxtTitle")}
                 </span>
+                <Badge
+                  variant="outline"
+                  className="ml-auto text-[10px] border-[#004BFF]/30 bg-[#004BFF]/10 text-[#004BFF] shrink-0"
+                >
+                  {t("domains.setup.required")}
+                </Badge>
               </div>
 
               <div className="grid grid-cols-[80px_1fr] gap-x-3 gap-y-1.5 text-xs">
@@ -514,9 +504,6 @@ export function DomainSetupCard({ domain, onVerify, onDelete }: DomainSetupCardP
               </div>
             </div>
           </details>
-            </div>
-          </details>
-          )}
 
           {/* Verification Errors */}
           {domain.verification_errors && (
