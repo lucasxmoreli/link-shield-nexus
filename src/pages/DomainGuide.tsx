@@ -11,12 +11,20 @@ import {
 
 const FAQ = ["where", "bought", "fill", "atSign", "grey", "pending", "second", "hosting", "www", "time"] as const;
 const STEPS = ["step1", "step2", "step3", "step4"] as const;
+const SHOTS = [
+  ["01-modal.png", "shot1Title", "shot1Text"],
+  ["02-registro-1.png", "shot2Title", "shot2Text"],
+  ["03-cloudflare-laranja.png", "shot3Title", "shot3Text"],
+  ["04-cloudflare-cinza.png", "shot4Title", "shot4Text"],
+  ["05-registro-2.png", "shot5Title", "shot5Text"],
+  ["06-linha-salva.png", "shot6Title", "shot6Text"],
+] as const;
 
 export default function DomainGuide() {
   const { t } = useTranslation();
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-6 max-w-3xl">
       <div className="space-y-3">
         <Button variant="ghost" size="sm" className="-ml-2 text-muted-foreground" asChild>
           <Link to="/domains">
@@ -37,6 +45,29 @@ export default function DomainGuide() {
             <li key={key} className="flex gap-3 text-sm leading-relaxed">
               <span className="font-semibold text-primary shrink-0">{index + 1}.</span>
               <span>{t(`domains.setup.${key}`)}</span>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section className="space-y-4">
+        <div className="space-y-1">
+          <h2 className="text-sm font-semibold">{t("domains.guide.shotsTitle")}</h2>
+          <p className="text-sm text-muted-foreground leading-relaxed">{t("domains.guide.shotsNote")}</p>
+        </div>
+        <ol className="space-y-5">
+          {SHOTS.map(([file, titleKey, textKey], index) => (
+            <li key={file} className="space-y-2">
+              <h3 className="text-sm font-semibold leading-relaxed">
+                <span className="text-primary mr-2">{index + 1}.</span>
+                {t(`domains.guide.${titleKey}`)}
+              </h3>
+              <img
+                src={`/domain-guide/${file}`}
+                alt={t(`domains.guide.${titleKey}`)}
+                className="w-full rounded-lg border border-border bg-card"
+              />
+              <p className="text-sm text-muted-foreground leading-relaxed">{t(`domains.guide.${textKey}`)}</p>
             </li>
           ))}
         </ol>
