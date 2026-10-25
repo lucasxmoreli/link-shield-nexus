@@ -15,7 +15,6 @@ const SHOTS = [
   ["01-modal.png", "shot1Title", "shot1Text"],
   ["02-registro-1.png", "shot2Title", "shot2Text"],
   ["03-cloudflare-laranja.png", "shot3Title", "shot3Text"],
-  ["04-cloudflare-cinza.png", "shot4Title", "shot4Text"],
   ["05-registro-2.png", "shot5Title", "shot5Text"],
   ["06-linha-salva.png", "shot6Title", "shot6Text"],
 ] as const;
