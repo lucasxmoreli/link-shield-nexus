@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Check, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +11,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
+import { Checkbox } from "@/components/ui/checkbox";
 import { PLANS, TRAFFIC_SOURCES, getPlanByName, type PlanData } from "@/lib/plan-config";
 import { PlanOverviewCard } from "@/components/billing/PlanOverviewCard";
 import { PaymentMethodCard } from "@/components/billing/PaymentMethodCard";
@@ -104,6 +105,7 @@ export default function Billing() {
 
   const [selectedPlan, setSelectedPlan] = useState<PlanData | null>(null);
   const [checkoutCurrency, setCheckoutCurrency] = useState<"brl" | "usd" | null>(null);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   const isViewOnly = !!user?.id && !!effectiveUserId && effectiveUserId !== user.id;
@@ -265,6 +267,7 @@ export default function Billing() {
     if (!STRIPE_CHECKOUT_ENABLED) return;
     if (holdsPlan && plan.name === userPlan.name) return;
     setCheckoutCurrency(null);
+    setAcceptedTerms(false);
     setCheckoutLoading(false);
     setSelectedPlan(plan);
   };
@@ -284,7 +287,7 @@ export default function Billing() {
 
   const handleConfirmUpgrade = async (currency: "brl" | "usd") => {
     if (!STRIPE_CHECKOUT_ENABLED) return;
-    if (!selectedPlan) return;
+    if (!selectedPlan || !acceptedTerms) return;
 
     if (!selectedPlan.stripePriceId) {
       toast({
@@ -387,6 +390,12 @@ export default function Billing() {
         </TabsContent>
 
         <TabsContent value="plans" className="mt-6 space-y-4">
+          <Link
+            to="/billing/termos"
+            className="inline-block text-sm text-primary underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+          >
+            {t("billing.termsLink")}
+          </Link>
           {needBannerResource && !showPacksTab && (
             <Alert className="border-primary/30 bg-primary/5">
               <AlertDescription>
@@ -461,6 +470,7 @@ export default function Billing() {
           if (!open) {
             setSelectedPlan(null);
             setCheckoutCurrency(null);
+            setAcceptedTerms(false);
             setCheckoutLoading(false);
           }
         }}
@@ -500,11 +510,36 @@ export default function Billing() {
                   <span className="mt-1 block text-[11px] leading-snug">{t("billing.payInUsdHint")}</span>
                 </button>
               </div>
+              <label className="flex items-start gap-3 text-sm leading-relaxed">
+                <Checkbox
+                  checked={acceptedTerms}
+                  disabled={checkoutLoading}
+                  onCheckedChange={(checked) => setAcceptedTerms(checked === true)}
+                  className="mt-0.5"
+                  aria-required="true"
+                />
+                <span>
+                  <Trans
+                    i18nKey="billing.termsAccept"
+                    components={{
+                      terms: (
+                        <Link
+                          to="/billing/termos"
+                          target="_blank"
+                          rel="noreferrer"
+                          onClick={(event) => event.stopPropagation()}
+                          className="text-foreground underline underline-offset-4 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                        />
+                      ),
+                    }}
+                  />
+                </span>
+              </label>
               <Button
                 onClick={() => {
-                  if (checkoutCurrency) handleConfirmUpgrade(checkoutCurrency);
+                  if (checkoutCurrency && acceptedTerms) handleConfirmUpgrade(checkoutCurrency);
                 }}
-                disabled={checkoutLoading || !checkoutCurrency || !selectedPlan.stripePriceId}
+                disabled={checkoutLoading || !checkoutCurrency || !acceptedTerms || !selectedPlan.stripePriceId}
                 className="h-11 w-full bg-primary hover:bg-primary/90 text-primary-foreground"
               >
                 {checkoutLoading ? (
@@ -526,6 +561,7 @@ export default function Billing() {
                 onClick={() => {
                   setSelectedPlan(null);
                   setCheckoutCurrency(null);
+                  setAcceptedTerms(false);
                   setCheckoutLoading(false);
                 }}
                 className="h-9 text-muted-foreground"

@@ -15,6 +15,7 @@ import CampaignEdit from "./pages/CampaignEdit";
 import Requests from "./pages/Requests";
 import AccountSettings from "./pages/AccountSettings";
 import Billing from "./pages/Billing";
+import SubscriptionTerms from "./pages/SubscriptionTerms";
 import Auth from "./pages/Auth";
 import CampaignRedirect from "./pages/CampaignRedirect";
 import Analytics from "./pages/Analytics";
@@ -79,6 +80,7 @@ const App = () => (
               <Route path="/requests" element={<Requests />} />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/billing" element={<Billing />} />
+              <Route path="/billing/termos" element={<SubscriptionTerms />} />
               <Route path="/settings" element={<AccountSettings />} />
 
               {/* === Admin Command Center (unified) === */}
