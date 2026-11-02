@@ -71,6 +71,7 @@ export default function Campaigns() {
   const badgeLabel = (): string => {
     if (activation === "PAST_DUE") return t("campaigns.gatePastDueShort");
     if (activation === "CANCELED") return t("campaigns.gateCanceledShort");
+    if (!isActive && effective > 0) return t("campaigns.activatingShort");
     if (!isActive) return t("campaigns.gatePaidPlanShort");
     if (state === "over_limit") {
       return t("campaigns.badgeOverLimit", {
@@ -90,6 +91,7 @@ export default function Campaigns() {
     if (isViewOnly) return "campaigns.viewOnlyHint";
     if (activation === "PAST_DUE") return "campaigns.gatePastDue";
     if (activation === "CANCELED") return "campaigns.gateCanceled";
+    if (!isActive && effective > 0) return "campaigns.activatingHint";
     if (!isActive) return "campaigns.gatePaidPlan";
     return "campaigns.viewOnlyMode";
   };
@@ -172,16 +174,26 @@ export default function Campaigns() {
       {!isLoading && !billingLoading && campaigns.length === 0 ? (
         <EmptyState
           icon={Target}
-          title={createBlocked || isViewOnly ? t("campaigns.emptyTitleLocked") : t("campaigns.emptyTitle")}
+          title={
+            isViewOnly
+              ? t("campaigns.emptyTitleLocked")
+              : !isActive && effective > 0
+                ? t("campaigns.activatingTitle")
+                : createBlocked
+                  ? t("campaigns.emptyTitleLocked")
+                  : t("campaigns.emptyTitle")
+          }
           description={
             isViewOnly
               ? t("campaigns.viewOnlyHint")
-              : createBlocked
-                ? t("campaigns.emptyDescLocked")
-                : t("campaigns.emptyDesc")
+              : !isActive && effective > 0
+                ? t("campaigns.activatingDesc")
+                : createBlocked
+                  ? t("campaigns.emptyDescLocked")
+                  : t("campaigns.emptyDesc")
           }
           cta={
-            isViewOnly
+            isViewOnly || (!isActive && effective > 0)
               ? undefined
               : {
                   label: createBlocked ? t("campaigns.emptyCtaLocked") : t("campaigns.emptyCta"),

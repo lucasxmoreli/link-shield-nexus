@@ -222,6 +222,27 @@ function findMeteredItem(subscription: Stripe.Subscription): Stripe.Subscription
   return null;
 }
 
+// A paid invoice is the source of truth. A later `incomplete` event must not
+// close a workspace that Stripe has already charged.
+async function subscriptionAlreadyPaid(
+  stripe: Stripe,
+  subscriptionId: string,
+): Promise<boolean> {
+  try {
+    const paid = await stripe.invoices.list({
+      subscription: subscriptionId,
+      status: "paid",
+      limit: 1,
+    });
+    return paid.data.length > 0;
+  } catch (err) {
+    console.warn(
+      `[paid-invoice check] ${subscriptionId}: ${(err as Error).message}`,
+    );
+    return false;
+  }
+}
+
 async function handleCheckoutCompleted(
   stripe: Stripe,
   admin: ReturnType<typeof createClient>,
@@ -246,10 +267,15 @@ async function handleCheckoutCompleted(
     .select("subscription_status, stripe_subscription_id")
     .eq("user_id", userId)
     .maybeSingle();
+  const incomingIncomplete =
+    subscription.status === "incomplete" || subscription.status === "incomplete_expired";
   const keepPaidStatus =
     existing?.stripe_subscription_id === subscriptionId &&
     (existing.subscription_status === "active" || existing.subscription_status === "trialing") &&
-    (subscription.status === "incomplete" || subscription.status === "incomplete_expired");
+    incomingIncomplete;
+  const alreadyPaid =
+    keepPaidStatus ||
+    (incomingIncomplete && await subscriptionAlreadyPaid(stripe, subscriptionId));
 
   mustWrite(
     "checkout.completed/profiles",
@@ -265,7 +291,9 @@ async function handleCheckoutCompleted(
         max_domains: planConfig.max_domains,
         max_campaigns: planConfig.max_campaigns,
         current_clicks: 0,
-        subscription_status: keepPaidStatus ? existing!.subscription_status : subscription.status,
+        subscription_status: alreadyPaid
+          ? (keepPaidStatus ? existing!.subscription_status : "active")
+          : subscription.status,
         is_suspended: false,
         billing_cycle_start: periodStart
           ? new Date(periodStart * 1000).toISOString()
@@ -350,10 +378,15 @@ async function handleSubscriptionUpdated(
     : null;
 
   const isCycleRenewal = oldCycleStartISO !== null && oldCycleStartISO !== newCycleStartISO;
+  const incomingIncomplete =
+    subscription.status === "incomplete" || subscription.status === "incomplete_expired";
   const keepPaidStatus =
     currentProfile?.stripe_subscription_id === subscription.id &&
     (currentProfile.subscription_status === "active" || currentProfile.subscription_status === "trialing") &&
-    (subscription.status === "incomplete" || subscription.status === "incomplete_expired");
+    incomingIncomplete;
+  const alreadyPaid =
+    keepPaidStatus ||
+    (incomingIncomplete && await subscriptionAlreadyPaid(stripe, subscription.id));
 
   const updatePayload: Record<string, unknown> = {
     stripe_subscription_id: subscription.id,
@@ -363,8 +396,10 @@ async function handleSubscriptionUpdated(
     max_clicks: planConfig.max_clicks,
     max_domains: planConfig.max_domains,
     max_campaigns: planConfig.max_campaigns,
-    subscription_status: keepPaidStatus ? currentProfile!.subscription_status : subscription.status,
-    is_suspended: keepPaidStatus ? false : isSuspended,
+    subscription_status: alreadyPaid
+      ? (keepPaidStatus ? currentProfile!.subscription_status : "active")
+      : subscription.status,
+    is_suspended: alreadyPaid ? false : isSuspended,
     billing_cycle_start: newCycleStartISO,
     billing_cycle_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
   };

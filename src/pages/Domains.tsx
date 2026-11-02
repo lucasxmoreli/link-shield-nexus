@@ -59,6 +59,7 @@ export default function Domains() {
   const state = domainsRes?.state;
   const packReason = billing?.packs.domains.reason;
   const unlimited = effective < 0;
+  const paidAwaitingActivation = !isActive && (unlimited || effective > 0);
   const billingReady = !billingLoading && !isViewOnly;
   const canAdd =
     billingReady && !billingError && canCreateResource(activation, domainsRes);
@@ -72,11 +73,12 @@ export default function Domains() {
 
   const gateCopyKey = (): string => {
     if (isViewOnly) return "domains.viewOnlyHint";
+    if (activation === "PAST_DUE") return "domains.gatePastDue";
+    if (activation === "CANCELED") return "domains.gateCanceled";
+    if (paidAwaitingActivation) return "domains.activatingHint";
     if (billingError || !activation || activation === "INVITED") {
       return "domains.gatePaidPlan";
     }
-    if (activation === "PAST_DUE") return "domains.gatePastDue";
-    if (activation === "CANCELED") return "domains.gateCanceled";
     if (state === "over_limit") return "domains.gateOverLimit";
     if (state === "at_limit") return "domains.limitReached";
     return "domains.noPlanDomains";
@@ -86,6 +88,7 @@ export default function Domains() {
   const badgeLabel = (): string => {
     if (activation === "PAST_DUE") return t("domains.gatePastDueShort");
     if (activation === "CANCELED") return t("domains.gateCanceledShort");
+    if (paidAwaitingActivation) return t("domains.activatingShort");
     if (!isActive) return t("domains.gatePaidPlanShort");
     if (state === "over_limit") {
       return t("domains.badgeOverLimit", {
@@ -362,16 +365,26 @@ export default function Domains() {
       {!isLoading && !billingLoading && domains.length === 0 && (
         <EmptyState
           icon={Globe}
-          title={isLimitReached || isViewOnly ? t("domains.emptyTitleLocked") : t("domains.emptyTitle")}
+          title={
+            isViewOnly
+              ? t("domains.emptyTitleLocked")
+              : paidAwaitingActivation
+                ? t("domains.activatingTitle")
+                : isLimitReached
+                  ? t("domains.emptyTitleLocked")
+                  : t("domains.emptyTitle")
+          }
           description={
             isViewOnly
               ? t("domains.viewOnlyHint")
-              : isLimitReached
-                ? t("domains.emptyDescLocked")
-                : t("domains.emptyDesc")
+              : paidAwaitingActivation
+                ? t("domains.activatingDesc")
+                : isLimitReached
+                  ? t("domains.emptyDescLocked")
+                  : t("domains.emptyDesc")
           }
           cta={
-            isViewOnly
+            isViewOnly || paidAwaitingActivation
               ? undefined
               : isLimitReached
                 ? {
