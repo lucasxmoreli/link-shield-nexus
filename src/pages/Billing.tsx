@@ -484,6 +484,10 @@ export default function Billing() {
                   {t(selectedPlan.descriptionKey)}
                 </p>
               </DialogHeader>
+              <div className="space-y-1 text-center">
+                <p className="text-sm font-medium text-foreground">{t("billing.chooseCurrency")}</p>
+                <p className="text-xs text-muted-foreground">{t("billing.currencyCardHint")}</p>
+              </div>
               <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label={t("billing.chooseCurrency")}>
                 <button
                   type="button"
@@ -493,8 +497,11 @@ export default function Billing() {
                   onClick={() => setCheckoutCurrency("brl")}
                   className={`h-auto rounded-lg border px-3 py-3 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60 ${checkoutCurrency === "brl" ? "border-primary bg-primary/15 text-foreground" : "border-border text-muted-foreground hover:border-primary/40"}`}
                 >
-                  <span className="block text-[11px] font-medium">{t("billing.payBrlShort")}</span>
-                  <span className="mt-1 block text-lg font-semibold font-mono leading-none text-foreground">{selectedPlan.checkoutBrl}</span>
+                  <span className={`mx-auto flex h-4 w-4 items-center justify-center rounded-full border ${checkoutCurrency === "brl" ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/60"}`}>
+                    {checkoutCurrency === "brl" && <Check size={10} strokeWidth={3} />}
+                  </span>
+                  <span className="mt-2 block text-[11px] font-medium">{t("billing.payBrlShort")}</span>
+                  <span className={`mt-1 block text-lg font-semibold font-mono leading-none ${checkoutCurrency === "brl" ? "text-foreground" : ""}`}>{selectedPlan.checkoutBrl}</span>
                   <span className="mt-1 block text-[11px] leading-snug">{t("billing.payInBrlHint")}</span>
                 </button>
                 <button
@@ -505,8 +512,11 @@ export default function Billing() {
                   onClick={() => setCheckoutCurrency("usd")}
                   className={`h-auto rounded-lg border px-3 py-3 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60 ${checkoutCurrency === "usd" ? "border-primary bg-primary/15 text-foreground" : "border-border text-muted-foreground hover:border-primary/40"}`}
                 >
-                  <span className="block text-[11px] font-medium">{t("billing.payUsdShort")}</span>
-                  <span className="mt-1 block text-lg font-semibold font-mono leading-none text-foreground">{selectedPlan.price}</span>
+                  <span className={`mx-auto flex h-4 w-4 items-center justify-center rounded-full border ${checkoutCurrency === "usd" ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/60"}`}>
+                    {checkoutCurrency === "usd" && <Check size={10} strokeWidth={3} />}
+                  </span>
+                  <span className="mt-2 block text-[11px] font-medium">{t("billing.payUsdShort")}</span>
+                  <span className={`mt-1 block text-lg font-semibold font-mono leading-none ${checkoutCurrency === "usd" ? "text-foreground" : ""}`}>{selectedPlan.price}</span>
                   <span className="mt-1 block text-[11px] leading-snug">{t("billing.payInUsdHint")}</span>
                 </button>
               </div>
@@ -540,19 +550,21 @@ export default function Billing() {
                   if (checkoutCurrency && acceptedTerms) handleConfirmUpgrade(checkoutCurrency);
                 }}
                 disabled={checkoutLoading || !checkoutCurrency || !acceptedTerms || !selectedPlan.stripePriceId}
-                className="h-11 w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                className={`h-11 w-full disabled:opacity-100 ${checkoutCurrency && acceptedTerms ? "bg-primary text-primary-foreground hover:bg-primary/90" : "bg-muted text-muted-foreground hover:bg-muted"}`}
               >
                 {checkoutLoading ? (
                   <>
                     <Loader2 size={16} className="animate-spin" />
                     {t("billing.openingCheckout")}
                   </>
-                ) : checkoutCurrency ? (
+                ) : !checkoutCurrency ? (
+                  t("billing.pickCurrency")
+                ) : !acceptedTerms ? (
+                  t("billing.acceptTermsToPay")
+                ) : (
                   t("billing.payAmount", {
                     amount: checkoutCurrency === "usd" ? selectedPlan.price : selectedPlan.checkoutBrl,
                   })
-                ) : (
-                  t("billing.confirmPayment")
                 )}
               </Button>
               <Button
